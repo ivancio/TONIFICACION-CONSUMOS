@@ -1,6 +1,8 @@
 import { mergeBackups } from './merge.js';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const MAX_PAYLOAD_BYTES = 1_800_000;
+const keySets = new Map();
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
@@ -15,6 +17,23 @@ function validBackup(value) {
 
 async function readState(db) {
   return db.prepare('SELECT revision, payload FROM sync_state WHERE id = 1').first();
+}
+
+async function hasAccess(request, env, ctx) {
+  if (ctx.access) return true;
+  const token = request.headers.get('cf-access-jwt-assertion');
+  if (!token || !env.TEAM_DOMAIN || !env.POLICY_AUD) return false;
+  try {
+    let keys = keySets.get(env.TEAM_DOMAIN);
+    if (!keys) {
+      keys = createRemoteJWKSet(new URL(`${env.TEAM_DOMAIN}/cdn-cgi/access/certs`));
+      keySets.set(env.TEAM_DOMAIN, keys);
+    }
+    await jwtVerify(token, keys, { issuer: env.TEAM_DOMAIN, audience: env.POLICY_AUD });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function saveBackup(db, incoming) {
@@ -38,7 +57,7 @@ async function saveBackup(db, incoming) {
 
 export default {
   async fetch(request, env, ctx) {
-    if (!ctx.access) return json({ error: 'Acceso privado no configurado' }, 403);
+    if (!await hasAccess(request, env, ctx)) return json({ error: 'Acceso privado no autorizado' }, 403);
     const path = new URL(request.url).pathname;
     if (path === '/api/sync') {
       if (request.method === 'GET') {

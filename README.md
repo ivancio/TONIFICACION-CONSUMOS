@@ -14,6 +14,11 @@ mantiene tambien sus datos locales y confirma una subida solo tras releer D1.
    Access", "All traffic" y permite solo tu correo. Sin Access, el Worker
    responde 403 para la web y la API.
 
+El Worker usa `ctx.access` en desarrollo y valida el JWT de Access en
+produccion: el router de Static Assets no transmite `ctx.access` al Worker.
+`TEAM_DOMAIN` y `POLICY_AUD` estan en `wrangler.jsonc`; si se recrea la
+aplicacion de Access, hay que actualizar el AUD y volver a desplegar.
+
 El Worker esta en `https://tonificacion-consumos.espinosa-surface.workers.dev/`.
 
 ## Pasar datos del sitio anterior

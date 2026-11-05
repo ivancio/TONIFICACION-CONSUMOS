@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import worker from './worker/index.js';
 
 function database() {
@@ -40,6 +41,26 @@ const backup = (id, dec) => ({
 test('Cloudflare sync denies requests without Access', async () => {
   const response = await worker.fetch(new Request('https://example.test/api/sync'), { DB: database() }, {});
   assert.equal(response.status, 403);
+});
+
+test('Cloudflare sync verifies Access JWT behind static assets', async t => {
+  const { publicKey, privateKey } = await generateKeyPair('RS256');
+  const jwk = { ...await exportJWK(publicKey), kid: 'test-key', alg: 'RS256', use: 'sig' };
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ keys: [jwk] }));
+  const issuer = 'https://access.example.test';
+  const env = { DB: database(), TEAM_DOMAIN: issuer, POLICY_AUD: 'tonificacion-test' };
+  const token = await new SignJWT({ email: 'ivan@example.com' })
+    .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+    .setIssuer(issuer).setAudience('tonificacion-test').setIssuedAt().setExpirationTime('5m')
+    .sign(privateKey);
+  const accepted = await worker.fetch(new Request('https://example.test/api/sync', {
+    headers: { 'cf-access-jwt-assertion': token }
+  }), env, {});
+  assert.equal(accepted.status, 200);
+  const rejected = await worker.fetch(new Request('https://example.test/api/sync', {
+    headers: { 'cf-access-jwt-assertion': token + 'x' }
+  }), env, {});
+  assert.equal(rejected.status, 403);
 });
 
 test('Cloudflare sync preserves both decorators and deletions', async () => {
