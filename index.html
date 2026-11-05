@@ -3,26 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tonificación Consumos - v2.3</title>
+    <meta name="theme-color" content="#1c1917">
+    <title>Basilión - Undora v2.7</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
+            --primary-color: #1c1917;
+            --primary-hover: #44403c;
             --success-color: #16a34a;
             --success-hover: #15803d;
             --danger-color: #dc2626;
+            --warn-bg: #fef3c7;
+            --warn-border: #f59e0b;
+            --warn-text: #92400e;
             --bg-color: #f8fafc;
             --card-bg: #ffffff;
+            --soft-bg: #f1f5f9;
+            --soft-bg-2: #e2e8f0;
             --text-color: #1e293b;
+            --muted: #64748b;
             --border-color: #cbd5e1;
         }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --card-bg: #1e293b;
+                --soft-bg: #273449;
+                --soft-bg-2: #334155;
+                --text-color: #e2e8f0;
+                --muted: #94a3b8;
+                --border-color: #475569;
+                --primary-color: #e7e5e4;
+                --primary-hover: #d6d3d1;
+                --warn-bg: #422006;
+                --warn-text: #fcd34d;
+            }
+        }
+
+        * { box-sizing: border-box; }
 
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: Futura, "Futura PT", "Jost", "Century Gothic", system-ui, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             justify-content: center;
             min-height: 100vh;
@@ -31,8 +58,8 @@
         .container {
             background-color: var(--card-bg);
             width: 100%;
-            max-width: 650px;
-            padding: 30px;
+            max-width: 680px;
+            padding: 24px;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             margin-bottom: 30px;
@@ -40,333 +67,302 @@
         }
 
         .version-tag {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            background: #e2e8f0;
-            color: #475569;
-            font-size: 0.75rem;
-            font-weight: bold;
-            padding: 4px 8px;
-            border-radius: 6px;
+            position: absolute; top: 15px; right: 20px;
+            background: var(--soft-bg-2); color: var(--muted);
+            font-size: 0.75rem; font-weight: bold;
+            padding: 4px 8px; border-radius: 6px;
         }
 
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 24px;
-            text-align: center;
-            color: var(--text-color);
-        }
+        input, select, textarea, button { font-family: inherit; }
+        h1 { letter-spacing: 0.04em; font-weight: 800; font-size: 1.5rem; margin: 8px 0 24px; text-align: center; }
+        h3 { margin: 0 0 10px; font-size: 1.1rem; }
 
-        /* Pantalla Home / Selección */
-        #homeView {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .home-cards {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 30px;
-        }
+        #homeView { text-align: center; padding: 20px 0; }
+        .home-cards { display: flex; flex-direction: column; gap: 20px; margin-top: 30px; }
 
         .card-selector {
-            background: #ffffff;
+            background: var(--card-bg);
             border: 2px solid var(--border-color);
-            padding: 24px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 24px; border-radius: 12px; cursor: pointer;
+            transition: all 0.2s; text-align: left;
+            display: flex; justify-content: space-between; align-items: center;
+            color: var(--text-color); font: inherit; width: 100%;
         }
+        .card-selector:hover { border-color: var(--primary-color); background-color: var(--soft-bg); transform: translateY(-2px); }
+        .card-title { font-size: 1.25rem; font-weight: bold; }
+        .card-subtitle { font-size: 0.9rem; color: var(--muted); margin-top: 4px; }
 
-        .card-selector:hover {
-            border-color: var(--primary-color);
-            background-color: #f1f5f9;
-            transform: translateY(-2px);
-        }
+        .home-tools { margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-
-        .card-subtitle {
-            font-size: 0.9rem;
-            color: #64748b;
-            margin-top: 4px;
-        }
-
-        /* Vista de Decorador (Oculta por defecto) */
-        #decoratorView {
-            display: none;
-        }
+        #decoratorView { display: none; }
 
         .nav-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #e2e8f0;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 20px;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--soft-bg-2); border: none;
+            padding: 8px 14px; border-radius: 6px;
+            font-weight: 600; cursor: pointer; margin-bottom: 8px;
             color: var(--text-color);
         }
-        .nav-back:hover {
-            background: #cbd5e1;
-        }
+        .nav-back:hover { filter: brightness(0.95); }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+        .form-group { margin-bottom: 18px; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; min-width: 0; }
 
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
 
-        input[type="text"],
-        input[type="date"],
-        input[type="time"],
-        select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1rem;
-            box-sizing: border-box;
-            background-color: #fff;
+        input[type="text"], input[type="date"], input[type="time"], input[type="number"], select {
+            width: 100%; padding: 12px; border: 1px solid var(--border-color);
+            border-radius: 8px; font-size: 1rem;
+            background-color: var(--card-bg); color: var(--text-color);
         }
-
         input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
         }
+        .invalid { border-color: var(--danger-color) !important; }
 
-        .time-row {
-            display: flex;
-            gap: 12px;
+        .hours-preview {
+            font-size: 0.9rem; color: var(--muted); margin: -8px 0 18px;
         }
+        .hours-preview b { color: var(--text-color); }
 
-        .time-row .form-group {
-            flex: 1;
-            margin-bottom: 20px;
-        }
-
-        .counter-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .counter-container { display: flex; align-items: center; gap: 10px; }
         .btn-counter {
-            background-color: #e2e8f0;
-            border: none;
-            color: var(--text-color);
-            font-size: 1.25rem;
-            font-weight: bold;
-            width: 42px;
-            height: 42px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background-color: var(--soft-bg-2); border: none; color: var(--text-color);
+            font-size: 1.6rem; font-weight: bold;
+            width: 56px; height: 56px; border-radius: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            touch-action: manipulation; user-select: none;
         }
-
-        .btn-counter:hover {
-            background-color: #cbd5e1;
-        }
-
+        .btn-counter:active { transform: scale(0.95); }
         .counter-display {
-            flex: 1;
-            text-align: center;
-            font-size: 1.25rem;
-            font-weight: bold;
-            background-color: #f1f5f9;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+            flex: 1; text-align: center; font-size: 1.5rem; font-weight: bold;
+            background-color: var(--soft-bg); padding: 10px;
+            border-radius: 10px; border: 1px solid var(--border-color); height: 56px;
         }
+        .counter-display::-webkit-inner-spin-button { display: none; }
 
         .alert-kerajet {
-            background-color: #fef3c7;
-            border: 1px solid #f59e0b;
-            color: #92400e;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            display: none;
-            text-align: center;
+            background-color: var(--warn-bg); border: 1px solid var(--warn-border);
+            color: var(--warn-text); padding: 12px; border-radius: 8px;
+            margin-bottom: 18px; font-size: 0.95rem; font-weight: 500;
+            display: none; text-align: center;
         }
 
-        .save-container {
-            margin-top: 25px;
-            margin-bottom: 30px;
-        }
+        .save-container { margin: 22px 0 28px; }
 
         .btn {
-            width: 100%;
-            border: none;
-            padding: 14px 20px;
-            font-size: 1.05rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
+            width: 100%; border: none; padding: 14px 20px;
+            font-size: 1.05rem; font-weight: bold; border-radius: 8px;
+            cursor: pointer; text-align: center;
+        }
+        .btn-small { width: auto; padding: 10px 14px; font-size: 0.9rem; }
+        .btn-save { background-color: var(--success-color); color: white; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); }
+        .btn-save:hover { background-color: var(--success-hover); }
+        .btn-primary { background-color: var(--primary-color); color: var(--card-bg); }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: var(--soft-bg); color: var(--text-color); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background-color: var(--soft-bg-2); }
+        .btn-danger { background-color: var(--soft-bg); color: var(--danger-color); border: 1px solid var(--border-color); font-size: 0.9rem; padding: 10px; }
+        .btn-danger:hover { background-color: #fee2e2; }
+
+        .history-section { border-top: 2px solid var(--soft-bg); padding-top: 20px; }
+
+        .stats {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
+        }
+        @media (min-width: 520px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+        .stat {
+            background: var(--soft-bg); border-radius: 10px; padding: 10px; text-align: center;
+        }
+        .stat-value { font-size: 1.3rem; font-weight: bold; }
+        .stat-label { font-size: 0.75rem; color: var(--muted); }
+        .stat.bad .stat-value { color: var(--danger-color); }
+
+        .table-wrap { overflow-x: auto; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+        .history-table th, .history-table td { border: 1px solid var(--border-color); padding: 7px 5px; text-align: center; white-space: nowrap; }
+        .history-table th { background-color: var(--soft-bg); }
+        .history-table tfoot tr { font-weight: bold; background-color: var(--soft-bg-2); }
+        .row-actions button {
+            background: none; border: none; cursor: pointer; font-size: 1.05rem; padding: 2px 6px;
+        }
+        tr.editing { outline: 2px solid var(--primary-color); }
+
+        .actions-grid { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .actions-row { display: flex; gap: 10px; }
+        .actions-row .btn { flex: 1; }
+
+        .edit-banner {
+            display: none; background: #dbeafe; color: #1e3a8a; border-radius: 8px;
+            padding: 10px 12px; margin-bottom: 14px; font-weight: 600;
+            justify-content: space-between; align-items: center; gap: 10px;
         }
 
-        .btn-save {
-            background-color: var(--success-color, #16a34a);
-            color: white;
-            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        .toast {
+            position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(120px);
+            background: #0f172a; color: #fff; padding: 12px 18px; border-radius: 10px;
+            font-weight: 600; box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            transition: transform 0.25s; z-index: 50; max-width: 90vw; text-align: center;
         }
-        .btn-save:hover {
-            background-color: #15803d;
-        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.error { background: var(--danger-color); }
 
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
+        .brand { display: flex; justify-content: center; margin: 4px 0 6px; }
+        .brand img { height: 34px; width: auto; }
+        .brand-text { font-weight: 800; letter-spacing: 0.35em; font-size: 1.3rem; display: none; }
+        @media (prefers-color-scheme: dark) { .brand img { filter: invert(1); } }
+        .brand-small img { height: 22px; }
+        .archive-section { border-top: 2px solid var(--soft-bg); margin-top: 24px; padding-top: 18px; }
+        .archive-item { border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+        .archive-item summary { cursor: pointer; font-weight: 600; }
+        .archive-meta { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+        .archive-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        textarea {
+            width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;
+            font-size: 1rem; font-family: inherit; background: var(--card-bg); color: var(--text-color);
+            resize: vertical; min-height: 70px;
         }
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-danger {
-            background-color: #f1f5f9;
-            color: var(--danger-color, #dc2626);
-            border: 1px solid var(--border-color);
-            font-size: 0.9rem;
-            padding: 10px;
-        }
-        .btn-danger:hover {
-            background-color: #fee2e2;
-        }
-
-        .history-section {
-            border-top: 2px solid #f1f5f9;
-            padding-top: 20px;
-        }
-
-        .history-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.8rem;
-            margin-top: 10px;
-        }
-
-        .history-table th, .history-table td {
-            border: 1px solid var(--border-color);
-            padding: 6px 4px;
-            text-align: center;
-        }
-
-        .history-table th {
-            background-color: #f1f5f9;
-        }
+        textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+        .comment-row td { text-align: left !important; white-space: normal !important; font-size: 0.8rem; color: var(--muted); background: var(--soft-bg); }
+        .sync-badge { display: inline-block; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; background: var(--soft-bg); color: var(--muted); margin-top: 14px; }
+        .sync-badge.ok { color: var(--success-color); }
+        .sync-badge.err { color: var(--danger-color); }
+        dialog { border: none; border-radius: 12px; padding: 20px; max-width: 460px; width: 92vw; background: var(--card-bg); color: var(--text-color); }
+        dialog::backdrop { background: rgba(0,0,0,0.45); }
+        .print-only { display: none; }
 
         @media print {
-            body { background-color: white; padding: 0; }
-            .container { box-shadow: none; padding: 0; max-width: 100%; }
-            .version-tag, .nav-back, .btn-counter, .save-container, .history-section button, .alert-kerajet { display: none !important; }
-            input, select { border: none; background: transparent; padding: 0; font-size: 1rem; }
-            .counter-display { border: none; background: transparent; text-align: left; padding: 0; }
-            .history-table { margin-top: 20px; }
+            body { background: white; color: black; padding: 0; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; background: white; }
+            .no-print, .version-tag, .nav-back, .row-actions, .history-table .col-actions { display: none !important; }
+            .print-only { display: block; }
+            .stat { background: #f1f5f9; }
+            .history-table th, .history-table td { border-color: #94a3b8; }
         }
+        .print-header table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 16px; }
+        .print-header td { padding: 4px 6px; border-bottom: 1px solid #cbd5e1; }
+        .print-header td:first-child { font-weight: bold; width: 35%; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="version-tag">v2.3</div>
-        
-        <!-- PANTALLA DE INICIO (HOME) -->
+        <div class="version-tag">v2.7</div>
+
+        <!-- PANTALLA DE INICIO -->
         <div id="homeView">
-            <h1>Tonificación Consumos</h1>
-            <p style="color: #64748b; margin-bottom: 20px;">Selecciona el técnico para gestionar su registro de producción:</p>
-            
+            <div class="brand"><img src="https://www.undora.com/assets/images/logo-black.svg" alt="Undora" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="brand-text">UNDORA</span></div>
+            <h1>Basilión</h1>
+            <p style="color: var(--muted); margin-bottom: 20px;">Selecciona el técnico para gestionar su registro de producción:</p>
+
             <div class="home-cards">
-                <div class="card-selector" onclick="selectDecorator('Decorador 1')">
+                <button type="button" class="card-selector" onclick="selectDecorator('Decorador 1')">
                     <div>
                         <div class="card-title">👤 Decorador 1</div>
                         <div class="card-subtitle" id="statusDec1">Cargando estado...</div>
                     </div>
                     <span style="font-size: 1.5rem; color: var(--primary-color);">➔</span>
-                </div>
-
-                <div class="card-selector" onclick="selectDecorator('Decorador 2')">
+                </button>
+                <button type="button" class="card-selector" onclick="selectDecorator('Decorador 2')">
                     <div>
                         <div class="card-title">👤 Decorador 2</div>
                         <div class="card-subtitle" id="statusDec2">Cargando estado...</div>
                     </div>
                     <span style="font-size: 1.5rem; color: var(--primary-color);">➔</span>
-                </div>
+                </button>
             </div>
+
+            <div class="home-tools">
+                <button type="button" class="btn btn-secondary btn-small" onclick="exportBackup()">⬇️ Copia de seguridad</button>
+                <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('importFile').click()">⬆️ Restaurar copia</button>
+                <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
+                <button type="button" class="btn btn-secondary btn-small" onclick="openSettings()">⚙️ Nube</button>
+            </div>
+            <div id="syncBadge" class="sync-badge">☁️ Nube sin configurar</div>
+
+            <dialog id="settingsDialog">
+                <h3>Sincronización con Google Sheets</h3>
+                <p style="font-size: 0.9rem; color: var(--muted);">Pega aquí la URL de la aplicación web de Apps Script (termina en <code>/exec</code>). Configúrala igual en todos los dispositivos para que compartan los datos.</p>
+                <div class="form-group">
+                    <input type="text" id="syncUrl" placeholder="https://script.google.com/macros/s/.../exec">
+                </div>
+                <div class="actions-grid" style="margin-top: 0;">
+                    <button type="button" class="btn btn-primary" onclick="saveSettings()">Guardar y conectar</button>
+                    <div class="actions-row">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="pullFromCloud(true)">⬇️ Traer de la nube</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="pushToCloud(true)">⬆️ Subir ahora</button>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('settingsDialog').close()">Cerrar</button>
+                </div>
+            </dialog>
         </div>
 
-        <!-- VISTA DE TRABAJO DEL DECORADOR -->
+        <!-- VISTA DEL DECORADOR -->
         <div id="decoratorView">
             <button type="button" class="nav-back" onclick="goHome()">⬅️ Volver a Selección</button>
-            <h1 id="decoratorTitle">Tonificación Consumos</h1>
-            
-            <div>
-                <!-- Número de Orden -->
-                <div class="form-group">
-                    <label for="orderNumber">Número de Orden</label>
-                    <input type="text" id="orderNumber" placeholder="Ej. ORD-2026-001">
+            <div class="brand brand-small"><img src="https://www.undora.com/assets/images/logo-black.svg" alt="Undora" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="brand-text">UNDORA</span></div>
+            <h1 id="decoratorTitle">Basilión</h1>
+
+            <!-- Cabecera solo para el PDF -->
+            <div class="print-only print-header">
+                <table>
+                    <tr><td>Orden</td><td id="pOrder"></td></tr>
+                    <tr><td>Técnico</td><td id="pTech"></td></tr>
+                    <tr><td>Sustrato</td><td id="pSubstrate"></td></tr>
+                    <tr><td>Gráfica</td><td id="pGraphic"></td></tr>
+                    <tr><td>Informe generado</td><td id="pDate"></td></tr>
+                </table>
+            </div>
+
+            <div class="no-print">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="orderNumber">Número de Orden</label>
+                        <input type="text" id="orderNumber" placeholder="Ej. ORD-2026-001">
+                    </div>
+                    <div class="form-group">
+                        <label for="technician">Técnico</label>
+                        <input type="text" id="technician" placeholder="Nombre del técnico...">
+                    </div>
                 </div>
 
-                <!-- Técnico -->
-                <div class="form-group">
-                    <label for="technician">Técnico</label>
-                    <input type="text" id="technician" placeholder="Nombre del técnico...">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="substrate">Sustrato</label>
+                        <select id="substrate">
+                            <option value="" disabled selected>Selecciona...</option>
+                            <option value="alveo">Alveo</option>
+                            <option value="anticato">Anticato</option>
+                            <option value="apomazado">Apomazado</option>
+                            <option value="arenisca">Arenisca</option>
+                            <option value="bamboo">Bamboo</option>
+                            <option value="lineal">Lineal</option>
+                            <option value="muro">Muro</option>
+                            <option value="pausa">Pausa</option>
+                            <option value="piano">Piano</option>
+                            <option value="prisma">Prisma</option>
+                            <option value="rústico">Rústico</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="graphicName">Nombre de Gráfica</label>
+                        <input type="text" id="graphicName" placeholder="Nombre de la gráfica...">
+                    </div>
                 </div>
 
-                <!-- Sustrato -->
-                <div class="form-group">
-                    <label for="substrate">Sustrato</label>
-                    <select id="substrate">
-                        <option value="" disabled selected>Selecciona un sustrato...</option>
-                        <option value="alveo">Alveo</option>
-                        <option value="anticato">Anticato</option>
-                        <option value="apomazado">Apomazado</option>
-                        <option value="arenisca">Arenisca</option>
-                        <option value="lineal">Lineal</option>
-                        <option value="pausa">Pausa</option>
-                        <option value="piano">Piano</option>
-                        <option value="prisma">Prisma</option>
-                        <option value="rústico">Rústico</option>
-                    </select>
+                <div id="editBanner" class="edit-banner">
+                    <span>✏️ Editando un registro del historial</span>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="cancelEdit()">Cancelar</button>
                 </div>
 
-                <!-- Nombre de Gráfica -->
-                <div class="form-group">
-                    <label for="graphicName">Nombre de Gráfica</label>
-                    <input type="text" id="graphicName" placeholder="Escribe el nombre de la gráfica...">
-                </div>
-
-                <!-- Fecha (Modificable) -->
                 <div class="form-group">
                     <label for="dateField">Fecha de Sesión</label>
                     <input type="date" id="dateField">
                 </div>
 
-                <!-- Hora Desde y Hora Hasta -->
-                <div class="time-row">
+                <div class="form-row">
                     <div class="form-group">
                         <label for="timeFrom">Hora Desde</label>
                         <input type="time" id="timeFrom">
@@ -376,8 +372,8 @@
                         <input type="time" id="timeTo">
                     </div>
                 </div>
+                <div class="hours-preview" id="hoursPreview"></div>
 
-                <!-- Estatus -->
                 <div class="form-group">
                     <label for="statusField">Estatus</label>
                     <select id="statusField">
@@ -386,313 +382,706 @@
                     </select>
                 </div>
 
-                <!-- Aviso sugerencia Kerajet -->
                 <div id="kerajetAlert" class="alert-kerajet">
                     ⚠️ Se han alcanzado o superado las 16 horas de trabajo acumuladas y el estatus sigue en pendiente: <strong>Solicitar ayuda a Kerajet</strong>
                 </div>
 
-                <!-- Cantidad Planchas No OK -->
                 <div class="form-group">
-                    <label>Cantidad Planchas No OK (de hoy)</label>
+                    <label for="countNok">Cantidad Planchas No OK</label>
                     <div class="counter-container">
-                        <button type="button" class="btn-counter" onclick="adjustCount('nok', -1)">-</button>
-                        <div id="countNok" class="counter-display">0</div>
-                        <button type="button" class="btn-counter" onclick="adjustCount('nok', 1)">+</button>
+                        <button type="button" class="btn-counter" onclick="adjustCount('nok', -1)" aria-label="Restar No OK">−</button>
+                        <input type="number" inputmode="numeric" min="0" id="countNok" class="counter-display" value="0" oninput="setCount('nok', this.value)">
+                        <button type="button" class="btn-counter" onclick="adjustCount('nok', 1)" aria-label="Sumar No OK">+</button>
                     </div>
                 </div>
 
-                <!-- Cantidad Planchas OK -->
                 <div class="form-group">
-                    <label>Cantidad Planchas OK (de hoy)</label>
+                    <label for="countOk">Cantidad Planchas OK</label>
                     <div class="counter-container">
-                        <button type="button" class="btn-counter" onclick="adjustCount('ok', -1)">-</button>
-                        <div id="countOk" class="counter-display">0</div>
-                        <button type="button" class="btn-counter" onclick="adjustCount('ok', 1)">+</button>
+                        <button type="button" class="btn-counter" onclick="adjustCount('ok', -1)" aria-label="Restar OK">−</button>
+                        <input type="number" inputmode="numeric" min="0" id="countOk" class="counter-display" value="0" oninput="setCount('ok', this.value)">
+                        <button type="button" class="btn-counter" onclick="adjustCount('ok', 1)" aria-label="Sumar OK">+</button>
                     </div>
                 </div>
 
-                <!-- BOTÓN DE GUARDAR DIRECTO (Con evento en línea para garantizar funcionamiento en móvil) -->
+                <div class="form-group">
+                    <label for="comments">Comentarios</label>
+                    <textarea id="comments" maxlength="500" placeholder="Incidencias, observaciones del turno..."></textarea>
+                </div>
+
                 <div class="save-container">
-                    <button type="button" class="btn btn-save" onclick="saveSession()">💾 GUARDAR REGISTRO DE HOY</button>
+                    <button type="button" id="saveBtn" class="btn btn-save" onclick="saveSession()">💾 GUARDAR REGISTRO DE HOY</button>
                 </div>
             </div>
 
-            <!-- Historial de días guardados -->
+            <!-- Historial -->
             <div class="history-section">
-                <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Historial de Consumos y Tiempos</h3>
+                <h3>Historial de Consumos y Tiempos</h3>
+                <div id="statsContainer"></div>
                 <div id="historyContainer">
-                    <p style="font-size: 0.9rem; color: #64748b;">No hay registros guardados todavía.</p>
+                    <p style="font-size: 0.9rem; color: var(--muted);">No hay registros guardados todavía.</p>
                 </div>
 
-                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="actions-grid no-print">
                     <button type="button" class="btn btn-primary" onclick="generatePDF()">📄 Generar Informe PDF Acumulado</button>
-                    <button type="button" class="btn btn-danger" onclick="clearHistory()">🗑 Borrar Todo / Nuevo Pedido</button>
+                    <div class="actions-row">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="exportCSV()">📊 Exportar a Excel (CSV)</button>
+                    </div>
+                    <button type="button" class="btn btn-danger" onclick="clearHistory()">📦 Cerrar pedido / Empezar uno nuevo</button>
                 </div>
+            </div>
+
+            <div class="archive-section no-print">
+                <h3>Pedidos anteriores</h3>
+                <div id="archiveContainer"></div>
             </div>
         </div>
-
     </div>
 
+    <div id="toast" class="toast"></div>
+
     <script>
+        const DECORATORS = { 'Decorador 1': 'dec1_', 'Decorador 2': 'dec2_' };
+        const KERAJET_HOURS = 16;
+
         let currentDecorator = '';
         let counts = { ok: 0, nok: 0 };
         let historyData = [];
+        let editingIndex = -1;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            updateHomeStatuses();
-            document.getElementById('statusField').addEventListener('change', checkKerajetAlert);
-        });
+        // ---------- Utilidades ----------
+        function $(id) { return document.getElementById(id); }
 
-        function getStorageKey(suffix) {
-            const prefix = currentDecorator === 'Decorador 1' ? 'dec1_' : 'dec2_';
-            return prefix + suffix;
+        function todayLocal() {
+            // toISOString usa UTC: de madrugada daba el día anterior/siguiente
+            const d = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
         }
 
+        function formatDate(iso) {
+            if (!iso || !iso.includes('-')) return iso || '';
+            const [y, m, d] = iso.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+        function toast(msg, isError = false) {
+            const t = $('toast');
+            t.textContent = msg;
+            t.classList.toggle('error', isError);
+            t.classList.add('show');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => t.classList.remove('show'), 2600);
+        }
+
+        function getStorageKey(suffix) {
+            return (DECORATORS[currentDecorator] || 'dec1_') + suffix;
+        }
+
+        function readHistory(prefix) {
+            try { return JSON.parse(localStorage.getItem(prefix + 'history')) || []; }
+            catch (e) { return []; }
+        }
+
+        function downloadFile(name, content, type) {
+            const blob = new Blob([content], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        }
+
+        // ---------- Inicio ----------
+        document.addEventListener('DOMContentLoaded', () => {
+            updateHomeStatuses();
+            $('statusField').addEventListener('change', checkKerajetAlert);
+            initSync();
+            ['timeFrom', 'timeTo'].forEach(id => $(id).addEventListener('input', () => { updateHoursPreview(); checkKerajetAlert(); }));
+            // Guardar la cabecera del pedido al escribir (no se pierde si se cierra la app)
+            ['orderNumber', 'technician', 'substrate', 'graphicName'].forEach(id =>
+                $(id).addEventListener('change', saveHeaderDraft));
+        });
+
+        window.addEventListener('beforeunload', e => {
+            if (currentDecorator && (counts.ok > 0 || counts.nok > 0)) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
         function updateHomeStatuses() {
-            ['Decorador 1', 'Decorador 2'].forEach(dec => {
-                const prefix = dec === 'Decorador 1' ? 'dec1_' : 'dec2_';
-                const hist = localStorage.getItem(prefix + 'history');
+            Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
+                const el = $('statusDec' + (i + 1));
+                const data = readHistory(prefix);
                 const order = localStorage.getItem(prefix + 'order');
-                const elementId = dec === 'Decorador 1' ? 'statusDec1' : 'statusDec2';
-                const el = document.getElementById(elementId);
-                
-                if (el && hist) {
-                    try {
-                        const data = JSON.parse(hist);
-                        const totalH = data.reduce((acc, i) => acc + i.hours, 0);
-                        el.innerText = `Orden: ${order || 'Sin orden'} | ${totalH.toFixed(1)}h acumuladas`;
-                    } catch(e) {
-                        el.innerText = 'Sin registros activos';
-                    }
-                } else if (el) {
-                    el.innerText = 'Sin registros activos';
-                }
+                if (!data.length) { el.innerText = 'Sin registros activos'; return; }
+                const totalH = data.reduce((a, x) => a + (x.hours || 0), 0);
+                const last = data[data.length - 1];
+                const finished = last && last.status === 'Fin';
+                el.innerText = `Orden: ${order || 'Sin orden'} | ${totalH.toFixed(1)}h | ${finished ? '✅ Fin' : '⏳ Pendiente'}`;
             });
         }
 
         function selectDecorator(decoratorName) {
             currentDecorator = decoratorName;
-            document.getElementById('decoratorTitle').innerText = `Tonificación Consumos - ${decoratorName}`;
-            document.getElementById('technician').value = decoratorName;
+            editingIndex = -1;
+            $('decoratorTitle').innerText = `Basilión - ${decoratorName}`;
+            $('homeView').style.display = 'none';
+            $('decoratorView').style.display = 'block';
 
-            document.getElementById('homeView').style.display = 'none';
-            document.getElementById('decoratorView').style.display = 'block';
+            $('orderNumber').value = localStorage.getItem(getStorageKey('order')) || '';
+            $('technician').value = localStorage.getItem(getStorageKey('tech')) || decoratorName;
+            $('substrate').value = localStorage.getItem(getStorageKey('substrate')) || '';
+            $('graphicName').value = localStorage.getItem(getStorageKey('graphic')) || '';
 
-            const savedOrder = localStorage.getItem(getStorageKey('order')) || '';
-            const savedTech = localStorage.getItem(getStorageKey('tech')) || decoratorName;
-            const savedSubstrate = localStorage.getItem(getStorageKey('substrate')) || '';
-            const savedGraphic = localStorage.getItem(getStorageKey('graphic')) || '';
-            const savedHistory = localStorage.getItem(getStorageKey('history'));
-
-            document.getElementById('orderNumber').value = savedOrder;
-            document.getElementById('technician').value = savedTech;
-            document.getElementById('substrate').value = savedSubstrate;
-            document.getElementById('graphicName').value = savedGraphic;
-
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateField').value = today;
-            document.getElementById('timeFrom').value = "14:00";
-            document.getElementById('timeTo').value = "22:00";
-            document.getElementById('statusField').value = "Pendiente";
-
-            counts = { ok: 0, nok: 0 };
-            document.getElementById('countOk').innerText = '0';
-            document.getElementById('countNok').innerText = '0';
-
-            if (savedHistory) {
-                try {
-                    historyData = JSON.parse(savedHistory);
-                    renderHistory();
-                } catch(e) {
-                    historyData = [];
-                    renderHistory();
-                }
-            } else {
-                historyData = [];
-                renderHistory();
-            }
-
+            historyData = readHistory(DECORATORS[decoratorName]);
+            resetSessionFields();
+            renderHistory();
+            renderArchive();
             checkKerajetAlert();
+            window.scrollTo(0, 0);
+        }
+
+        function resetSessionFields() {
+            $('dateField').value = todayLocal();
+            $('timeFrom').value = '14:00';
+            $('timeTo').value = '22:00';
+            $('statusField').value = 'Pendiente';
+            counts = { ok: 0, nok: 0 };
+            $('countOk').value = 0;
+            $('countNok').value = 0;
+            $('comments').value = '';
+            editingIndex = -1;
+            $('editBanner').style.display = 'none';
+            $('saveBtn').innerText = '💾 GUARDAR REGISTRO DE HOY';
+            updateHoursPreview();
         }
 
         function goHome() {
+            if ((counts.ok > 0 || counts.nok > 0) &&
+                !confirm('Tienes planchas contadas sin guardar. ¿Salir igualmente?')) return;
+            counts = { ok: 0, nok: 0 };
+            currentDecorator = '';
             updateHomeStatuses();
-            document.getElementById('decoratorView').style.display = 'none';
-            document.getElementById('homeView').style.display = 'block';
+            $('decoratorView').style.display = 'none';
+            $('homeView').style.display = 'block';
         }
 
+        function saveHeaderDraft() {
+            if (!currentDecorator) return;
+            localStorage.setItem(getStorageKey('order'), $('orderNumber').value.trim());
+            localStorage.setItem(getStorageKey('tech'), $('technician').value.trim());
+            localStorage.setItem(getStorageKey('substrate'), $('substrate').value);
+            localStorage.setItem(getStorageKey('graphic'), $('graphicName').value.trim());
+        }
+
+        // ---------- Contadores ----------
         function adjustCount(type, amount) {
-            counts[type] += amount;
-            if (counts[type] < 0) counts[type] = 0;
-            document.getElementById(`count${type.charAt(0).toUpperCase() + type.slice(1)}`).innerText = counts[type];
+            setCount(type, counts[type] + amount);
+            if (navigator.vibrate) navigator.vibrate(15);
         }
 
+        function setCount(type, value) {
+            let n = parseInt(value, 10);
+            if (isNaN(n) || n < 0) n = 0;
+            counts[type] = n;
+            const el = $('count' + capitalize(type));
+            if (String(el.value) !== String(n)) el.value = n;
+        }
+
+        // ---------- Horas ----------
         function calculateHours(timeFrom, timeTo) {
             const [hFrom, mFrom] = timeFrom.split(':').map(Number);
             const [hTo, mTo] = timeTo.split(':').map(Number);
-            
-            let minutesFrom = hFrom * 60 + mFrom;
-            let minutesTo = hTo * 60 + mTo;
-            
-            if (minutesTo < minutesFrom) {
-                minutesTo += 24 * 60;
-            }
-            return (minutesTo - minutesFrom) / 60;
+            let from = hFrom * 60 + mFrom;
+            let to = hTo * 60 + mTo;
+            if (to < from) to += 24 * 60; // turno que pasa de medianoche
+            return (to - from) / 60;
+        }
+
+        function updateHoursPreview() {
+            const f = $('timeFrom').value, t = $('timeTo').value;
+            const el = $('hoursPreview');
+            if (!f || !t) { el.innerHTML = ''; return; }
+            const h = calculateHours(f, t);
+            const overnight = t < f ? ' (pasa de medianoche)' : '';
+            el.innerHTML = `Duración de la sesión: <b>${h.toFixed(2)} h</b>${overnight}`;
+        }
+
+        function totalHoursExcluding(idx) {
+            return historyData.reduce((a, x, i) => i === idx ? a : a + (x.hours || 0), 0);
         }
 
         function checkKerajetAlert() {
-            const status = document.getElementById('statusField').value;
-            const alertBox = document.getElementById('kerajetAlert');
-
-            let totalHistoryHours = historyData.reduce((acc, item) => acc + item.hours, 0);
-
-            if (totalHistoryHours >= 16 && status === 'Pendiente') {
-                alertBox.style.display = 'block';
-            } else {
-                alertBox.style.display = 'none';
-            }
+            const status = $('statusField').value;
+            let total = totalHoursExcluding(editingIndex);
+            // Incluye la sesión que se está rellenando ahora
+            const f = $('timeFrom').value, t = $('timeTo').value;
+            if (currentDecorator && f && t) total += calculateHours(f, t);
+            $('kerajetAlert').style.display = (total >= KERAJET_HOURS && status === 'Pendiente') ? 'block' : 'none';
         }
 
+        // ---------- Guardar / editar ----------
         function saveSession() {
-            const order = document.getElementById('orderNumber').value.trim();
-            const technician = document.getElementById('technician').value.trim();
-            const substrate = document.getElementById('substrate').value;
-            const graphicName = document.getElementById('graphicName').value.trim();
-            const date = document.getElementById('dateField').value;
-            const timeFrom = document.getElementById('timeFrom').value;
-            const timeTo = document.getElementById('timeTo').value;
-            const status = document.getElementById('statusField').value;
-
-            if (!order || !technician || !substrate || !graphicName || !date || !timeFrom || !timeTo) {
-                alert('Por favor, asegúrate de rellenar todos los campos antes de guardar.');
+            const fields = {
+                order: $('orderNumber'), technician: $('technician'), substrate: $('substrate'),
+                graphicName: $('graphicName'), date: $('dateField'), timeFrom: $('timeFrom'), timeTo: $('timeTo')
+            };
+            let missing = false;
+            Object.values(fields).forEach(el => {
+                const empty = !String(el.value).trim();
+                el.classList.toggle('invalid', empty);
+                if (empty) missing = true;
+            });
+            if (missing) {
+                toast('Rellena los campos marcados en rojo', true);
+                document.querySelector('.invalid')?.focus();
                 return;
             }
 
-            const hoursWorked = calculateHours(timeFrom, timeTo);
-
+            const hoursWorked = calculateHours(fields.timeFrom.value, fields.timeTo.value);
             if (hoursWorked <= 0) {
-                alert('La hora "Hasta" debe ser posterior a la hora "Desde".');
+                toast('La hora "Hasta" debe ser distinta de "Desde"', true);
                 return;
             }
+            if (hoursWorked > 14 && !confirm(`La sesión dura ${hoursWorked.toFixed(1)} h. ¿Es correcto?`)) return;
 
-            localStorage.setItem(getStorageKey('order'), order);
-            localStorage.setItem(getStorageKey('tech'), technician);
-            localStorage.setItem(getStorageKey('substrate'), substrate);
-            localStorage.setItem(getStorageKey('graphic'), graphicName);
+            if (counts.ok === 0 && counts.nok === 0 &&
+                !confirm('No has contado ninguna plancha (0 OK y 0 No OK). ¿Guardar igualmente?')) return;
 
-            const newEntry = {
-                date: date,
-                timeFrom: timeFrom,
-                timeTo: timeTo,
+            saveHeaderDraft();
+
+            const entry = {
+                date: fields.date.value,
+                timeFrom: fields.timeFrom.value,
+                timeTo: fields.timeTo.value,
                 hours: hoursWorked,
-                status: status,
+                status: $('statusField').value,
                 ok: counts.ok,
-                nok: counts.nok
+                nok: counts.nok,
+                comment: $('comments').value.trim()
             };
 
-            historyData.push(newEntry);
-            localStorage.setItem(getStorageKey('history'), JSON.stringify(historyData));
+            const wasEditing = editingIndex >= 0;
+            if (wasEditing) historyData[editingIndex] = entry;
+            else historyData.push(entry);
 
+            persistHistory();
+            resetSessionFields();
             renderHistory();
             checkKerajetAlert();
+            toast(wasEditing ? 'Registro actualizado ✔' : `Registro de ${currentDecorator} guardado ✔`);
+        }
 
-            counts = { ok: 0, nok: 0 };
-            document.getElementById('countOk').innerText = '0';
-            document.getElementById('countNok').innerText = '0';
+        function persistHistory() {
+            localStorage.setItem(getStorageKey('history'), JSON.stringify(historyData));
+        }
 
-            alert(`¡Registro de ${currentDecorator} guardado correctamente!`);
+        function editEntry(i) {
+            const x = historyData[i];
+            if (!x) return;
+            editingIndex = i;
+            $('dateField').value = x.date;
+            $('timeFrom').value = x.timeFrom;
+            $('timeTo').value = x.timeTo;
+            $('statusField').value = x.status;
+            setCount('ok', x.ok);
+            setCount('nok', x.nok);
+            $('comments').value = x.comment || '';
+            $('editBanner').style.display = 'flex';
+            $('saveBtn').innerText = '💾 GUARDAR CAMBIOS';
+            updateHoursPreview();
+            renderHistory();
+            checkKerajetAlert();
+            $('editBanner').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelEdit() {
+            resetSessionFields();
+            renderHistory();
+            checkKerajetAlert();
+        }
+
+        function deleteEntry(i) {
+            const x = historyData[i];
+            if (!x) return;
+            if (!confirm(`¿Borrar el registro del ${formatDate(x.date)} (${x.timeFrom}-${x.timeTo})?`)) return;
+            historyData.splice(i, 1);
+            if (editingIndex === i) resetSessionFields();
+            else if (editingIndex > i) editingIndex--;
+            persistHistory();
+            renderHistory();
+            checkKerajetAlert();
+            toast('Registro borrado');
+        }
+
+        // ---------- Historial ----------
+        function computeTotals() {
+            const t = historyData.reduce((a, x) => {
+                a.ok += x.ok || 0; a.nok += x.nok || 0; a.hours += x.hours || 0; return a;
+            }, { ok: 0, nok: 0, hours: 0 });
+            t.total = t.ok + t.nok;
+            t.merma = t.total ? (t.nok / t.total) * 100 : 0;
+            t.perHour = t.hours ? t.total / t.hours : 0;
+            return t;
         }
 
         function renderHistory() {
-            const container = document.getElementById('historyContainer');
+            const container = $('historyContainer');
+            const stats = $('statsContainer');
             if (historyData.length === 0) {
-                container.innerHTML = '<p style="font-size: 0.9rem; color: #64748b;">No hay registros guardados todavía.</p>';
+                stats.innerHTML = '';
+                container.innerHTML = '<p style="font-size: 0.9rem; color: var(--muted);">No hay registros guardados todavía.</p>';
                 return;
             }
 
-            let totalOk = 0;
-            let totalNok = 0;
-            let totalHours = 0;
+            const t = computeTotals();
+            stats.innerHTML = `
+                <div class="stats">
+                    <div class="stat"><div class="stat-value">${t.hours.toFixed(1)}h</div><div class="stat-label">Horas totales</div></div>
+                    <div class="stat"><div class="stat-value">${t.total}</div><div class="stat-label">Planchas totales</div></div>
+                    <div class="stat ${t.merma >= 10 ? 'bad' : ''}"><div class="stat-value">${t.merma.toFixed(1)}%</div><div class="stat-label">Merma (No OK)</div></div>
+                    <div class="stat"><div class="stat-value">${t.perHour.toFixed(1)}</div><div class="stat-label">Planchas / hora</div></div>
+                </div>`;
 
-            let html = `<table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Horas</th>
-                        <th>Estatus</th>
-                        <th>OK</th>
-                        <th>NO OK</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            let rows = historyData.map((x, i) => `
+                <tr class="${i === editingIndex ? 'editing' : ''}">
+                    <td>${formatDate(x.date)}</td>
+                    <td>${escapeHtml(x.timeFrom)}-${escapeHtml(x.timeTo)}</td>
+                    <td>${(x.hours || 0).toFixed(1)}h</td>
+                    <td><b>${escapeHtml(x.status)}</b></td>
+                    <td>${x.ok}</td>
+                    <td>${x.nok}</td>
+                    <td class="row-actions col-actions">
+                        <button type="button" title="Editar" onclick="editEntry(${i})">✏️</button>
+                        <button type="button" title="Borrar" onclick="deleteEntry(${i})">🗑</button>
+                    </td>
+                </tr>${x.comment ? `<tr class="comment-row"><td colspan="7">💬 ${escapeHtml(x.comment)}</td></tr>` : ''}`).join('');
 
-            historyData.forEach(item => {
-                totalOk += item.ok;
-                totalNok += item.nok;
-                totalHours += item.hours;
-
-                html += `<tr>
-                    <td>${item.date}</td>
-                    <td>${item.timeFrom}-${item.timeTo}</td>
-                    <td>${item.hours.toFixed(1)}h</td>
-                    <td><b>${item.status}</b></td>
-                    <td>${item.ok}</td>
-                    <td>${item.nok}</td>
-                </tr>`;
-            });
-
-            html += `</tbody>
-                <tfoot>
-                    <tr style="font-weight: bold; background-color: #e2e8f0;">
-                        <td colspan="2">TOTALES</td>
-                        <td>${totalHours.toFixed(1)}h</td>
-                        <td>-</td>
-                        <td>${totalOk}</td>
-                        <td>${totalNok}</td>
-                    </tr>
-                </tfoot>
-            </table>`;
-
-            container.innerHTML = html;
+            container.innerHTML = `
+                <div class="table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr><th>Fecha</th><th>Horario</th><th>Horas</th><th>Estatus</th><th>OK</th><th>NO OK</th><th class="col-actions"></th></tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">TOTALES</td>
+                            <td>${t.hours.toFixed(1)}h</td>
+                            <td>-</td>
+                            <td>${t.ok}</td>
+                            <td>${t.nok}</td>
+                            <td class="col-actions"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                </div>`;
         }
 
+        // ---------- Informe / exportación ----------
         function generatePDF() {
-            if (historyData.length === 0) {
-                alert('No hay ningún registro guardado en el historial para generar el informe.');
-                return;
-            }
+            if (historyData.length === 0) { toast('No hay registros para el informe', true); return; }
+            const sel = $('substrate');
+            $('pOrder').textContent = $('orderNumber').value || '-';
+            $('pTech').textContent = $('technician').value || currentDecorator;
+            $('pSubstrate').textContent = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '-';
+            $('pGraphic').textContent = $('graphicName').value || '-';
+            $('pDate').textContent = new Date().toLocaleString('es-ES');
+            const prevTitle = document.title;
+            document.title = `Informe_${($('orderNumber').value || 'orden').replace(/[^\w-]+/g, '_')}_${currentDecorator.replace(' ', '')}`;
             window.print();
+            setTimeout(() => document.title = prevTitle, 1000);
+        }
+
+        function exportCSV() {
+            if (historyData.length === 0) { toast('No hay registros para exportar', true); return; }
+            const sel = $('substrate');
+            const sub = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '';
+            const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const head = ['Orden', 'Técnico', 'Sustrato', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
+            const lines = historyData.map(x => [
+                $('orderNumber').value, $('technician').value, sub, $('graphicName').value,
+                formatDate(x.date), x.timeFrom, x.timeTo, (x.hours || 0).toFixed(2).replace('.', ','), x.status, x.ok, x.nok, x.comment || ''
+            ].map(q).join(';'));
+            // BOM + ';' para que Excel en español lo abra bien
+            const csv = '﻿' + head.map(q).join(';') + '\n' + lines.join('\n');
+            const name = `Consumos_${($('orderNumber').value || 'orden').replace(/[^\w-]+/g, '_')}_${currentDecorator.replace(' ', '')}.csv`;
+            downloadFile(name, csv, 'text/csv;charset=utf-8');
+            toast('CSV descargado');
+        }
+
+        function buildBackup() {
+            const data = { app: 'tonificacion-consumos', version: '2.7', exportedAt: new Date().toISOString(), decorators: {} };
+            Object.entries(DECORATORS).forEach(([dec, p]) => {
+                data.decorators[dec] = {
+                    order: localStorage.getItem(p + 'order') || '',
+                    tech: localStorage.getItem(p + 'tech') || '',
+                    substrate: localStorage.getItem(p + 'substrate') || '',
+                    graphic: localStorage.getItem(p + 'graphic') || '',
+                    history: readHistory(p),
+                    archive: readArchive(p)
+                };
+            });
+            return data;
+        }
+
+        function exportBackup() {
+            downloadFile(`Backup_Basilion_${todayLocal()}.json`, JSON.stringify(buildBackup(), null, 2), 'application/json');
+            toast('Copia de seguridad descargada');
+        }
+
+        function importBackup(ev) {
+            const file = ev.target.files[0];
+            ev.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const data = JSON.parse(reader.result);
+                    if (data.app !== 'tonificacion-consumos' || !data.decorators) throw new Error('formato');
+                    if (!confirm('Esto sustituirá los datos actuales de ambos decoradores por los de la copia. ¿Continuar?')) return;
+                    Object.entries(DECORATORS).forEach(([dec, p]) => {
+                        const d = data.decorators[dec];
+                        if (!d) return;
+                        localStorage.setItem(p + 'order', d.order || '');
+                        localStorage.setItem(p + 'tech', d.tech || '');
+                        localStorage.setItem(p + 'substrate', d.substrate || '');
+                        localStorage.setItem(p + 'graphic', d.graphic || '');
+                        localStorage.setItem(p + 'history', JSON.stringify(Array.isArray(d.history) ? d.history : []));
+                        if (Array.isArray(d.archive)) localStorage.setItem(p + 'archive', JSON.stringify(d.archive));
+                    });
+                    updateHomeStatuses();
+                    toast('Copia restaurada ✔');
+                } catch (e) {
+                    toast('El archivo no es una copia válida', true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function readArchive(prefix) {
+            try { return JSON.parse(localStorage.getItem(prefix + 'archive')) || []; }
+            catch (e) { return []; }
         }
 
         function clearHistory() {
-            if (confirm(`¿Estás seguro de que quieres borrar todo el historial y los datos de ${currentDecorator}?`)) {
-                localStorage.removeItem(getStorageKey('history'));
-                localStorage.removeItem(getStorageKey('order'));
-                localStorage.removeItem(getStorageKey('tech'));
-                localStorage.removeItem(getStorageKey('substrate'));
-                localStorage.removeItem(getStorageKey('graphic'));
-                
-                historyData = [];
-                counts = { ok: 0, nok: 0 };
-                
-                document.getElementById('orderNumber').value = '';
-                document.getElementById('technician').value = currentDecorator;
-                document.getElementById('substrate').selectedIndex = 0;
-                document.getElementById('graphicName').value = '';
-                
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('dateField').value = today;
-                document.getElementById('timeFrom').value = "14:00";
-                document.getElementById('timeTo').value = "22:00";
-                document.getElementById('statusField').value = "Pendiente";
-                document.getElementById('countOk').innerText = '0';
-                document.getElementById('countNok').innerText = '0';
-                
-                renderHistory();
-                checkKerajetAlert();
-                alert(`Se han borrado todos los datos de ${currentDecorator}. Ya puedes empezar un pedido nuevo.`);
+            if (!historyData.length && !$('orderNumber').value.trim()) { toast('No hay ningún pedido abierto'); return; }
+            if (!confirm(`¿Cerrar el pedido actual de ${currentDecorator} y empezar uno nuevo?\n\nEl pedido se guardará en "Pedidos anteriores".`)) return;
+
+            const sel = $('substrate');
+            if (historyData.length) {
+                const archive = readArchive(DECORATORS[currentDecorator]);
+                archive.unshift({
+                    closedAt: new Date().toISOString(),
+                    order: $('orderNumber').value.trim(),
+                    tech: $('technician').value.trim(),
+                    substrate: sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '',
+                    graphic: $('graphicName').value.trim(),
+                    history: historyData
+                });
+                localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
             }
+
+            ['history', 'order', 'tech', 'substrate', 'graphic'].forEach(k => localStorage.removeItem(getStorageKey(k)));
+            historyData = [];
+            $('orderNumber').value = '';
+            $('technician').value = currentDecorator;
+            $('substrate').selectedIndex = 0;
+            $('graphicName').value = '';
+            resetSessionFields();
+            renderHistory();
+            renderArchive();
+            checkKerajetAlert();
+            toast('Pedido archivado. Listo para uno nuevo.');
+        }
+
+        function renderArchive() {
+            const box = $('archiveContainer');
+            const archive = readArchive(DECORATORS[currentDecorator]);
+            if (!archive.length) {
+                box.innerHTML = '<p style="font-size: 0.9rem; color: var(--muted);">Aún no hay pedidos cerrados.</p>';
+                return;
+            }
+            box.innerHTML = archive.map((a, i) => {
+                const h = a.history || [];
+                const hours = h.reduce((x, e) => x + (e.hours || 0), 0);
+                const ok = h.reduce((x, e) => x + (e.ok || 0), 0);
+                const nok = h.reduce((x, e) => x + (e.nok || 0), 0);
+                const merma = ok + nok ? (nok / (ok + nok) * 100) : 0;
+                return `<details class="archive-item">
+                    <summary>${escapeHtml(a.order || 'Sin orden')} · ${escapeHtml(a.substrate || '-')}</summary>
+                    <div class="archive-meta">
+                        ${escapeHtml(a.graphic || '')} — cerrado el ${new Date(a.closedAt).toLocaleDateString('es-ES')}<br>
+                        ${h.length} sesiones · ${hours.toFixed(1)} h · ${ok} OK · ${nok} No OK · merma ${merma.toFixed(1)}%
+                    </div>
+                    <div class="archive-actions">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="exportArchivedCSV(${i})">📊 CSV</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="reopenArchived(${i})">↩️ Reabrir</button>
+                        <button type="button" class="btn btn-danger btn-small" onclick="deleteArchived(${i})">🗑 Eliminar</button>
+                    </div>
+                </details>`;
+            }).join('');
+        }
+
+        function exportArchivedCSV(i) {
+            const a = readArchive(DECORATORS[currentDecorator])[i];
+            if (!a) return;
+            const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const head = ['Orden', 'Técnico', 'Sustrato', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
+            const lines = (a.history || []).map(x => [a.order, a.tech, a.substrate, a.graphic, formatDate(x.date), x.timeFrom, x.timeTo,
+                (x.hours || 0).toFixed(2).replace('.', ','), x.status, x.ok, x.nok, x.comment || ''].map(q).join(';'));
+            downloadFile(`Consumos_${(a.order || 'orden').replace(/[^\w-]+/g, '_')}.csv`, '\uFEFF' + head.map(q).join(';') + '\n' + lines.join('\n'), 'text/csv;charset=utf-8');
+        }
+
+        function reopenArchived(i) {
+            if (historyData.length) { toast('Cierra antes el pedido actual', true); return; }
+            const archive = readArchive(DECORATORS[currentDecorator]);
+            const a = archive[i];
+            if (!a || !confirm(`¿Reabrir el pedido ${a.order || ''}?`)) return;
+            archive.splice(i, 1);
+            localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
+            historyData = a.history || [];
+            persistHistory();
+            $('orderNumber').value = a.order || '';
+            $('technician').value = a.tech || currentDecorator;
+            const opt = [...$('substrate').options].find(o => o.text === a.substrate);
+            $('substrate').value = opt ? opt.value : '';
+            $('graphicName').value = a.graphic || '';
+            saveHeaderDraft();
+            renderHistory(); renderArchive(); checkKerajetAlert();
+            toast('Pedido reabierto');
+        }
+
+        function deleteArchived(i) {
+            const archive = readArchive(DECORATORS[currentDecorator]);
+            const a = archive[i];
+            if (!a) return;
+            const typed = prompt(`Para eliminar definitivamente el pedido ${a.order || ''}, escribe BORRAR`);
+            if (!typed || typed.trim().toUpperCase() !== 'BORRAR') return;
+            archive.splice(i, 1);
+            localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
+            renderArchive();
+            toast('Pedido eliminado');
+        }
+
+        // ---------- Sincronización con Google Sheets ----------
+        const SYNC_URL_KEY = 'sync_url';
+        const LOCAL_TS_KEY = 'local_updated_at';
+        let applyingRemote = false;
+        let pushTimer = null;
+
+        function syncUrl() { return localStorage.getItem(SYNC_URL_KEY) || ''; }
+
+        function setBadge(text, cls = '') {
+            const b = $('syncBadge');
+            b.textContent = text;
+            b.className = 'sync-badge ' + cls;
+        }
+
+        function initSync() {
+            // Cualquier cambio en los datos marca la hora y programa una subida
+            const origSet = Storage.prototype.setItem, origRemove = Storage.prototype.removeItem;
+            const touch = key => {
+                if (applyingRemote || !/^dec\d_/.test(key)) return;
+                origSet.call(localStorage, LOCAL_TS_KEY, new Date().toISOString());
+                schedulePush();
+            };
+            Storage.prototype.setItem = function (k, v) { origSet.call(this, k, v); if (this === localStorage) touch(k); };
+            Storage.prototype.removeItem = function (k) { origRemove.call(this, k); if (this === localStorage) touch(k); };
+
+            if (syncUrl()) { pullFromCloud(false); setInterval(() => { if (!currentDecorator) pullFromCloud(false); }, 60000); }
+            window.addEventListener('online', () => { if (syncUrl()) pushToCloud(false); });
+        }
+
+        function schedulePush() {
+            if (!syncUrl()) return;
+            setBadge('☁️ Cambios pendientes de subir…');
+            clearTimeout(pushTimer);
+            pushTimer = setTimeout(() => pushToCloud(false), 1500);
+        }
+
+        async function pushToCloud(manual) {
+            const url = syncUrl();
+            if (!url) { if (manual) toast('Configura primero la URL', true); return; }
+            const payload = buildBackup();
+            payload.exportedAt = localStorage.getItem(LOCAL_TS_KEY) || new Date().toISOString();
+            try {
+                // text/plain evita el preflight CORS de Apps Script
+                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                localStorage.setItem('last_push', new Date().toISOString());
+                setBadge('☁️ Sincronizado ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }), 'ok');
+                if (manual) toast('Datos subidos a la nube ✔');
+            } catch (e) {
+                setBadge('☁️ Sin conexión: se subirá al volver la red', 'err');
+                if (manual) toast('No se pudo subir', true);
+            }
+        }
+
+        async function pullFromCloud(manual) {
+            const url = syncUrl();
+            if (!url) { if (manual) toast('Configura primero la URL', true); return; }
+            try {
+                const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+                const data = await res.json();
+                if (!data || !data.decorators) {
+                    // Hoja vacía: subimos lo que hay en este dispositivo
+                    await pushToCloud(manual);
+                    return;
+                }
+                const localTs = localStorage.getItem(LOCAL_TS_KEY) || '';
+                if (manual || !localTs || data.exportedAt > localTs) {
+                    if (manual && !confirm('¿Sustituir los datos de este dispositivo por los de la nube?')) return;
+                    applyBackupData(data);
+                    localStorage.setItem(LOCAL_TS_KEY, data.exportedAt);
+                    if (currentDecorator) selectDecorator(currentDecorator); else updateHomeStatuses();
+                    if (manual) toast('Datos traídos de la nube ✔');
+                } else if (data.exportedAt < localTs) {
+                    await pushToCloud(false);
+                }
+                setBadge('☁️ Sincronizado ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }), 'ok');
+            } catch (e) {
+                setBadge('☁️ No se pudo conectar con la nube', 'err');
+                if (manual) toast('No se pudo leer la nube. Revisa la URL', true);
+            }
+        }
+
+        function applyBackupData(data) {
+            applyingRemote = true;
+            try {
+                Object.entries(DECORATORS).forEach(([dec, p]) => {
+                    const d = data.decorators[dec];
+                    if (!d) return;
+                    localStorage.setItem(p + 'order', d.order || '');
+                    localStorage.setItem(p + 'tech', d.tech || '');
+                    localStorage.setItem(p + 'substrate', d.substrate || '');
+                    localStorage.setItem(p + 'graphic', d.graphic || '');
+                    localStorage.setItem(p + 'history', JSON.stringify(Array.isArray(d.history) ? d.history : []));
+                    localStorage.setItem(p + 'archive', JSON.stringify(Array.isArray(d.archive) ? d.archive : []));
+                });
+            } finally { applyingRemote = false; }
+        }
+
+        function openSettings() {
+            $('syncUrl').value = syncUrl();
+            $('settingsDialog').showModal();
+        }
+
+        function saveSettings() {
+            const url = $('syncUrl').value.trim();
+            if (url && !/^https:\/\/script\.google\.com\/.+\/exec/.test(url)) { toast('La URL debe ser de script.google.com y acabar en /exec', true); return; }
+            if (url) localStorage.setItem(SYNC_URL_KEY, url); else localStorage.removeItem(SYNC_URL_KEY);
+            $('settingsDialog').close();
+            if (url) pullFromCloud(false); else setBadge('☁️ Nube sin configurar');
+            toast(url ? 'Nube configurada' : 'Sincronización desactivada');
         }
     </script>
 </body>
