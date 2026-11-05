@@ -280,16 +280,11 @@
                 <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
                 <button type="button" class="btn btn-secondary btn-small" onclick="openSettings()">⚙️ Nube</button>
             </div>
-            <div id="syncBadge" class="sync-badge">☁️ Nube sin configurar</div>
+            <div id="syncBadge" class="sync-badge">☁️ Comprobando sincronización</div>
 
             <dialog id="settingsDialog">
-                <h3>Sincronización con Google Sheets</h3>
-                <p style="font-size: 0.9rem; color: var(--muted);">Pega aquí la URL de la aplicación web de Apps Script (termina en <code>/exec</code>). Configúrala igual en todos los dispositivos para que compartan los datos.</p>
-                <div class="form-group">
-                    <input type="text" id="syncUrl" placeholder="https://script.google.com/macros/s/.../exec">
-                </div>
+                <h3>Sincronización</h3>
                 <div class="actions-grid" style="margin-top: 0;">
-                    <button type="button" class="btn btn-primary" onclick="saveSettings()">Guardar y conectar</button>
                     <div class="actions-row">
                         <button type="button" class="btn btn-secondary btn-small" onclick="pullFromCloud(true)">⬇️ Traer de la nube</button>
                         <button type="button" class="btn btn-secondary btn-small" onclick="pushToCloud(true)">⬆️ Subir ahora</button>
@@ -862,7 +857,7 @@
                 try {
                     const data = JSON.parse(reader.result);
                     if (data.app !== 'tonificacion-consumos' || !data.decorators) throw new Error('formato');
-                    if (!confirm('Esto sustituirá los datos actuales de ambos decoradores por los de la copia. ¿Continuar?')) return;
+                    if (!confirm('Esto sustituirá los datos locales de ambos decoradores por los de la copia y los sincronizará. ¿Continuar?')) return;
                     Object.entries(DECORATORS).forEach(([dec, p]) => {
                         const d = data.decorators[dec];
                         if (!d) return;
@@ -871,8 +866,10 @@
                         localStorage.setItem(p + 'substrate', d.substrate || '');
                         localStorage.setItem(p + 'graphic', d.graphic || '');
                         localStorage.setItem(p + 'history', JSON.stringify(Array.isArray(d.history) ? d.history : []));
-                        if (Array.isArray(d.archive)) localStorage.setItem(p + 'archive', JSON.stringify(d.archive));
+                        localStorage.setItem(p + 'archive', JSON.stringify(Array.isArray(d.archive) ? d.archive : []));
                     });
+                    localStorage.setItem('deleted_records', JSON.stringify(data.deletedRecords || {}));
+                    localStorage.setItem('deleted_archives', JSON.stringify(data.deletedArchives || {}));
                     updateHomeStatuses();
                     toast('Copia restaurada ✔');
                 } catch (e) {
@@ -1000,14 +997,13 @@
         }
 
         // ---------- Sincronización con Google Sheets ----------
-        const SYNC_URL_KEY = 'sync_url';
         const LOCAL_TS_KEY = 'local_updated_at';
         const CONFIRMED_TS_KEY = 'cloud_confirmed_at';
         let applyingRemote = false;
         let pushTimer = null;
         let syncing = false;
 
-        function syncUrl() { return localStorage.getItem(SYNC_URL_KEY) || ''; }
+        function syncUrl() { return '/api/sync'; }
 
         function setBadge(text, cls = '') {
             const b = $('syncBadge');
@@ -1039,17 +1035,18 @@
 
         async function pushToCloud(manual) {
             const url = syncUrl();
-            if (!url) { if (manual) toast('Configura primero la URL', true); return; }
             if (syncing) { schedulePush(); return; }
             syncing = true;
             const payload = buildBackup();
             payload.exportedAt = localStorage.getItem(LOCAL_TS_KEY) || new Date().toISOString();
             try {
                 const check = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+                if (!check.ok) throw new Error('No se pudo abrir la nube');
                 const server = await check.json();
-                if (server.syncProtocol !== 2) throw new Error('Actualiza el Apps Script');
+                if (server.syncProtocol !== 3) throw new Error('Actualiza la aplicación');
                 setBadge('☁️ Enviando cambios…');
-                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                const sent = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!sent.ok) throw new Error('La nube rechazó la subida');
                 const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
                 if (!res.ok) throw new Error('Sin respuesta de la nube');
                 const remote = await res.json();
@@ -1069,7 +1066,7 @@
                 else setBadge('☁️ Confirmado en la nube', 'ok');
                 if (manual) toast('Cambios confirmados en la nube ✔');
             } catch (e) {
-                setBadge(e.message.includes('Apps Script') ? '☁️ Actualiza el Apps Script · guardado local' : '☁️ Guardado en este móvil · pendiente de sincronizar', 'err');
+                setBadge(e.message.includes('Actualiza') ? '☁️ Actualiza la aplicación · guardado local' : '☁️ Guardado en este móvil · pendiente de sincronizar', 'err');
                 if (manual) toast('No se ha confirmado la subida. Tus datos siguen en este móvil.', true);
             } finally {
                 syncing = false;
@@ -1078,13 +1075,13 @@
 
         async function pullFromCloud(manual) {
             const url = syncUrl();
-            if (!url) { if (manual) toast('Configura primero la URL', true); return; }
             try {
                 const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+                if (!res.ok) throw new Error('No se pudo abrir la nube');
                 const data = await res.json();
-                if (data.syncProtocol !== 2) {
-                    setBadge('☁️ Actualiza el Apps Script · guardado local', 'err');
-                    if (manual) toast('Actualiza el Apps Script antes de sincronizar', true);
+                if (data.syncProtocol !== 3) {
+                    setBadge('☁️ Actualiza la aplicación · guardado local', 'err');
+                    if (manual) toast('Actualiza la aplicación antes de sincronizar', true);
                     return;
                 }
                 if (!data || !data.decorators) {
@@ -1102,7 +1099,7 @@
                 if (manual) toast('Registros combinados con la nube ✔');
             } catch (e) {
                 setBadge('☁️ No se pudo conectar con la nube', 'err');
-                if (manual) toast('No se pudo leer la nube. Revisa la URL', true);
+                if (manual) toast('No se pudo leer la nube. Comprueba tu acceso', true);
             }
         }
 
@@ -1168,17 +1165,7 @@
         }
 
         function openSettings() {
-            $('syncUrl').value = syncUrl();
             $('settingsDialog').showModal();
-        }
-
-        function saveSettings() {
-            const url = $('syncUrl').value.trim();
-            if (url && !/^https:\/\/script\.google\.com\/.+\/exec/.test(url)) { toast('La URL debe ser de script.google.com y acabar en /exec', true); return; }
-            if (url) localStorage.setItem(SYNC_URL_KEY, url); else localStorage.removeItem(SYNC_URL_KEY);
-            $('settingsDialog').close();
-            if (url) pullFromCloud(false); else setBadge('☁️ Nube sin configurar');
-            toast(url ? 'Nube configurada' : 'Sincronización desactivada');
         }
     </script>
 </body>

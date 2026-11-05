@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "tonificacion-consumos",
+  "main": "./worker/index.js",
+  "compatibility_date": "2026-11-05",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tonificacion-consumos",
+      "database_id": "dc449df8-7def-4172-8d74-58356111b074",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "access": {
+    "dev": {
+      "aud": "tonificacion-consumos-local",
+      "identity": { "email": "local@example.test" }
+    }
+  }
+}
