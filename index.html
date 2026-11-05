@@ -1012,6 +1012,7 @@
         }
 
         function initSync() {
+            if (!localStorage.getItem(LOCAL_TS_KEY)) localStorage.setItem(LOCAL_TS_KEY, new Date().toISOString());
             // Cualquier cambio en los datos marca la hora y programa una subida
             const origSet = Storage.prototype.setItem, origRemove = Storage.prototype.removeItem;
             const touch = key => {
