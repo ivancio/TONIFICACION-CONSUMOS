@@ -10,6 +10,8 @@
  *    Autoriza los permisos que pida.
  * 4. Copia la URL que termina en /exec y pégala en la app (botón ⚙️ Nube) en cada dispositivo.
  *
+ * Si ya tienes una implementación, pega esta versión y usa Implementar > Gestionar
+ * implementaciones > Editar > Nueva versión. Conserva la misma URL /exec.
  * La hoja "Registros" se rellena sola con todas las sesiones (activas y archivadas)
  * para poder filtrar, hacer tablas dinámicas o gráficas. No la edites a mano:
  * se regenera en cada sincronización.
@@ -19,8 +21,9 @@ const BACKUP_FILE = 'tonificacion_consumos_backup.json';
 
 function doGet() {
   const file = getBackupFile_();
-  const json = file ? file.getBlob().getDataAsString() : '{}';
-  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+  const data = file ? JSON.parse(file.getBlob().getDataAsString() || '{}') : {};
+  data.syncProtocol = 2;
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
@@ -31,22 +34,60 @@ function doPost(e) {
     if (incoming.app !== 'tonificacion-consumos' || !incoming.decorators) {
       return ContentService.createTextOutput('formato no válido');
     }
-    // Solo se acepta si es más reciente que lo guardado (evita pisar datos nuevos con viejos)
     const file = getBackupFile_();
+    let merged = incoming;
     if (file) {
       const current = JSON.parse(file.getBlob().getDataAsString() || '{}');
-      if (current.exportedAt && incoming.exportedAt && incoming.exportedAt < current.exportedAt) {
-        return ContentService.createTextOutput('ignorado: más antiguo');
-      }
-      file.setContent(JSON.stringify(incoming));
+      merged = mergeBackups_(current, incoming);
+      file.setContent(JSON.stringify(merged));
     } else {
-      DriveApp.createFile(BACKUP_FILE, JSON.stringify(incoming), MimeType.PLAIN_TEXT);
+      DriveApp.createFile(BACKUP_FILE, JSON.stringify(merged), MimeType.PLAIN_TEXT);
     }
-    writeSheet_(incoming);
+    writeSheet_(merged);
     return ContentService.createTextOutput('ok');
   } finally {
     lock.releaseLock();
   }
+}
+
+function mergeBackups_(current, incoming) {
+  const merged = {
+    app: 'tonificacion-consumos', version: '2.8',
+    exportedAt: new Date().toISOString(),
+    decorators: {},
+    deletedRecords: mergeTombstones_(current.deletedRecords, incoming.deletedRecords),
+    deletedArchives: mergeTombstones_(current.deletedArchives, incoming.deletedArchives)
+  };
+  const decorators = new Set([...Object.keys(current.decorators || {}), ...Object.keys(incoming.decorators || {})]);
+  decorators.forEach(dec => {
+    const old = current.decorators?.[dec] || {};
+    const next = incoming.decorators?.[dec] || {};
+    const rows = new Map();
+    const prefix = dec === 'Decorador 1' ? 'dec1_' : 'dec2_';
+    [...(old.history || []), ...(next.history || [])].forEach((row, index) => {
+      const id = row.id || `legacy-${prefix}-${row.date}-${row.timeFrom}-${index}`;
+      const item = { ...row, id, updatedAt: row.updatedAt || '1970-01-01T00:00:00.000Z' };
+      if (merged.deletedRecords[id] && merged.deletedRecords[id] >= item.updatedAt) return;
+      if (!rows.has(id) || rows.get(id).updatedAt < item.updatedAt) rows.set(id, item);
+    });
+    const newest = (incoming.exportedAt || '') >= (current.exportedAt || '') ? next : old;
+    merged.decorators[dec] = {
+      order: newest.order || '', tech: newest.tech || '', substrate: newest.substrate || '', graphic: newest.graphic || '',
+      history: [...rows.values()],
+      archive: [...(old.archive || []), ...(next.archive || [])].filter((item, index, all) =>
+        !merged.deletedArchives[item.closedAt] &&
+        all.findIndex(other => other.closedAt === item.closedAt && other.order === item.order) === index)
+    };
+  });
+  return merged;
+}
+
+function mergeTombstones_(old, next) {
+  const result = { ...(old || {}) };
+  Object.entries(next || {}).forEach(([id, date]) => {
+    if (!result[id] || date > result[id]) result[id] = date;
+  });
+  return result;
 }
 
 function getBackupFile_() {

@@ -485,7 +485,14 @@
         }
 
         function readHistory(prefix) {
-            try { return JSON.parse(localStorage.getItem(prefix + 'history')) || []; }
+            try {
+                const rows = JSON.parse(localStorage.getItem(prefix + 'history')) || [];
+                return rows.map((row, index) => ({
+                    ...row,
+                    id: row.id || `legacy-${prefix}-${row.date}-${row.timeFrom}-${index}`,
+                    updatedAt: row.updatedAt || '1970-01-01T00:00:00.000Z'
+                }));
+            }
             catch (e) { return []; }
         }
 
@@ -659,7 +666,10 @@
 
             saveHeaderDraft();
 
+            const wasEditing = editingIndex >= 0;
             const entry = {
+                id: wasEditing ? historyData[editingIndex].id : crypto.randomUUID(),
+                updatedAt: new Date().toISOString(),
                 date: fields.date.value,
                 timeFrom: fields.timeFrom.value,
                 timeTo: fields.timeTo.value,
@@ -670,7 +680,6 @@
                 comment: $('comments').value.trim()
             };
 
-            const wasEditing = editingIndex >= 0;
             if (wasEditing) historyData[editingIndex] = entry;
             else historyData.push(entry);
 
@@ -714,6 +723,9 @@
             const x = historyData[i];
             if (!x) return;
             if (!confirm(`¿Borrar el registro del ${formatDate(x.date)} (${x.timeFrom}-${x.timeTo})?`)) return;
+            const deleted = JSON.parse(localStorage.getItem('deleted_records') || '{}');
+            deleted[x.id || `legacy-${DECORATORS[currentDecorator]}-${x.date}-${x.timeFrom}-${i}`] = new Date().toISOString();
+            localStorage.setItem('deleted_records', JSON.stringify(deleted));
             historyData.splice(i, 1);
             if (editingIndex === i) resetSessionFields();
             else if (editingIndex > i) editingIndex--;
@@ -821,6 +833,8 @@
 
         function buildBackup() {
             const data = { app: 'tonificacion-consumos', version: '2.7', exportedAt: new Date().toISOString(), decorators: {} };
+            data.deletedRecords = JSON.parse(localStorage.getItem('deleted_records') || '{}');
+            data.deletedArchives = JSON.parse(localStorage.getItem('deleted_archives') || '{}');
             Object.entries(DECORATORS).forEach(([dec, p]) => {
                 data.decorators[dec] = {
                     order: localStorage.getItem(p + 'order') || '',
@@ -880,6 +894,9 @@
             const sel = $('substrate');
             if (historyData.length) {
                 const archive = readArchive(DECORATORS[currentDecorator]);
+                const deleted = JSON.parse(localStorage.getItem('deleted_records') || '{}');
+                historyData.forEach(x => { deleted[x.id] = new Date().toISOString(); });
+                localStorage.setItem('deleted_records', JSON.stringify(deleted));
                 archive.unshift({
                     closedAt: new Date().toISOString(),
                     order: $('orderNumber').value.trim(),
@@ -947,6 +964,12 @@
             const archive = readArchive(DECORATORS[currentDecorator]);
             const a = archive[i];
             if (!a || !confirm(`¿Reabrir el pedido ${a.order || ''}?`)) return;
+            const deletedArchives = JSON.parse(localStorage.getItem('deleted_archives') || '{}');
+            deletedArchives[a.closedAt] = new Date().toISOString();
+            localStorage.setItem('deleted_archives', JSON.stringify(deletedArchives));
+            const deletedRecords = JSON.parse(localStorage.getItem('deleted_records') || '{}');
+            (a.history || []).forEach(x => { delete deletedRecords[x.id]; x.updatedAt = new Date().toISOString(); });
+            localStorage.setItem('deleted_records', JSON.stringify(deletedRecords));
             archive.splice(i, 1);
             localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
             historyData = a.history || [];
@@ -967,6 +990,9 @@
             if (!a) return;
             const typed = prompt(`Para eliminar definitivamente el pedido ${a.order || ''}, escribe BORRAR`);
             if (!typed || typed.trim().toUpperCase() !== 'BORRAR') return;
+            const deleted = JSON.parse(localStorage.getItem('deleted_archives') || '{}');
+            deleted[a.closedAt] = new Date().toISOString();
+            localStorage.setItem('deleted_archives', JSON.stringify(deleted));
             archive.splice(i, 1);
             localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
             renderArchive();
@@ -976,8 +1002,10 @@
         // ---------- Sincronización con Google Sheets ----------
         const SYNC_URL_KEY = 'sync_url';
         const LOCAL_TS_KEY = 'local_updated_at';
+        const CONFIRMED_TS_KEY = 'cloud_confirmed_at';
         let applyingRemote = false;
         let pushTimer = null;
+        let syncing = false;
 
         function syncUrl() { return localStorage.getItem(SYNC_URL_KEY) || ''; }
 
@@ -1004,7 +1032,7 @@
 
         function schedulePush() {
             if (!syncUrl()) return;
-            setBadge('☁️ Cambios pendientes de subir…');
+            setBadge('☁️ Guardado en este móvil · pendiente de sincronizar');
             clearTimeout(pushTimer);
             pushTimer = setTimeout(() => pushToCloud(false), 1500);
         }
@@ -1012,17 +1040,39 @@
         async function pushToCloud(manual) {
             const url = syncUrl();
             if (!url) { if (manual) toast('Configura primero la URL', true); return; }
+            if (syncing) { schedulePush(); return; }
+            syncing = true;
             const payload = buildBackup();
             payload.exportedAt = localStorage.getItem(LOCAL_TS_KEY) || new Date().toISOString();
             try {
-                // text/plain evita el preflight CORS de Apps Script
+                const check = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+                const server = await check.json();
+                if (server.syncProtocol !== 2) throw new Error('Actualiza el Apps Script');
+                setBadge('☁️ Enviando cambios…');
                 await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                localStorage.setItem('last_push', new Date().toISOString());
-                setBadge('☁️ Sincronizado ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }), 'ok');
-                if (manual) toast('Datos subidos a la nube ✔');
+                const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+                if (!res.ok) throw new Error('Sin respuesta de la nube');
+                const remote = await res.json();
+                const remoteRows = new Map(Object.values(remote.decorators || {}).flatMap(d => (d.history || []).map(x => [x.id, x])));
+                const localRows = Object.values(payload.decorators).flatMap(d => d.history);
+                const remoteArchiveIds = new Set(Object.values(remote.decorators || {}).flatMap(d => (d.archive || []).map(x => x.closedAt)));
+                const localArchiveIds = Object.values(payload.decorators).flatMap(d => d.archive.map(x => x.closedAt));
+                const confirmed = localRows.every(row => (remoteRows.get(row.id)?.updatedAt || '') >= row.updatedAt || remote.deletedRecords?.[row.id] >= row.updatedAt) &&
+                    localArchiveIds.every(id => remoteArchiveIds.has(id) || remote.deletedArchives?.[id]) &&
+                    Object.keys(payload.deletedRecords).every(id => remote.deletedRecords?.[id] >= payload.deletedRecords[id]) &&
+                    Object.keys(payload.deletedArchives).every(id => remote.deletedArchives?.[id] >= payload.deletedArchives[id]);
+                if (!confirmed) throw new Error('La nube no ha confirmado todos los registros');
+                mergeCloudData(remote);
+                refreshCurrentHistory();
+                localStorage.setItem(CONFIRMED_TS_KEY, payload.exportedAt);
+                if (localStorage.getItem(LOCAL_TS_KEY) !== payload.exportedAt) schedulePush();
+                else setBadge('☁️ Confirmado en la nube', 'ok');
+                if (manual) toast('Cambios confirmados en la nube ✔');
             } catch (e) {
-                setBadge('☁️ Sin conexión: se subirá al volver la red', 'err');
-                if (manual) toast('No se pudo subir', true);
+                setBadge(e.message.includes('Apps Script') ? '☁️ Actualiza el Apps Script · guardado local' : '☁️ Guardado en este móvil · pendiente de sincronizar', 'err');
+                if (manual) toast('No se ha confirmado la subida. Tus datos siguen en este móvil.', true);
+            } finally {
+                syncing = false;
             }
         }
 
@@ -1032,22 +1082,24 @@
             try {
                 const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
                 const data = await res.json();
+                if (data.syncProtocol !== 2) {
+                    setBadge('☁️ Actualiza el Apps Script · guardado local', 'err');
+                    if (manual) toast('Actualiza el Apps Script antes de sincronizar', true);
+                    return;
+                }
                 if (!data || !data.decorators) {
                     // Hoja vacía: subimos lo que hay en este dispositivo
                     await pushToCloud(manual);
                     return;
                 }
-                const localTs = localStorage.getItem(LOCAL_TS_KEY) || '';
-                if (manual || !localTs || data.exportedAt > localTs) {
-                    if (manual && !confirm('¿Sustituir los datos de este dispositivo por los de la nube?')) return;
-                    applyBackupData(data);
-                    localStorage.setItem(LOCAL_TS_KEY, data.exportedAt);
-                    if (currentDecorator) selectDecorator(currentDecorator); else updateHomeStatuses();
-                    if (manual) toast('Datos traídos de la nube ✔');
-                } else if (data.exportedAt < localTs) {
-                    await pushToCloud(false);
-                }
-                setBadge('☁️ Sincronizado ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }), 'ok');
+                mergeCloudData(data);
+                refreshCurrentHistory();
+                const localRows = Object.values(buildBackup().decorators).flatMap(d => d.history);
+                const remoteRows = new Map(Object.values(data.decorators).flatMap(d => (d.history || []).map(x => [x.id, x])));
+                if (localStorage.getItem(LOCAL_TS_KEY) !== localStorage.getItem(CONFIRMED_TS_KEY) ||
+                    localRows.some(row => !remoteRows.has(row.id) && !data.deletedRecords?.[row.id])) schedulePush();
+                else setBadge('☁️ Confirmado en la nube', 'ok');
+                if (manual) toast('Registros combinados con la nube ✔');
             } catch (e) {
                 setBadge('☁️ No se pudo conectar con la nube', 'err');
                 if (manual) toast('No se pudo leer la nube. Revisa la URL', true);
@@ -1068,6 +1120,51 @@
                     localStorage.setItem(p + 'archive', JSON.stringify(Array.isArray(d.archive) ? d.archive : []));
                 });
             } finally { applyingRemote = false; }
+        }
+
+        function mergeCloudData(remote) {
+            applyingRemote = true;
+            try {
+                const mergeDeleted = (a, b) => {
+                    const result = { ...a };
+                    Object.entries(b).forEach(([id, date]) => { if (!result[id] || date > result[id]) result[id] = date; });
+                    return result;
+                };
+                const deleted = mergeDeleted(remote.deletedRecords || {}, JSON.parse(localStorage.getItem('deleted_records') || '{}'));
+                const deletedArchives = mergeDeleted(remote.deletedArchives || {}, JSON.parse(localStorage.getItem('deleted_archives') || '{}'));
+                Object.entries(DECORATORS).forEach(([dec, prefix]) => {
+                    const cloudDec = remote.decorators?.[dec] || {};
+                    const local = readHistory(prefix);
+                    const merged = new Map();
+                    [...(cloudDec.history || []), ...local].forEach((row, index) => {
+                        const id = row.id || `legacy-${prefix}-${row.date}-${row.timeFrom}-${index}`;
+                        const item = { ...row, id, updatedAt: row.updatedAt || '1970-01-01T00:00:00.000Z' };
+                        if (deleted[id] && deleted[id] >= item.updatedAt) return;
+                        if (!merged.has(id) || merged.get(id).updatedAt < item.updatedAt) merged.set(id, item);
+                    });
+                    localStorage.setItem(prefix + 'history', JSON.stringify([...merged.values()]));
+                    const archives = new Map();
+                    [...(cloudDec.archive || []), ...readArchive(prefix)].forEach(a => {
+                        if (a.closedAt && !deletedArchives[a.closedAt]) archives.set(a.closedAt, a);
+                    });
+                    localStorage.setItem(prefix + 'archive', JSON.stringify([...archives.values()]));
+                    const useCloudHeader = (remote.exportedAt || '') > (localStorage.getItem(LOCAL_TS_KEY) || '');
+                    ['order', 'tech', 'substrate', 'graphic'].forEach(key => {
+                        if ((useCloudHeader || !localStorage.getItem(prefix + key)) && cloudDec[key]) localStorage.setItem(prefix + key, cloudDec[key]);
+                    });
+                });
+                localStorage.setItem('deleted_records', JSON.stringify(deleted));
+                localStorage.setItem('deleted_archives', JSON.stringify(deletedArchives));
+            } finally { applyingRemote = false; }
+        }
+
+        function refreshCurrentHistory() {
+            if (currentDecorator && editingIndex < 0) {
+                historyData = readHistory(DECORATORS[currentDecorator]);
+                renderHistory();
+                renderArchive();
+                checkKerajetAlert();
+            } else if (!currentDecorator) updateHomeStatuses();
         }
 
         function openSettings() {
