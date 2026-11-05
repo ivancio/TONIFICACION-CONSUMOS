@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1c1917">
-    <title>Basilión - Undora v2.7</title>
+    <title>Tonificación Consumos - Undora v2.7</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -254,7 +254,7 @@
         <!-- PANTALLA DE INICIO -->
         <div id="homeView">
             <div class="brand"><img src="https://www.undora.com/assets/images/logo-black.svg" alt="Undora" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="brand-text">UNDORA</span></div>
-            <h1>Basilión</h1>
+            <h1>Tonificación Consumos</h1>
             <p style="color: var(--muted); margin-bottom: 20px;">Selecciona el técnico para gestionar su registro de producción:</p>
 
             <div class="home-cards">
@@ -303,7 +303,7 @@
         <div id="decoratorView">
             <button type="button" class="nav-back" onclick="goHome()">⬅️ Volver a Selección</button>
             <div class="brand brand-small"><img src="https://www.undora.com/assets/images/logo-black.svg" alt="Undora" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="brand-text">UNDORA</span></div>
-            <h1 id="decoratorTitle">Basilión</h1>
+            <h1 id="decoratorTitle">Tonificación Consumos</h1>
 
             <!-- Cabecera solo para el PDF -->
             <div class="print-only print-header">
@@ -533,7 +533,7 @@
         function selectDecorator(decoratorName) {
             currentDecorator = decoratorName;
             editingIndex = -1;
-            $('decoratorTitle').innerText = `Basilión - ${decoratorName}`;
+            $('decoratorTitle').innerText = `Tonificación Consumos - ${decoratorName}`;
             $('homeView').style.display = 'none';
             $('decoratorView').style.display = 'block';
 
@@ -835,7 +835,7 @@
         }
 
         function exportBackup() {
-            downloadFile(`Backup_Basilion_${todayLocal()}.json`, JSON.stringify(buildBackup(), null, 2), 'application/json');
+            downloadFile(`Backup_Tonificacion_${todayLocal()}.json`, JSON.stringify(buildBackup(), null, 2), 'application/json');
             toast('Copia de seguridad descargada');
         }
 
