@@ -59,7 +59,8 @@ export default {
   async fetch(request, env, ctx) {
     if (!await hasAccess(request, env, ctx)) return json({ error: 'Acceso privado no autorizado' }, 403);
     const path = new URL(request.url).pathname;
-    if (path === '/api/sync') {
+    if (path === '/api/sync') return json({ error: 'Actualiza la aplicación' }, 410);
+    if (path === '/api/sync/v3') {
       if (request.method === 'GET') {
         const state = await readState(env.DB);
         return json({ ...(state ? JSON.parse(state.payload) : {}), syncProtocol: 3 });

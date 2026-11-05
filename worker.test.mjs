@@ -39,7 +39,7 @@ const backup = (id, dec) => ({
 });
 
 test('Cloudflare sync denies requests without Access', async () => {
-  const response = await worker.fetch(new Request('https://example.test/api/sync'), { DB: database() }, {});
+  const response = await worker.fetch(new Request('https://example.test/api/sync/v3'), { DB: database() }, {});
   assert.equal(response.status, 403);
 });
 
@@ -53,11 +53,11 @@ test('Cloudflare sync verifies Access JWT behind static assets', async t => {
     .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
     .setIssuer(issuer).setAudience('tonificacion-test').setIssuedAt().setExpirationTime('5m')
     .sign(privateKey);
-  const accepted = await worker.fetch(new Request('https://example.test/api/sync', {
+  const accepted = await worker.fetch(new Request('https://example.test/api/sync/v3', {
     headers: { 'cf-access-jwt-assertion': token }
   }), env, {});
   assert.equal(accepted.status, 200);
-  const rejected = await worker.fetch(new Request('https://example.test/api/sync', {
+  const rejected = await worker.fetch(new Request('https://example.test/api/sync/v3', {
     headers: { 'cf-access-jwt-assertion': token + 'x' }
   }), env, {});
   assert.equal(rejected.status, 403);
@@ -66,7 +66,7 @@ test('Cloudflare sync verifies Access JWT behind static assets', async t => {
 test('Cloudflare sync preserves both decorators and deletions', async () => {
   const env = { DB: database() };
   const ctx = { access: { getIdentity: async () => ({ email: 'ivan@example.com' }) } };
-  const request = (method, body) => new Request('https://example.test/api/sync', {
+  const request = (method, body) => new Request('https://example.test/api/sync/v3', {
     method, ...(body ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {})
   });
   assert.deepEqual(await (await worker.fetch(request('GET'), env, ctx)).json(), { syncProtocol: 3 });
@@ -86,7 +86,7 @@ test('Cloudflare sync preserves both decorators and deletions', async () => {
 });
 
 test('Cloudflare sync rejects malformed data', async () => {
-  const response = await worker.fetch(new Request('https://example.test/api/sync', {
+  const response = await worker.fetch(new Request('https://example.test/api/sync/v3', {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"app":"tonificacion-consumos","decorators":{"bad":{}}}'
   }), { DB: database() }, { access: {} });
   assert.equal(response.status, 400);
@@ -95,7 +95,7 @@ test('Cloudflare sync rejects malformed data', async () => {
 test('Cloudflare sync keeps the newest order header', async () => {
   const env = { DB: database() };
   const ctx = { access: {} };
-  const post = body => worker.fetch(new Request('https://example.test/api/sync', {
+  const post = body => worker.fetch(new Request('https://example.test/api/sync/v3', {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
   }), env, ctx);
   const first = backup('a', 1);
@@ -106,7 +106,12 @@ test('Cloudflare sync keeps the newest order header', async () => {
   second.decorators['Decorador 1'].order = 'Nuevo';
   await post(first);
   await post(second);
-  const cloud = await (await worker.fetch(new Request('https://example.test/api/sync'), env, ctx)).json();
+  const cloud = await (await worker.fetch(new Request('https://example.test/api/sync/v3'), env, ctx)).json();
   assert.equal(cloud.decorators['Decorador 1'].order, 'Nuevo');
   assert.equal(cloud.exportedAt, second.exportedAt);
+});
+
+test('Old sync route asks the browser to update without changing data', async () => {
+  const response = await worker.fetch(new Request('https://example.test/api/sync'), { DB: database() }, { access: {} });
+  assert.equal(response.status, 410);
 });
