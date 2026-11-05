@@ -1,27 +1,23 @@
 /**
- * Tonificación Consumos — backend en Google Sheets
+ * Tonificación Consumos - backend en Google Sheets
  *
  * INSTALACIÓN (una sola vez):
- * 1. Crea una Hoja de cálculo de Google nueva (ej. "Tonificación Consumos").
- * 2. Menú Extensiones > Apps Script. Borra lo que haya y pega este archivo entero. Guarda.
- * 3. Botón "Implementar" > "Nueva implementación" > tipo "Aplicación web".
- *      - Ejecutar como: Yo
- *      - Quién tiene acceso: Cualquier usuario
- *    Autoriza los permisos que pida.
- * 4. Copia la URL que termina en /exec y pégala en la app (botón ⚙️ Nube) en cada dispositivo.
+ * 1. Crea un proyecto independiente de Apps Script y pega este archivo.
+ * 2. Ejecuta initializeRecords una vez y autoriza el acceso a Sheets.
+ * 3. Implementa como aplicación web: ejecutar como yo; acceso para cualquiera.
+ * 4. Pega la URL /exec en la app (botón Nube) en cada dispositivo.
  *
  * Si ya tienes una implementación, pega esta versión y usa Implementar > Gestionar
  * implementaciones > Editar > Nueva versión. Conserva la misma URL /exec.
- * La hoja "Registros" se rellena sola con todas las sesiones (activas y archivadas)
- * para poder filtrar, hacer tablas dinámicas o gráficas. No la edites a mano:
- * se regenera en cada sincronización.
+ * "Sincronizacion" guarda el JSON completo en fragmentos. "Registros" muestra
+ * las sesiones para consultar. No edites estas hojas: se regeneran al sincronizar.
  */
 
-const BACKUP_FILE = 'tonificacion_consumos_backup.json';
+const SYNC_SHEET = 'Sincronizacion';
+const SYNC_CHUNK_SIZE = 30000;
 
 function doGet() {
-  const file = getBackupFile_();
-  const data = file ? JSON.parse(file.getBlob().getDataAsString() || '{}') : {};
+  const data = readBackup_() || {};
   data.syncProtocol = 2;
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -34,15 +30,9 @@ function doPost(e) {
     if (incoming.app !== 'tonificacion-consumos' || !incoming.decorators) {
       return ContentService.createTextOutput('formato no válido');
     }
-    const file = getBackupFile_();
-    let merged = incoming;
-    if (file) {
-      const current = JSON.parse(file.getBlob().getDataAsString() || '{}');
-      merged = mergeBackups_(current, incoming);
-      file.setContent(JSON.stringify(merged));
-    } else {
-      DriveApp.createFile(BACKUP_FILE, JSON.stringify(merged), MimeType.PLAIN_TEXT);
-    }
+    const current = readBackup_();
+    const merged = current ? mergeBackups_(current, incoming) : incoming;
+    writeBackup_(merged);
     writeSheet_(merged);
     return ContentService.createTextOutput('ok');
   } finally {
@@ -90,9 +80,21 @@ function mergeTombstones_(old, next) {
   return result;
 }
 
-function getBackupFile_() {
-  const files = DriveApp.getFilesByName(BACKUP_FILE);
-  return files.hasNext() ? files.next() : null;
+function readBackup_() {
+  const sh = getRecordsSpreadsheet_().getSheetByName(SYNC_SHEET);
+  if (!sh || sh.getLastRow() === 0) return null;
+  const chunks = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(row => row[0]);
+  return JSON.parse(chunks.join(''));
+}
+
+function writeBackup_(data) {
+  const ss = getRecordsSpreadsheet_();
+  const sh = ss.getSheetByName(SYNC_SHEET) || ss.insertSheet(SYNC_SHEET);
+  const json = JSON.stringify(data);
+  const chunks = [];
+  for (let i = 0; i < json.length; i += SYNC_CHUNK_SIZE) chunks.push([json.slice(i, i + SYNC_CHUNK_SIZE)]);
+  sh.clearContents();
+  sh.getRange(1, 1, chunks.length, 1).setValues(chunks);
 }
 
 function writeSheet_(data) {
