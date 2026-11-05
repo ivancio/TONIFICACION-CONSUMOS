@@ -129,3 +129,7 @@ function getRecordsSpreadsheet_() {
   props.setProperty('RECORDS_SPREADSHEET_ID', ss.getId());
   return ss;
 }
+
+function initializeRecords() {
+  return getRecordsSpreadsheet_().getId();
+}
