@@ -96,7 +96,7 @@ function getBackupFile_() {
 }
 
 function writeSheet_(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getRecordsSpreadsheet_();
   const sh = ss.getSheetByName('Registros') || ss.insertSheet('Registros');
   const head = ['Decorador', 'Estado pedido', 'Orden', 'Técnico', 'Sustrato', 'Gráfica', 'Fecha',
                 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Merma %', 'Comentarios'];
@@ -119,4 +119,13 @@ function writeSheet_(data) {
   sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold');
   if (rows.length) sh.getRange(2, 1, rows.length, head.length).setValues(rows);
   sh.setFrozenRows(1);
+}
+
+function getRecordsSpreadsheet_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('RECORDS_SPREADSHEET_ID');
+  if (id) return SpreadsheetApp.openById(id);
+  const ss = SpreadsheetApp.create('Tonificación Consumos - Registros');
+  props.setProperty('RECORDS_SPREADSHEET_ID', ss.getId());
+  return ss;
 }
