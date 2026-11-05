@@ -4,6 +4,18 @@ App para registrar sesiones de los dos decoradores. La web y la API se publican
 en un mismo Cloudflare Worker; D1 conserva una copia compartida. Cada navegador
 mantiene tambien sus datos locales y confirma una subida solo tras releer D1.
 
+## Instalar en Android
+
+Abre `https://tonificacion-consumos.espinosa-surface.workers.dev/` en Chrome
+para Android, no en el navegador integrado de otra app. Inicia sesion en
+Cloudflare Access y espera a ver la pantalla de Alejandro e Ivan. Usa el boton
+"Instalar app" si aparece, o el menu de Chrome (tres puntos) > "Instalar
+aplicacion" / "Anadir a pantalla de inicio". La instalacion conserva el acceso
+privado y no borra los registros.
+
+Si Chrome solo ofrece un acceso directo, verifica que ya has vuelto a la URL
+de la app tras iniciar sesion y recarga la pagina.
+
 ## Primera puesta en marcha
 
 1. `npm install`

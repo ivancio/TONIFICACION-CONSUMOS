@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1c1917">
     <title>Tonificación Consumos - Undora</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -97,6 +100,7 @@
 
         .home-tools { margin-top: 28px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
         .home-tools .btn { width: 100%; padding: 12px 8px; font-size: 0.85rem; min-height: 46px; }
+        .install-app { margin-top: 10px; }
 
         #decoratorView { display: none; }
 
@@ -298,6 +302,7 @@
                 <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
                 <button type="button" class="btn btn-secondary btn-small" onclick="openSettings()">☁ Nube</button>
             </div>
+            <button type="button" class="btn btn-primary install-app" id="installApp" hidden>Instalar app</button>
             <div id="syncBadge" class="sync-badge">☁️ Comprobando sincronización</div>
 
             <dialog id="settingsDialog">
@@ -471,6 +476,17 @@
         let counts = { ok: 0, nok: 0 };
         let historyData = [];
         let editingIndex = -1;
+        let installPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', event => {
+            event.preventDefault();
+            installPrompt = event;
+            $('installApp').hidden = false;
+        });
+        window.addEventListener('appinstalled', () => {
+            installPrompt = null;
+            $('installApp').hidden = true;
+        });
 
         // ---------- Utilidades ----------
         function $(id) { return document.getElementById(id); }
@@ -533,6 +549,13 @@
         // ---------- Inicio ----------
         document.addEventListener('DOMContentLoaded', () => {
             updateHomeStatuses();
+            $('installApp').addEventListener('click', async () => {
+                if (!installPrompt) return;
+                const prompt = installPrompt;
+                installPrompt = null;
+                $('installApp').hidden = true;
+                await prompt.prompt();
+            });
             $('statusField').addEventListener('change', checkKerajetAlert);
             initSync();
             ['timeFrom', 'timeTo'].forEach(id => $(id).addEventListener('input', () => { updateHoursPreview(); checkKerajetAlert(); }));

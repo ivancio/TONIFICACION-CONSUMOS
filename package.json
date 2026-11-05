@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "npm run build && wrangler dev",
-    "test": "node --test sync.test.cjs worker.test.mjs",
+    "test": "node --test sync.test.cjs worker.test.mjs pwa.test.mjs",
     "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
