@@ -324,6 +324,7 @@
                     <tr><td>Orden</td><td id="pOrder"></td></tr>
                     <tr><td>Técnico</td><td id="pTech"></td></tr>
                     <tr><td>Sustrato</td><td id="pSubstrate"></td></tr>
+                    <tr><td>Material</td><td id="pMaterial"></td></tr>
                     <tr><td>Gráfica</td><td id="pGraphic"></td></tr>
                     <tr><td>Informe generado</td><td id="pDate"></td></tr>
                 </table>
@@ -360,9 +361,17 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="graphicName">Nombre de Gráfica</label>
-                        <input type="text" id="graphicName" placeholder="Nombre de la gráfica...">
+                        <label for="material">Material</label>
+                        <select id="material">
+                            <option value="">Selecciona...</option>
+                            <option value="criscal">Criscal</option>
+                            <option value="pigmentado">Pigmentado</option>
+                        </select>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="graphicName">Nombre de Gráfica</label>
+                    <input type="text" id="graphicName" placeholder="Nombre de la gráfica...">
                 </div>
 
                 <div id="editBanner" class="edit-banner">
@@ -528,7 +537,7 @@
             initSync();
             ['timeFrom', 'timeTo'].forEach(id => $(id).addEventListener('input', () => { updateHoursPreview(); checkKerajetAlert(); }));
             // Guardar la cabecera del pedido al escribir (no se pierde si se cierra la app)
-            ['orderNumber', 'technician', 'substrate', 'graphicName'].forEach(id =>
+            ['orderNumber', 'technician', 'substrate', 'material', 'graphicName'].forEach(id =>
                 $(id).addEventListener('change', saveHeaderDraft));
         });
 
@@ -562,6 +571,7 @@
             $('orderNumber').value = localStorage.getItem(getStorageKey('order')) || '';
             $('technician').value = displayDecorator(localStorage.getItem(getStorageKey('tech')) || decoratorName);
             $('substrate').value = localStorage.getItem(getStorageKey('substrate')) || '';
+            $('material').value = localStorage.getItem(getStorageKey('material')) || '';
             $('graphicName').value = localStorage.getItem(getStorageKey('graphic')) || '';
 
             historyData = readHistory(DECORATORS[decoratorName]);
@@ -602,6 +612,7 @@
             localStorage.setItem(getStorageKey('order'), $('orderNumber').value.trim());
             localStorage.setItem(getStorageKey('tech'), $('technician').value.trim());
             localStorage.setItem(getStorageKey('substrate'), $('substrate').value);
+            localStorage.setItem(getStorageKey('material'), $('material').value);
             localStorage.setItem(getStorageKey('graphic'), $('graphicName').value.trim());
         }
 
@@ -821,6 +832,7 @@
             $('pOrder').textContent = $('orderNumber').value || '-';
             $('pTech').textContent = $('technician').value || displayDecorator(currentDecorator);
             $('pSubstrate').textContent = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '-';
+            $('pMaterial').textContent = $('material').value ? $('material').selectedOptions[0].textContent : '-';
             $('pGraphic').textContent = $('graphicName').value || '-';
             $('pDate').textContent = new Date().toLocaleString('es-ES');
             const prevTitle = document.title;
@@ -833,10 +845,11 @@
             if (historyData.length === 0) { toast('No hay registros para exportar', true); return; }
             const sel = $('substrate');
             const sub = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '';
+            const material = $('material').value ? $('material').selectedOptions[0].textContent : '';
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const head = ['Orden', 'Técnico', 'Sustrato', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
+            const head = ['Orden', 'Técnico', 'Sustrato', 'Material', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
             const lines = historyData.map(x => [
-                $('orderNumber').value, $('technician').value, sub, $('graphicName').value,
+                $('orderNumber').value, $('technician').value, sub, material, $('graphicName').value,
                 formatDate(x.date), x.timeFrom, x.timeTo, (x.hours || 0).toFixed(2).replace('.', ','), x.status, x.ok, x.nok, x.comment || ''
             ].map(q).join(';'));
             // BOM + ';' para que Excel en español lo abra bien
@@ -855,6 +868,7 @@
                     order: localStorage.getItem(p + 'order') || '',
                     tech: localStorage.getItem(p + 'tech') || '',
                     substrate: localStorage.getItem(p + 'substrate') || '',
+                    material: localStorage.getItem(p + 'material') || '',
                     graphic: localStorage.getItem(p + 'graphic') || '',
                     history: readHistory(p),
                     archive: readArchive(p)
@@ -884,6 +898,7 @@
                         localStorage.setItem(p + 'order', d.order || '');
                         localStorage.setItem(p + 'tech', d.tech || '');
                         localStorage.setItem(p + 'substrate', d.substrate || '');
+                        localStorage.setItem(p + 'material', d.material || '');
                         localStorage.setItem(p + 'graphic', d.graphic || '');
                         localStorage.setItem(p + 'history', JSON.stringify(Array.isArray(d.history) ? d.history : []));
                         localStorage.setItem(p + 'archive', JSON.stringify(Array.isArray(d.archive) ? d.archive : []));
@@ -919,17 +934,19 @@
                     order: $('orderNumber').value.trim(),
                     tech: $('technician').value.trim(),
                     substrate: sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '',
+                    material: $('material').value ? $('material').selectedOptions[0].textContent : '',
                     graphic: $('graphicName').value.trim(),
                     history: historyData
                 });
                 localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
             }
 
-            ['history', 'order', 'tech', 'substrate', 'graphic'].forEach(k => localStorage.removeItem(getStorageKey(k)));
+            ['history', 'order', 'tech', 'substrate', 'material', 'graphic'].forEach(k => localStorage.removeItem(getStorageKey(k)));
             historyData = [];
             $('orderNumber').value = '';
             $('technician').value = displayDecorator(currentDecorator);
             $('substrate').selectedIndex = 0;
+            $('material').value = '';
             $('graphicName').value = '';
             resetSessionFields();
             renderHistory();
@@ -952,7 +969,7 @@
                 const nok = h.reduce((x, e) => x + (e.nok || 0), 0);
                 const merma = ok + nok ? (nok / (ok + nok) * 100) : 0;
                 return `<details class="archive-item">
-                    <summary>${escapeHtml(a.order || 'Sin orden')} · ${escapeHtml(a.substrate || '-')}</summary>
+                    <summary>${escapeHtml(a.order || 'Sin orden')} · ${escapeHtml(a.substrate || '-')} ${a.material ? '· ' + escapeHtml(a.material) : ''}</summary>
                     <div class="archive-meta">
                         ${escapeHtml(a.graphic || '')} — cerrado el ${new Date(a.closedAt).toLocaleDateString('es-ES')}<br>
                         ${h.length} sesiones · ${hours.toFixed(1)} h · ${ok} OK · ${nok} No OK · merma ${merma.toFixed(1)}%
@@ -970,8 +987,8 @@
             const a = readArchive(DECORATORS[currentDecorator])[i];
             if (!a) return;
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const head = ['Orden', 'Técnico', 'Sustrato', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
-            const lines = (a.history || []).map(x => [a.order, displayDecorator(a.tech), a.substrate, a.graphic, formatDate(x.date), x.timeFrom, x.timeTo,
+            const head = ['Orden', 'Técnico', 'Sustrato', 'Material', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
+            const lines = (a.history || []).map(x => [a.order, displayDecorator(a.tech), a.substrate, a.material || '', a.graphic, formatDate(x.date), x.timeFrom, x.timeTo,
                 (x.hours || 0).toFixed(2).replace('.', ','), x.status, x.ok, x.nok, x.comment || ''].map(q).join(';'));
             downloadFile(`Consumos_${(a.order || 'orden').replace(/[^\w-]+/g, '_')}.csv`, '\uFEFF' + head.map(q).join(';') + '\n' + lines.join('\n'), 'text/csv;charset=utf-8');
         }
@@ -995,6 +1012,8 @@
             $('technician').value = displayDecorator(a.tech || currentDecorator);
             const opt = [...$('substrate').options].find(o => o.text === a.substrate);
             $('substrate').value = opt ? opt.value : '';
+            const materialOption = [...$('material').options].find(o => o.text === a.material || o.value === a.material);
+            $('material').value = materialOption ? materialOption.value : '';
             $('graphicName').value = a.graphic || '';
             saveHeaderDraft();
             renderHistory(); renderArchive(); checkKerajetAlert();
@@ -1133,6 +1152,7 @@
                     localStorage.setItem(p + 'order', d.order || '');
                     localStorage.setItem(p + 'tech', d.tech || '');
                     localStorage.setItem(p + 'substrate', d.substrate || '');
+                    localStorage.setItem(p + 'material', d.material || '');
                     localStorage.setItem(p + 'graphic', d.graphic || '');
                     localStorage.setItem(p + 'history', JSON.stringify(Array.isArray(d.history) ? d.history : []));
                     localStorage.setItem(p + 'archive', JSON.stringify(Array.isArray(d.archive) ? d.archive : []));
@@ -1167,7 +1187,11 @@
                     });
                     localStorage.setItem(prefix + 'archive', JSON.stringify([...archives.values()]));
                     const useCloudHeader = (remote.exportedAt || '') > (localStorage.getItem(LOCAL_TS_KEY) || '');
-                    ['order', 'tech', 'substrate', 'graphic'].forEach(key => {
+                    ['order', 'tech', 'substrate', 'material', 'graphic'].forEach(key => {
+                        if (key === 'material' && useCloudHeader) {
+                            localStorage.setItem(prefix + key, cloudDec.material || '');
+                            return;
+                        }
                         if ((useCloudHeader || !localStorage.getItem(prefix + key)) && cloudDec[key]) localStorage.setItem(prefix + key, cloudDec[key]);
                     });
                 });

@@ -101,14 +101,28 @@ test('Cloudflare sync keeps the newest order header', async () => {
   const first = backup('a', 1);
   first.exportedAt = '2026-11-05T08:00:00.000Z';
   first.decorators['Decorador 1'].order = 'Viejo';
+  first.decorators['Decorador 1'].material = 'criscal';
   const second = backup('a', 1);
   second.exportedAt = '2026-11-05T09:00:00.000Z';
   second.decorators['Decorador 1'].order = 'Nuevo';
+  second.decorators['Decorador 1'].material = 'pigmentado';
   await post(first);
   await post(second);
   const cloud = await (await worker.fetch(new Request('https://example.test/api/sync/v3'), env, ctx)).json();
   assert.equal(cloud.decorators['Decorador 1'].order, 'Nuevo');
+  assert.equal(cloud.decorators['Decorador 1'].material, 'pigmentado');
   assert.equal(cloud.exportedAt, second.exportedAt);
+});
+
+test('Old backups without material remain valid', async () => {
+  const env = { DB: database() };
+  const ctx = { access: {} };
+  const post = body => worker.fetch(new Request('https://example.test/api/sync/v3', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+  }), env, ctx);
+  assert.equal((await post(backup('old', 1))).status, 200);
+  const cloud = await (await worker.fetch(new Request('https://example.test/api/sync/v3'), env, ctx)).json();
+  assert.equal(cloud.decorators['Decorador 1'].material, undefined);
 });
 
 test('Old sync route asks the browser to update without changing data', async () => {

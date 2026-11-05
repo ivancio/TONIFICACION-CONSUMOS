@@ -35,6 +35,7 @@ export function mergeBackups(current, incoming) {
       order: newest.order || '',
       tech: newest.tech || '',
       substrate: newest.substrate || '',
+      material: newest.material || '',
       graphic: newest.graphic || '',
       history: [...rows.values()],
       archive: [...(old.archive || []), ...(next.archive || [])].filter((item, index, all) =>
