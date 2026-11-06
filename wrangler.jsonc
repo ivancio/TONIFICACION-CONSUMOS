@@ -1,12 +1,8 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "tonificacion-consumos",
+  "name": "tonificacion-consumos-compartida",
   "main": "./worker/index.js",
   "compatibility_date": "2026-11-05",
-  "vars": {
-    "TEAM_DOMAIN": "https://square-mountain-5e01.cloudflareaccess.com",
-    "POLICY_AUD": "23eb55fcd4bb1f317c6ca4aa8ab18737fd8853667cbc7bf07b371bdc3b0a0e99"
-  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
@@ -19,11 +15,5 @@
       "database_id": "dc449df8-7def-4172-8d74-58356111b074",
       "migrations_dir": "migrations"
     }
-  ],
-  "access": {
-    "dev": {
-      "aud": "tonificacion-consumos-local",
-      "identity": { "email": "local@example.test" }
-    }
-  }
+  ]
 }

@@ -68,6 +68,14 @@
             margin-bottom: 30px;
             position: relative;
         }
+        .locked .container { display: none; }
+        body:not(.locked) .share-gate { display: none; }
+        .share-gate { width: min(100%, 420px); margin: auto; padding: 28px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; }
+        .share-gate h1 { text-align: left; margin-bottom: 8px; }
+        .share-gate p { color: var(--muted); line-height: 1.45; }
+        .share-gate label { display: block; margin: 24px 0 12px; font-weight: 700; }
+        .share-gate input { margin-top: 8px; width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-color); }
+        .share-error { min-height: 1.4em; color: var(--danger-color) !important; font-size: 0.9rem; }
 
         input, select, textarea, button { font-family: inherit; }
         h1 { letter-spacing: 0; font-weight: 800; font-size: 1.5rem; margin: 8px 0 24px; text-align: center; }
@@ -262,7 +270,20 @@
         .print-header td:first-child { font-weight: bold; width: 35%; }
     </style>
 </head>
-<body>
+<body class="locked">
+
+    <section class="share-gate" id="shareGate" aria-labelledby="shareTitle">
+        <div class="home-kicker">UNDORA</div>
+        <h1 id="shareTitle">Acceso privado</h1>
+        <p>Abre el enlace de invitación. Si ya tienes el código, introdúcelo aquí.</p>
+        <form id="shareForm">
+            <label for="shareLink">Enlace o código
+                <input id="shareLink" type="password" autocomplete="off" required>
+            </label>
+            <button class="btn btn-primary" type="submit">Entrar</button>
+        </form>
+        <p class="share-error" id="shareError" role="alert"></p>
+    </section>
 
     <div class="container">
         <!-- PANTALLA DE INICIO -->
@@ -547,7 +568,19 @@
         }
 
         // ---------- Inicio ----------
-        document.addEventListener('DOMContentLoaded', () => {
+        const SHARE_KEY_STORAGE = 'undora_share_key_v1';
+        let appStarted = false;
+
+        function privateFetch(url, options = {}) {
+            const headers = new Headers(options.headers || {});
+            headers.set('X-Undora-Key', localStorage.getItem(SHARE_KEY_STORAGE) || '');
+            return fetch(url, { ...options, headers });
+        }
+
+        function startApp() {
+            if (appStarted) return;
+            appStarted = true;
+            document.body.classList.remove('locked');
             updateHomeStatuses();
             $('installApp').addEventListener('click', async () => {
                 if (!installPrompt) return;
@@ -562,6 +595,42 @@
             // Guardar la cabecera del pedido al escribir (no se pierde si se cierra la app)
             ['orderNumber', 'technician', 'substrate', 'material', 'graphicName'].forEach(id =>
                 $(id).addEventListener('change', saveHeaderDraft));
+        }
+
+        async function unlockWithKey(raw) {
+            let key = raw.trim();
+            if (key.includes('#clave=')) {
+                try { key = new URLSearchParams(new URL(key).hash.slice(1)).get('clave') || ''; }
+                catch { key = ''; }
+            }
+            $('shareError').textContent = 'Comprobando enlace…';
+            try {
+                const response = await fetch('/api/access', { headers: { 'X-Undora-Key': key }, cache: 'no-store' });
+                if (!response.ok) throw new Error('Este enlace no es válido. Pide uno nuevo.');
+                localStorage.setItem(SHARE_KEY_STORAGE, key);
+                $('shareError').textContent = '';
+                startApp();
+            } catch (error) {
+                $('shareError').textContent = error instanceof TypeError ? 'No se pudo conectar. Revisa Internet.' : error.message;
+            }
+        }
+
+        function acceptLink() {
+            const fromLink = new URLSearchParams(location.hash.slice(1)).get('clave');
+            if (!fromLink) return false;
+            history.replaceState(null, '', location.pathname + location.search);
+            unlockWithKey(fromLink);
+            return true;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            $('shareForm').addEventListener('submit', event => {
+                event.preventDefault();
+                unlockWithKey($('shareLink').value);
+            });
+            window.addEventListener('hashchange', acceptLink);
+            const saved = localStorage.getItem(SHARE_KEY_STORAGE);
+            if (!acceptLink() && saved) unlockWithKey(saved);
         });
 
         window.addEventListener('beforeunload', e => {
@@ -1103,14 +1172,14 @@
             const payload = buildBackup();
             payload.exportedAt = localStorage.getItem(LOCAL_TS_KEY) || new Date().toISOString();
             try {
-                const check = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+                const check = await privateFetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
                 if (!check.ok) throw new Error('No se pudo abrir la nube');
                 const server = await check.json();
                 if (server.syncProtocol !== 3) throw new Error('Actualiza la aplicación');
                 setBadge('☁️ Enviando cambios…');
-                const sent = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const sent = await privateFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!sent.ok) throw new Error('La nube rechazó la subida');
-                const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+                const res = await privateFetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
                 if (!res.ok) throw new Error('Sin respuesta de la nube');
                 const remote = await res.json();
                 const remoteRows = new Map(Object.values(remote.decorators || {}).flatMap(d => (d.history || []).map(x => [x.id, x])));
@@ -1139,7 +1208,7 @@
         async function pullFromCloud(manual) {
             const url = syncUrl();
             try {
-                const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+                const res = await privateFetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
                 if (!res.ok) throw new Error('No se pudo abrir la nube');
                 const data = await res.json();
                 if (data.syncProtocol !== 3) {

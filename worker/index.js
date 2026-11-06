@@ -1,8 +1,6 @@
 import { mergeBackups } from './merge.js';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const MAX_PAYLOAD_BYTES = 1_800_000;
-const keySets = new Map();
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
@@ -19,21 +17,13 @@ async function readState(db) {
   return db.prepare('SELECT revision, payload FROM sync_state WHERE id = 1').first();
 }
 
-async function hasAccess(request, env, ctx) {
-  if (ctx.access) return true;
-  const token = request.headers.get('cf-access-jwt-assertion');
-  if (!token || !env.TEAM_DOMAIN || !env.POLICY_AUD) return false;
-  try {
-    let keys = keySets.get(env.TEAM_DOMAIN);
-    if (!keys) {
-      keys = createRemoteJWKSet(new URL(`${env.TEAM_DOMAIN}/cdn-cgi/access/certs`));
-      keySets.set(env.TEAM_DOMAIN, keys);
-    }
-    await jwtVerify(token, keys, { issuer: env.TEAM_DOMAIN, audience: env.POLICY_AUD });
-    return true;
-  } catch {
-    return false;
-  }
+function hasShareKey(request, env) {
+  const expected = env.SHARE_KEY;
+  const supplied = request.headers.get('x-undora-key');
+  if (!expected || !supplied || supplied.length !== expected.length) return false;
+  let difference = 0;
+  for (let i = 0; i < expected.length; i++) difference |= supplied.charCodeAt(i) ^ expected.charCodeAt(i);
+  return difference === 0;
 }
 
 async function saveBackup(db, incoming) {
@@ -56,9 +46,11 @@ async function saveBackup(db, incoming) {
 }
 
 export default {
-  async fetch(request, env, ctx) {
-    if (!await hasAccess(request, env, ctx)) return json({ error: 'Acceso privado no autorizado' }, 403);
+  async fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if (!path.startsWith('/api/')) return env.ASSETS.fetch(request);
+    if (!hasShareKey(request, env)) return json({ error: 'Enlace privado no autorizado' }, 403);
+    if (path === '/api/access') return request.method === 'GET' ? json({ ok: true }) : json({ error: 'Método no permitido' }, 405);
     if (path === '/api/sync') return json({ error: 'Actualiza la aplicación' }, 410);
     if (path === '/api/sync/v3') {
       if (request.method === 'GET') {
@@ -77,7 +69,6 @@ export default {
       }
       return json({ error: 'Método no permitido' }, 405);
     }
-    if (path.startsWith('/api/')) return json({ error: 'Ruta no encontrada' }, 404);
-    return env.ASSETS.fetch(request);
+    return json({ error: 'Ruta no encontrada' }, 404);
   }
 };
