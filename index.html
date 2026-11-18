@@ -125,6 +125,12 @@
         .form-group { margin-bottom: 18px; }
         .form-row { display: flex; gap: 12px; }
         .form-row .form-group { flex: 1; min-width: 0; }
+        .shift-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .shift-btn { padding: 12px 8px; border: 2px solid var(--border-color, #d6d3d1); border-radius: 10px; background: #fff; font: inherit; font-weight: 700; cursor: pointer; text-align: center; line-height: 1.25; }
+        .shift-btn small { display: block; font-weight: 500; color: var(--muted); margin-top: 2px; }
+        .shift-btn.active { border-color: var(--primary-color); background: var(--soft-bg); }
+        .now-btn { margin-top: 6px; width: 100%; padding: 8px; border: 1px dashed var(--border-color, #d6d3d1); border-radius: 8px; background: transparent; font: inherit; font-size: 0.85rem; cursor: pointer; }
+        .now-btn:hover { border-color: var(--primary-color); }
 
         label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
 
@@ -422,14 +428,21 @@
                     <input type="date" id="dateField">
                 </div>
 
+                <label>Turno</label>
+                <div class="shift-picker">
+                    <button type="button" class="shift-btn" data-from="06:00" data-to="14:00" onclick="setShift(this)">☀️ Mañana<small>06:00 – 14:00</small></button>
+                    <button type="button" class="shift-btn" data-from="14:00" data-to="22:00" onclick="setShift(this)">🌇 Tarde<small>14:00 – 22:00</small></button>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="timeFrom">Hora Desde</label>
+                        <label for="timeFrom">Empieza</label>
                         <input type="time" id="timeFrom">
+                        <button type="button" class="now-btn" onclick="setNow('timeFrom')">⏱ Ahora</button>
                     </div>
                     <div class="form-group">
-                        <label for="timeTo">Hora Hasta</label>
+                        <label for="timeTo">Termina</label>
                         <input type="time" id="timeTo">
+                        <button type="button" class="now-btn" onclick="setNow('timeTo')">⏱ Ahora</button>
                     </div>
                 </div>
                 <div class="hours-preview" id="hoursPreview"></div>
@@ -603,7 +616,7 @@
             });
             $('statusField').addEventListener('change', checkKerajetAlert);
             initSync();
-            ['timeFrom', 'timeTo'].forEach(id => $(id).addEventListener('input', () => { updateHoursPreview(); checkKerajetAlert(); }));
+            ['timeFrom', 'timeTo'].forEach(id => $(id).addEventListener('input', () => { highlightShift(); updateHoursPreview(); checkKerajetAlert(); }));
             // Guardar la cabecera del pedido al escribir (no se pierde si se cierra la app)
             ['orderNumber', 'technician', 'substrate', 'material', 'graphicName'].forEach(id =>
                 $(id).addEventListener('change', saveHeaderDraft));
@@ -688,8 +701,10 @@
 
         function resetSessionFields() {
             $('dateField').value = todayLocal();
-            $('timeFrom').value = '14:00';
-            $('timeTo').value = '22:00';
+            const morning = new Date().getHours() >= 6 && new Date().getHours() < 14;
+            $('timeFrom').value = morning ? '06:00' : '14:00';
+            $('timeTo').value = morning ? '14:00' : '22:00';
+            highlightShift();
             $('statusField').value = 'Pendiente';
             counts = { ok: 0, nok: 0 };
             $('countOk').value = 0;
@@ -742,6 +757,23 @@
             let to = hTo * 60 + mTo;
             if (to < from) to += 24 * 60; // turno que pasa de medianoche
             return (to - from) / 60;
+        }
+
+        function highlightShift() {
+            document.querySelectorAll('.shift-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.from === $('timeFrom').value && b.dataset.to === $('timeTo').value));
+        }
+
+        function setShift(btn) {
+            $('timeFrom').value = btn.dataset.from;
+            $('timeTo').value = btn.dataset.to;
+            highlightShift(); updateHoursPreview(); checkKerajetAlert();
+        }
+
+        function setNow(id) {
+            const d = new Date();
+            $(id).value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+            highlightShift(); updateHoursPreview(); checkKerajetAlert();
         }
 
         function updateHoursPreview() {
@@ -831,6 +863,7 @@
             $('dateField').value = x.date;
             $('timeFrom').value = x.timeFrom;
             $('timeTo').value = x.timeTo;
+            highlightShift();
             $('statusField').value = x.status;
             setCount('ok', x.ok);
             setCount('nok', x.nok);
