@@ -273,6 +273,37 @@
             .history-table th, .history-table td { border-color: #94a3b8; }
         }
         #fullReport { display: none; }
+        #planningView { display: none; }
+        .planning-btn { width: 100%; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-radius: 8px; border: 0; background: var(--primary-color); color: #fff; font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; text-align: left; }
+        .planning-btn small { display: block; font-weight: 400; opacity: 0.8; font-size: 0.82rem; margin-top: 2px; }
+        .pl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 12px; flex-wrap: wrap; }
+        .pl-week { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+        .pl-week button { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); font: inherit; font-size: 1.2rem; cursor: pointer; }
+        .pl-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
+        .pl-meta select, .pl-meta input { padding: 6px 8px; font-size: 0.85rem; width: auto; }
+        .pl-scroll { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
+        .pl-table { border-collapse: collapse; font-size: 0.8rem; min-width: 760px; width: 100%; }
+        .pl-table th, .pl-table td { border: 1px solid var(--border-color); padding: 0; text-align: center; }
+        .pl-table th { background: var(--soft-bg); padding: 6px 4px; font-size: 0.75rem; }
+        .pl-table th.today { background: #fde68a; }
+        .pl-table td input { width: 100%; border: 0; border-radius: 0; padding: 7px 4px; font: inherit; background: transparent; text-align: center; min-width: 0; }
+        .pl-table td.pl-deco input { text-align: left; min-width: 320px; }
+        body.planning-open .container { max-width: 1240px; }
+        .pl-table td.pl-sap input { min-width: 90px; }
+        .pl-table td.filled { background: #57534e; }
+        .pl-table td.filled input { color: #fff; font-weight: 700; }
+        .pl-reton { border: 0; background: transparent; font: inherit; font-weight: 700; padding: 7px 6px; cursor: pointer; width: 100%; }
+        .pl-reton.si { background: #d6d3d1; }
+        .pl-del { border: 0; background: transparent; cursor: pointer; padding: 6px; font-size: 0.9rem; }
+        .pl-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .pl-totals td { font-weight: 700; padding: 6px 4px; background: var(--soft-bg); }
+        @media print {
+            body.print-planning #homeView, body.print-planning #decoratorView { display: none !important; }
+            body.print-planning #planningView { display: block !important; }
+            body.print-planning .pl-scroll { overflow: visible; border: 0; }
+            .pl-table td.filled { background: #9ca3af !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .pl-table td.filled input { color: #000; }
+        }
         @media print {
             body.print-full #homeView, body.print-full #decoratorView > *:not(#fullReport) { display: none !important; }
             body.print-full #fullReport { display: block; }
@@ -315,6 +346,11 @@
                 <div class="home-kicker">Registro de producción</div>
                 <h1>Tonificación Consumos</h1>
             </header>
+
+            <button type="button" class="planning-btn" onclick="openPlanning()">
+                <span>📅 Planning semanal<small id="planningSummary">Faena programada de la semana</small></span>
+                <span aria-hidden="true">›</span>
+            </button>
 
             <div class="home-cards">
                 <button type="button" class="card-selector" onclick="selectDecorator('Decorador 1')">
@@ -527,6 +563,29 @@
                 <div id="archiveContainer"></div>
             </div>
         </div>
+
+        <div id="planningView">
+            <button type="button" class="nav-back no-print" onclick="closePlanning()">← Volver</button>
+            <h1 style="margin-bottom:4px">Planning semanal</h1>
+            <div class="pl-toolbar">
+                <div class="pl-week">
+                    <button type="button" class="no-print" onclick="movePlanningWeek(-1)" aria-label="Semana anterior">‹</button>
+                    <span id="plWeekLabel"></span>
+                    <button type="button" class="no-print" onclick="movePlanningWeek(1)" aria-label="Semana siguiente">›</button>
+                </div>
+                <button type="button" class="btn btn-secondary btn-small no-print" onclick="planningToday()">Hoy</button>
+            </div>
+            <div class="pl-meta">
+                <label>Turno <select id="plShift" onchange="setPlanningWeekField('shift', this.value)"><option value="">—</option><option>Mañana</option><option>Tarde</option></select></label>
+                <label>F. actualización <input type="date" id="plUpdated" onchange="setPlanningWeekField('updated', this.value)"></label>
+                <label class="no-print"><input type="checkbox" id="plOnlyWeek" onchange="renderPlanning()"> Solo filas con faena esta semana</label>
+            </div>
+            <div class="pl-scroll"><table class="pl-table" id="plTable"></table></div>
+            <div class="pl-actions no-print">
+                <button type="button" class="btn btn-primary btn-small" onclick="addPlanningRow()">＋ Añadir fila</button>
+                <button type="button" class="btn btn-secondary btn-small" onclick="printPlanning()">🖨 Imprimir / PDF</button>
+            </div>
+        </div>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -551,6 +610,125 @@
             installPrompt = null;
             $('installApp').hidden = true;
         });
+
+
+        // ---------- Planning semanal ----------
+        const PLANNING_KEY = 'planning';
+        const PLANNING_SEED = {"updatedAt": "2026-11-18T07:00:00.000Z", "weeks": {"2026-W47": {"shift": "Tarde", "updated": "2026-11-12"}}, "rows": [{"id": "seed-1", "reton": false, "sap": "100380178", "deco": "UNDR. CAMPASP. GR. APOMAZ. EM 1200X2700", "qty": {"2026-11-13": 250}}, {"id": "seed-2", "reton": false, "sap": "100383786", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700", "qty": {"2026-11-13": 90}}, {"id": "seed-3", "reton": false, "sap": "100384156", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700 M", "qty": {"2026-11-13": 16}}, {"id": "seed-4", "reton": true, "sap": "100387360", "deco": "UNDR. AVORIO ROCA EM 1200X2700 M", "qty": {"2026-11-13": 12}}, {"id": "seed-5", "reton": false, "sap": "100384007", "deco": "UNDR. CAPRI BLANCO ARENISCA EM 1200X2700", "qty": {"2026-11-16": 300}}, {"id": "seed-6", "reton": false, "sap": "100384059", "deco": "UNDR. CAPRI BLA ARENISCA EM 1200X2700 M", "qty": {"2026-11-16": 12}}, {"id": "seed-7", "reton": false, "sap": "100382615", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700", "qty": {"2026-11-17": 300}}, {"id": "seed-8", "reton": false, "sap": "100383113", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700 M", "qty": {"2026-11-17": 10}}, {"id": "seed-9", "reton": false, "sap": "100382628", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700", "qty": {"2026-11-18": 300}}, {"id": "seed-10", "reton": false, "sap": "100384153", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700 M", "qty": {"2026-11-18": 10}}, {"id": "seed-11", "reton": false, "sap": "100380186", "deco": "UNDR. TRAV ALABAS ANTICATO EM 1200X2700", "qty": {"2026-11-19": 300}}, {"id": "seed-12", "reton": false, "sap": "100384155", "deco": "UNDR. TRAV ALABAS ANTICA EM 1200X2700 M", "qty": {"2026-11-19": 10}}, {"id": "seed-13", "reton": false, "sap": "100383773", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700", "qty": {}}, {"id": "seed-14", "reton": false, "sap": "100384046", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700 M", "qty": {}}, {"id": "seed-15", "reton": false, "sap": "100384056", "deco": "UNDR. TUNDRA GREY LINEAL EM 1197X2700 M", "qty": {}}]};
+        let planningMonday = null;
+
+        function readPlanning() {
+            try {
+                const p = JSON.parse(localStorage.getItem(PLANNING_KEY));
+                if (p && Array.isArray(p.rows)) return { weeks: {}, ...p };
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(PLANNING_SEED));
+        }
+        function writePlanning(p) {
+            p.updatedAt = new Date().toISOString();
+            localStorage.setItem(PLANNING_KEY, JSON.stringify(p));
+            updatePlanningSummary();
+        }
+        const isoDate = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        function mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+        function isoWeek(d) {
+            const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+            const y = t.getUTCFullYear();
+            return { year: y, week: Math.ceil(((t - Date.UTC(y, 0, 1)) / 86400000 + 1) / 7) };
+        }
+        const weekKey = d => { const w = isoWeek(d); return `${w.year}-W${String(w.week).padStart(2, '0')}`; };
+        function weekDays() { return Array.from({ length: 6 }, (_, i) => { const d = new Date(planningMonday); d.setDate(d.getDate() + i); return d; }); }
+
+        function openPlanning() {
+            if (!planningMonday) planningMonday = mondayOf(new Date());
+            $('homeView').style.display = 'none';
+            $('planningView').style.display = 'block';
+            document.body.classList.add('planning-open');
+            renderPlanning();
+            window.scrollTo(0, 0);
+        }
+        function closePlanning() {
+            $('planningView').style.display = 'none';
+            document.body.classList.remove('planning-open');
+            $('homeView').style.display = 'block';
+            updatePlanningSummary();
+        }
+        function movePlanningWeek(n) { planningMonday.setDate(planningMonday.getDate() + 7 * n); renderPlanning(); }
+        function planningToday() { planningMonday = mondayOf(new Date()); renderPlanning(); }
+
+        function setPlanningWeekField(field, value) {
+            const p = readPlanning(), k = weekKey(planningMonday);
+            p.weeks[k] = { ...(p.weeks[k] || {}), [field]: value };
+            writePlanning(p);
+        }
+
+        function renderPlanning() {
+            const p = readPlanning(), days = weekDays(), keys = days.map(isoDate), today = todayLocal();
+            const w = isoWeek(planningMonday), wk = p.weeks[weekKey(planningMonday)] || {};
+            const fmt = d => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+            $('plWeekLabel').textContent = `Semana ${w.week} · ${fmt(days[0])} – ${fmt(days[5])}`;
+            $('plShift').value = wk.shift || '';
+            $('plUpdated').value = wk.updated || '';
+            const only = $('plOnlyWeek').checked;
+            const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const e = escapeHtml;
+            let html = `<thead><tr><th>Retonif.</th><th>SAP</th><th>Programación decoración</th>${days.map((d, i) =>
+                `<th class="${keys[i] === today ? 'today' : ''}">${dayNames[i]}<br>${formatDate(keys[i]).slice(0, 5)}</th>`).join('')}<th class="no-print"></th></tr></thead><tbody>`;
+            const totals = keys.map(() => 0);
+            p.rows.forEach((r, i) => {
+                const q = r.qty || {};
+                keys.forEach((k, j) => totals[j] += Number(q[k]) || 0);
+                if (only && !keys.some(k => Number(q[k]) > 0)) return;
+                html += `<tr>
+                    <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
+                    <td class="pl-sap"><input value="${e(r.sap || '')}" onchange="editPlanningRow(${i}, 'sap', this.value)" inputmode="numeric"></td>
+                    <td class="pl-deco"><input value="${e(r.deco || '')}" onchange="editPlanningRow(${i}, 'deco', this.value)"></td>
+                    ${keys.map(k => `<td class="${Number(q[k]) > 0 ? 'filled' : ''}"><input type="number" min="0" value="${q[k] ?? ''}" onchange="editPlanningQty(${i}, '${k}', this.value)" inputmode="numeric"></td>`).join('')}
+                    <td class="no-print"><button type="button" class="pl-del" title="Borrar fila" onclick="deletePlanningRow(${i})">🗑</button></td>
+                </tr>`;
+            });
+            html += `</tbody><tfoot><tr class="pl-totals"><td colspan="3" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}<td class="no-print"></td></tr></tfoot>`;
+            $('plTable').innerHTML = html;
+        }
+
+        function editPlanningRow(i, field, value) { const p = readPlanning(); p.rows[i][field] = value.trim(); writePlanning(p); }
+        function editPlanningQty(i, key, value) {
+            const p = readPlanning(), r = p.rows[i];
+            r.qty = r.qty || {};
+            const n = parseInt(value, 10);
+            if (n > 0) r.qty[key] = n; else delete r.qty[key];
+            writePlanning(p); renderPlanning();
+        }
+        function togglePlanningReton(i) { const p = readPlanning(); p.rows[i].reton = !p.rows[i].reton; writePlanning(p); renderPlanning(); }
+        function addPlanningRow() {
+            const p = readPlanning();
+            p.rows.push({ id: 'r' + Date.now().toString(36), reton: false, sap: '', deco: '', qty: {} });
+            writePlanning(p);
+            $('plOnlyWeek').checked = false;
+            renderPlanning();
+            const inputs = document.querySelectorAll('#plTable tbody tr:last-child .pl-sap input');
+            if (inputs[0]) inputs[0].focus();
+        }
+        function deletePlanningRow(i) {
+            const p = readPlanning(), r = p.rows[i];
+            if (!confirm(`¿Borrar la fila ${r.sap || ''} ${r.deco || ''}?`)) return;
+            p.rows.splice(i, 1); writePlanning(p); renderPlanning();
+        }
+        function printPlanning() {
+            const prev = document.title;
+            document.title = `Planning_semana_${isoWeek(planningMonday).week}`;
+            document.body.classList.add('print-planning');
+            window.print();
+            setTimeout(() => { document.body.classList.remove('print-planning'); document.title = prev; }, 1000);
+        }
+        function updatePlanningSummary() {
+            const el = $('planningSummary'); if (!el) return;
+            const p = readPlanning(), t = todayLocal();
+            const todayRows = p.rows.filter(r => Number((r.qty || {})[t]) > 0);
+            const total = todayRows.reduce((a, r) => a + Number(r.qty[t]), 0);
+            el.textContent = todayRows.length ? `Hoy: ${todayRows.length} decoraciones · ${total} planchas` : 'Hoy no hay faena programada';
+        }
 
         // ---------- Utilidades ----------
         function $(id) { return document.getElementById(id); }
@@ -684,6 +862,7 @@
         });
 
         function updateHomeStatuses() {
+            updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
                 const el = $('statusDec' + (i + 1));
                 const data = readHistory(prefix);
@@ -1051,6 +1230,7 @@
             const data = { app: 'tonificacion-consumos', version: '2.7', exportedAt: new Date().toISOString(), decorators: {} };
             data.deletedRecords = JSON.parse(localStorage.getItem('deleted_records') || '{}');
             data.deletedArchives = JSON.parse(localStorage.getItem('deleted_archives') || '{}');
+            if (localStorage.getItem(PLANNING_KEY)) data.planning = readPlanning();
             Object.entries(DECORATORS).forEach(([dec, p]) => {
                 data.decorators[dec] = {
                     order: localStorage.getItem(p + 'order') || '',
@@ -1243,7 +1423,7 @@
             // Cualquier cambio en los datos marca la hora y programa una subida
             const origSet = Storage.prototype.setItem, origRemove = Storage.prototype.removeItem;
             const touch = key => {
-                if (applyingRemote || !/^dec\d_/.test(key)) return;
+                if (applyingRemote || !(/^dec\d_/.test(key) || key === PLANNING_KEY)) return;
                 origSet.call(localStorage, LOCAL_TS_KEY, new Date().toISOString());
                 schedulePush();
             };
@@ -1385,6 +1565,12 @@
                 });
                 localStorage.setItem('deleted_records', JSON.stringify(deleted));
                 localStorage.setItem('deleted_archives', JSON.stringify(deletedArchives));
+                const localPlan = JSON.parse(localStorage.getItem(PLANNING_KEY) || 'null');
+                if (remote.planning && Array.isArray(remote.planning.rows) && (remote.planning.updatedAt || '') > (localPlan?.updatedAt || '')) {
+                    localStorage.setItem(PLANNING_KEY, JSON.stringify(remote.planning));
+                    if ($('planningView').style.display === 'block') renderPlanning();
+                    updatePlanningSummary();
+                }
             } finally { applyingRemote = false; }
         }
 

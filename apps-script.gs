@@ -69,6 +69,8 @@ function mergeBackups_(current, incoming) {
         all.findIndex(other => other.closedAt === item.closedAt && other.order === item.order) === index)
     };
   });
+  const plans = [current.planning, incoming.planning].filter(x => x && Array.isArray(x.rows));
+  if (plans.length) merged.planning = plans.reduce((a, b) => ((b.updatedAt || '') > (a.updatedAt || '') ? b : a));
   return merged;
 }
 

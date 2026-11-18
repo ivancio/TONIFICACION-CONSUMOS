@@ -127,3 +127,15 @@ test('Old sync route asks the browser to update without changing data', async ()
   const response = await worker.fetch(new Request('https://example.test/api/sync', { headers: { 'x-undora-key': KEY } }), { DB: database(), SHARE_KEY: KEY });
   assert.equal(response.status, 410);
 });
+
+import { mergeBackups as mergePlanning } from './worker/merge.js';
+import assertPlan from 'node:assert/strict';
+import testPlan from 'node:test';
+testPlan('planning keeps the newest version', () => {
+  const base = { decorators: {} };
+  const a = { ...base, planning: { updatedAt: '2026-11-18T08:00:00Z', rows: [{ id: 'a' }] } };
+  const b = { ...base, planning: { updatedAt: '2026-11-18T09:00:00Z', rows: [{ id: 'b' }] } };
+  assertPlan.equal(mergePlanning(a, b).planning.rows[0].id, 'b');
+  assertPlan.equal(mergePlanning(b, a).planning.rows[0].id, 'b');
+  assertPlan.equal(mergePlanning(base, a).planning.rows[0].id, 'a');
+});
