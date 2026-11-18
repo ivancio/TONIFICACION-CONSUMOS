@@ -466,7 +466,7 @@
                 </div>
                 <div class="form-group">
                     <label for="graphicName">Nombre de Gráfica</label>
-                    <input type="text" id="graphicName" placeholder="Nombre de la gráfica...">
+                    <input type="text" id="graphicName" list="codesName" placeholder="Escribe para buscar en el listado Undora...">
                 </div>
 
                 <div id="editBanner" class="edit-banner">
@@ -588,6 +588,8 @@
         </div>
     </div>
 
+    <datalist id="codesSap"></datalist>
+    <datalist id="codesName"></datalist>
     <div id="toast" class="toast"></div>
 
     <script>
@@ -611,6 +613,32 @@
             $('installApp').hidden = true;
         });
 
+
+        // ---------- Listado de códigos Undora (SAP → texto breve de material) ----------
+        const UNDORA_CODES = [["100375419", "UNDR. CAMPASPERO GR. ALVEO EM 1200X2700"], ["100380178", "UNDR. CAMPASP. GR. APOMAZ. EM 1200X2700"], ["100384004", "UNDR. CAMPA GREIGE ARENISCA EM 1200X2700"], ["100380179", "UNDR. CAMPASP. GR. APOMAZ. EM 1200X2700"], ["100380184", "UNDR. CAMPASP. GR. ARENADO EM 1200X2700"], ["100380200", "UNDR. CAMPASPERO GR. BAMBOO EM 1200X2700"], ["100383123", "UNDR. CAMP GRE ARENISCA EM 1200X2700 M"], ["100383124", "UNDR. CAMP GRE APOMAZADO EM 1200X2700 M"], ["100383125", "UNDR. CAMP GRE LINEAL EM 1200X2700 M"], ["100383128", "UNDR. CAMP GRE BAMBOO EM 1200X2700 M"], ["100383129", "UNDR. CAMP GRE ALVEO EM 1200X2700 M"], ["100380224", "UNDR. BOTTICINO FIO. APOMAZ EM 1200X2700"], ["100382640", "UNDR. BOTTI. FIO. ARENADO EM 1200X2700"], ["100382641", "UNDR. BOTTI. FIO. LINEAL EM 1200X2700"], ["100382643", "UNDR. BOTTI. FIO. BAMBOO EM 1200X2700"], ["100382644", "UNDR. BOTTICINO FIO. ALVEO EM 1200X2700"], ["100384061", "UNDR. BOTTI. FIO. BAMBOO EM 1200X2700 M"], ["100384062", "UNDR. BOTT FIORITO ALVEO EM 1200X2700 M"], ["100384081", "UNDR. BOTT FIO ARENISCA EM 1200X2700 M"], ["100384082", "UNDR. BOTT FIO APOMAZADO EM 1200X2700 M"], ["100384005", "UNDR. BOTT FIORITO ARENISCA EM 1200X2700"], ["100384083", "UNDR. BOTTI. FIO. LINEAL EM 1200X2700 M"], ["100380242", "UNDR. CAPRI BLANCO APOMAZ. EM 1200X2700"], ["100380254", "UNDR. CAPRI BLANCO LINEAL EM 1200X2700"], ["100380255", "UNDR. CAPRI BLANCO BAMBOO EM 1200X2700"], ["100384007", "UNDR. CAPRI BLANCO ARENISCA EM 1200X2700"], ["100380256", "UNDR. CAPRI BLANCO ALVEO EM 1200X2700"], ["100384085", "UNDR. CAPRI BLAN APOMAZ EM 1200X2700 M"], ["100384086", "UNDR. CAPRI BLAN LINEAL EM 1200X2700 M"], ["100384087", "UNDR. CAPRI BLAN  BAMBOO EM 1200X2700 M"], ["100384088", "UNDR. CAPRI BLANCO ALVEO EM 1200X2700 M"], ["100384059", "UNDR. CAPRI BLA ARENISCA EM 1200X2700 M"], ["100382661", "UNDR. CAPRI BLANCO ARENADO EM 1200X2700"], ["100382623", "UNDR. TRAV NAVONA LINEAL EM 1200X2700"], ["100382624", "UNDR. TRAV NAVONA ALVEO EM 1200X2700"], ["100380257", "UNDR. TRAV NAVONA ANTI EM 1200X2700"], ["100383773", "UNDR. TRAV NAVONA BAMBOO EM 1200X2700"], ["100383099", "UNDR. TRAV NAVONA LINEAL EM 1200X2700 M"], ["100383110", "UNDR. TRAV NAVONA ALVEO EM 1200X2700 M"], ["100383111", "UNDR. TRAV NAVONA ANTI EM 1200X2700 M"], ["100384046", "UNDR. TRAV NAVONA BAMBOO EM 1200X2700 M"], ["100380186", "UNDR. TRAV ALABAS ANTICATO EM 1200X2700"], ["100382628", "UNDR. TRAV ALABAS LINEAL EM 1200X2700"], ["100382629", "UNDR. TRAV ALABAS ALVEO EM 1200X2700"], ["100383786", "UNDR. TRAV ALABAS BAMBOO EM 1200X2700"], ["100384153", "UNDR. TRAV ALABAS LINEAL EM 1200X2700 M"], ["100384154", "UNDR. TRAV ALABAS ALVEO EM 1200X2700 M"], ["100384155", "UNDR. TRAV ALABAS ANTICA EM 1200X2700 M"], ["100384156", "UNDR. TRAV ALABAS BAMBOO EM 1200X2700 M"], ["100380188", "UNDR. TRAV ALBINO ANTI EM 1200X2700"], ["100383776", "UNDR. TRAV ALBINO BAMBOO EM 1200X2700"], ["100382613", "UNDR. TRAV ALBINO LINEAL EM 1200X2700"], ["100382614", "UNDR. TRAV ALBINO ALVEO EM 1200X2700"], ["100384049", "UNDR. TRAV ALBINO BAMBOO EM 1200X2700 M"], ["100383138", "UNDR. TRAV ALBINO LINEAL EM 1200X2700 M"], ["100383139", "UNDR. TRAV ALBINO ALVEO EM 1200X2700 M"], ["100383140", "UNDR. TRAV ALBINO ANTI EM 1200X2700 M"], ["100380187", "UNDR. TRAV CR BEI ANTI EM 1200X2700"], ["100382625", "UNDR. TRAV CR BEI LINEAL EM 1200X2700"], ["100382626", "UNDR. TRAV CR BEI ALVEO EM 1200X2700"], ["100383775", "UNDR. TRAV CR BEI BAMBOO EM 1200X2700"], ["100383068", "UNDR. TRAV CR BEI LINEAL EM 1200X2700 M"], ["100383069", "UNDR. TRAV CR BEI ALVEO EM 1200X2700 M"], ["100384048", "UNDR. TRAV CR BEI BAMBOO EM 1200X2700 M"], ["100383120", "UNDR. TRAV CR BEI ANTI EM 1200X2700 M"], ["100382621", "UNDR. TRAV ARGEN ANTI EM 1200X2700"], ["100382620", "UNDR. TRAV ARGEN ALVEO EM 1200X2700"], ["100382609", "UNDR. TRAV ARGEN LINEAL EM 1200X2700"], ["100383774", "UNDR. TRAV ARGEN BAMBOO EM 1200X2700"], ["100384047", "UNDR. TRAV ARGEN BAMBOO EM 1200X2700 M"], ["100382997", "UNDR. TRAV ARGEN LINEAL EM 1200X2700 M"], ["100382998", "UNDR. TRAV ARGEN ALVEO EM 1200X2700 M"], ["100382999", "UNDR. TRAV ARGEN ANTI EM 1200X2700 M"], ["100382615", "UNDR. TRAV ROSSO LINEAL EM 1200X2700"], ["100382616", "UNDR. TRAV ROSSO ALVEO EM 1200X2700"], ["100380189", "UNDR. TRAV ROSSO ANTI EM 1200X2700"], ["100383785", "UNDR. TRAV ROSSO BAMBOO EM 1200X2700"], ["100384080", "UNDR. TRAV ROSSO BAMBOO EM 1200X2700 M"], ["100383113", "UNDR. TRAV ROSSO LINEAL EM 1200X2700 M"], ["100383114", "UNDR. TRAV ROSSO ALVEO EM 1200X2700 M"], ["100383115", "UNDR. TRAV ROSSO ANTI EM 1200X2700 M"], ["100380225", "UNDR. TUNDRA GREY APOMAZ. EM 1200X2700"], ["100380239", "UNDR. TUNDRA GREY BAMBOO EM 1200X2700"], ["100384006", "UNDR. TUNDRA GREY ARENISCA EM 1200X2700"], ["100382660", "UNDR. TUNDRA GREY ALVEO EM 1200X2700"], ["100382645", "UNDR. TUNDRA GREY ARENADO EM 1200X2700"], ["100382646", "UNDR. TUNDRA GREY LINEAL EM 1200X2700"], ["100384064", "UNDR. TUNDRA GREY APOMAZ EM 1200X2700 M"], ["100384056", "UNDR. TUNDRA GREY LINEAL EM 1200X2700 M"], ["100384057", "UNDR. TUNDRA GREY BAMBOO EM 1200X2700 M"], ["100384058", "UNDR. TUNDRA GREY ALVEO EM 1200X2700 M"], ["100384063", "UNDR. TUNDRA GREY ARENIS EM 1200X2700 M"], ["100380267", "UNDR. BRERA GRIS ARENADO EM 1200X2700"], ["100380268", "UNDR. BRERA GRIS APOMAZ. EM 1200X2700"], ["100380269", "UNDR. BRERA GRIS LINEAL EM 1200X2700"], ["100380270", "UNDR. BRERA GRIS ALVEO EM 1200X2700"], ["100382659", "UNDR. BRERA GRIS BAMBOO EM 1200X2700"], ["100383979", "UNDR. BRERA GRIS ARENISCA EM 1200X2700"], ["100384157", "UNDR. BRERA GRIS ARENIS EM 1200X2700 M"], ["100384158", "UNDR. BRERA GRIS APOMAZ. EM 1200X2700 M"], ["100384159", "UNDR. BRERA GRIS LINEAL EM 1200X2700 M"], ["100384160", "UNDR. BRERA GRIS BAMBOO EM 1200X2700 M"], ["100384161", "UNDR. BRERA GRIS ALVEO EM 1200X2700 M"], ["100382648", "UNDR. THASSOS NERO ARENADO EM 1200X2700"], ["100382649", "UNDR. THAS. NERO APOMAZADO EM 1200X2700"], ["100382668", "UNDR. THASSOS NERO ALVEO EM 1200X2700"], ["100382670", "UNDR. THASSOS NERO LINEAL EM 1200X2700"], ["100382671", "UNDR. THASSOS NERO BAMBOO EM 1200X2700"], ["100384020", "UNDR. THASSOS NERO ARENISCA EM 1200X2700"], ["100384099", "UNDR. THASS NERO LINEAL EM 1200X2700 M"], ["100384110", "UNDR. THASS NERO BAMBOO EM 1200X2700 M"], ["100384111", "UNDR. THASSOS NERO ALVEO EM 1200X2700 M"], ["100384097", "UNDR. THASS NERO ARENISA EM 1200X2700 M"], ["100384098", "UNDR. THASS NERO APOMAZ EM 1200X2700 M"], ["100384564", "UNDR. NIWA CRE ARENISCA EM 1200X2700 M"], ["100384565", "UNDR. NIWA CRE LINEAL EM 1200X2700 M"], ["100384566", "UNDR. NIWA CRE ALVEO EM 1200X2700 M"], ["100384567", "UNDR. NIWA CRE BAMBOO EM 1200X2700 M"], ["100384611", "UNDR. NIWA CRE ARENISCA EM 1200X2700"], ["100384612", "UNDR. NIWA CRE LINEAL EM 1200X2700"], ["100384613", "UNDR. NIWA CRE ALVEO EM 1200X2700"], ["100384614", "UNDR. NIWA CRE BAMBOO EM 1200X2700"], ["100380271", "UNDR. MURO BETON GREY EM 1200X2700"], ["100380272", "UNDR. MURO BETON BONE EM 1200X2700"], ["100383916", "UNDR. MURO BETON BONE EM 1200X2700 M"], ["100383917", "UNDR. MURO BETON GREY EM 1200X2700 M"], ["100382663", "UNDR. NEGRO MURO EM 1200X2700"], ["100384100", "UNDR. NEGRO MURO EM 1200X2700 M"], ["100383918", "UNDR. BLANCO MURO EM 1200X2700 M"], ["100382662", "UNDR. BLANCO MURO EM 1200X2700"], ["100382653", "UNDR. TRAV MARRON LINEAL EM 1200X2700"], ["100382654", "UNDR. TRAV MARRON ALVEO EM 1200X2700"], ["100382655", "UNDR. TRAV MARRON OLIVILLO EM 1200X2700"], ["100382656", "UNDR. TRAV BLANCO LINEAL EM 1200X2700"], ["100382657", "UNDR. TRAV BLANCO ALVEO EM 1200X2700"], ["100382658", "UNDR. TRAV BLANCO OLIVILLO EM 1200X2700"]];
+        const CODE_BY_SAP = new Map(UNDORA_CODES);
+        const CODE_BY_NAME = new Map();
+        UNDORA_CODES.forEach(([c, n]) => { if (!CODE_BY_NAME.has(n.toUpperCase())) CODE_BY_NAME.set(n.toUpperCase(), c); });
+        const SUBSTRATE_HINTS = [['ALVEO', 'alveo'], ['ANTI', 'anticato'], ['APOMAZ', 'apomazado'], ['ARENIS', 'arenisca'], ['BAMBOO', 'bamboo'],
+            ['LINEAL', 'lineal'], ['MURO', 'muro'], ['PAUSA', 'pausa'], ['PIANO', 'piano'], ['PRISMA', 'prisma'], ['ROCA', 'roca'], ['RUST', 'rústico']];
+        function substrateFromName(name) {
+            const words = ' ' + String(name || '').toUpperCase() + ' ';
+            const hit = SUBSTRATE_HINTS.find(([w]) => words.includes(' ' + w));
+            return hit ? hit[1] : '';
+        }
+        function fillCodeLists() {
+            const e = escapeHtml;
+            $('codesSap').innerHTML = UNDORA_CODES.map(([c, n]) => `<option value="${c}">${e(n)}</option>`).join('');
+            $('codesName').innerHTML = [...new Set(UNDORA_CODES.map(([, n]) => n))].map(n => `<option value="${e(n)}"></option>`).join('');
+            $('graphicName').addEventListener('change', () => {
+                const sub = substrateFromName($('graphicName').value);
+                if (sub && [...$('substrate').options].some(o => o.value === sub) && $('substrate').value !== sub) {
+                    $('substrate').value = sub;
+                    $('substrate').dispatchEvent(new Event('change'));
+                    toast('Sustrato puesto automáticamente: ' + $('substrate').selectedOptions[0].textContent);
+                }
+            });
+        }
 
         // ---------- Planning semanal ----------
         const PLANNING_KEY = 'planning';
@@ -682,8 +710,8 @@
                 if (only && !keys.some(k => Number(q[k]) > 0)) return;
                 html += `<tr>
                     <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
-                    <td class="pl-sap"><input value="${e(r.sap || '')}" onchange="editPlanningRow(${i}, 'sap', this.value)" inputmode="numeric"></td>
-                    <td class="pl-deco"><input value="${e(r.deco || '')}" onchange="editPlanningRow(${i}, 'deco', this.value)"></td>
+                    <td class="pl-sap"><input value="${e(r.sap || '')}" list="codesSap" onchange="editPlanningRow(${i}, 'sap', this.value)" inputmode="numeric"></td>
+                    <td class="pl-deco"><input value="${e(r.deco || '')}" list="codesName" onchange="editPlanningRow(${i}, 'deco', this.value)"></td>
                     ${keys.map(k => `<td class="${Number(q[k]) > 0 ? 'filled' : ''}"><input type="number" min="0" value="${q[k] ?? ''}" onchange="editPlanningQty(${i}, '${k}', this.value)" inputmode="numeric"></td>`).join('')}
                     <td class="no-print"><button type="button" class="pl-del" title="Borrar fila" onclick="deletePlanningRow(${i})">🗑</button></td>
                 </tr>`;
@@ -692,7 +720,14 @@
             $('plTable').innerHTML = html;
         }
 
-        function editPlanningRow(i, field, value) { const p = readPlanning(); p.rows[i][field] = value.trim(); writePlanning(p); }
+        function editPlanningRow(i, field, value) {
+            const p = readPlanning(), r = p.rows[i], v = value.trim();
+            r[field] = v;
+            // Autocompletar con el listado de códigos Undora
+            if (field === 'sap' && CODE_BY_SAP.has(v)) r.deco = CODE_BY_SAP.get(v);
+            if (field === 'deco' && !r.sap && CODE_BY_NAME.has(v.toUpperCase())) r.sap = CODE_BY_NAME.get(v.toUpperCase());
+            writePlanning(p); renderPlanning();
+        }
         function editPlanningQty(i, key, value) {
             const p = readPlanning(), r = p.rows[i];
             r.qty = r.qty || {};
@@ -862,6 +897,7 @@
         });
 
         function updateHomeStatuses() {
+            if (!$('codesSap').options.length) fillCodeLists();
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
                 const el = $('statusDec' + (i + 1));
