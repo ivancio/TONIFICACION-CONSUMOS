@@ -272,6 +272,21 @@
             .stat { background: #f1f5f9; }
             .history-table th, .history-table td { border-color: #94a3b8; }
         }
+        #fullReport { display: none; }
+        @media print {
+            body.print-full #homeView, body.print-full #decoratorView > *:not(#fullReport) { display: none !important; }
+            body.print-full #fullReport { display: block; }
+        }
+        .fr-title { font-size: 1.4rem; margin: 0 0 4px; }
+        .fr-meta { color: #475569; font-size: 0.85rem; margin-bottom: 14px; }
+        .fr-totals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px; }
+        .fr-totals div { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; text-align: center; font-size: 0.8rem; }
+        .fr-totals b { display: block; font-size: 1.1rem; }
+        .fr-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 14px; }
+        .fr-table th, .fr-table td { border: 1px solid #94a3b8; padding: 3px 5px; text-align: left; }
+        .fr-table th { background: #f1f5f9; }
+        .fr-order { break-inside: avoid; margin-top: 14px; }
+        .fr-order h3 { font-size: 0.95rem; margin: 0 0 4px; }
         .print-header table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 16px; }
         .print-header td { padding: 4px 6px; border-bottom: 1px solid #cbd5e1; }
         .print-header td:first-child { font-weight: bold; width: 35%; }
@@ -497,12 +512,15 @@
 
                 <div class="actions-grid no-print">
                     <button type="button" class="btn btn-primary" onclick="generatePDF()">📄 Generar Informe PDF Acumulado</button>
+                    <button type="button" class="btn btn-primary" onclick="generateFullReport()">📚 Informe completo (todos los pedidos)</button>
                     <div class="actions-row">
                         <button type="button" class="btn btn-secondary btn-small" onclick="exportCSV()">📊 Exportar a Excel (CSV)</button>
                     </div>
                     <button type="button" class="btn btn-danger" onclick="clearHistory()">📦 Cerrar pedido / Empezar uno nuevo</button>
                 </div>
             </div>
+
+            <div id="fullReport"></div>
 
             <div class="archive-section no-print">
                 <h3>Pedidos anteriores</h3>
@@ -976,6 +994,39 @@
             document.title = `Informe_${($('orderNumber').value || 'orden').replace(/[^\w-]+/g, '_')}_${displayDecorator(currentDecorator)}`;
             window.print();
             setTimeout(() => document.title = prevTitle, 1000);
+        }
+
+        function generateFullReport() {
+            const sel = $('substrate');
+            const orders = [];
+            if (historyData.length) orders.push({
+                open: true, order: $('orderNumber').value.trim(), substrate: sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '',
+                material: $('material').value ? $('material').selectedOptions[0].textContent : '', graphic: $('graphicName').value.trim(), history: historyData
+            });
+            readArchive(DECORATORS[currentDecorator]).forEach(a => orders.push({ ...a, open: false }));
+            if (!orders.length) { toast('No hay pedidos para el informe', true); return; }
+            const sum = (h, k) => h.reduce((a, x) => a + (x[k] || 0), 0);
+            const pct = (ok, nok) => ok + nok ? (nok / (ok + nok) * 100).toFixed(1) + '%' : '-';
+            const e = escapeHtml;
+            const all = orders.flatMap(o => o.history || []);
+            const T = { s: all.length, h: sum(all, 'hours'), ok: sum(all, 'ok'), nok: sum(all, 'nok') };
+            const name = displayDecorator(currentDecorator);
+            const rows = orders.map(o => { const h = o.history || []; const ok = sum(h, 'ok'), nok = sum(h, 'nok');
+                return `<tr><td>${e(o.order || 'Sin orden')}</td><td>${o.open ? 'Abierto' : 'Cerrado ' + new Date(o.closedAt).toLocaleDateString('es-ES')}</td><td>${e(o.substrate || '-')}</td><td>${e(o.material || '-')}</td><td>${e(o.graphic || '-')}</td><td>${h.length}</td><td>${sum(h, 'hours').toFixed(2)}</td><td>${ok}</td><td>${nok}</td><td>${pct(ok, nok)}</td></tr>`; }).join('');
+            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin orden')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>
+                <table class="fr-table"><thead><tr><th>Fecha</th><th>Desde</th><th>Hasta</th><th>Horas</th><th>Estatus</th><th>OK</th><th>No OK</th><th>Comentarios</th></tr></thead><tbody>
+                ${(o.history || []).map(x => `<tr><td>${e(formatDate(x.date))}</td><td>${e(x.timeFrom)}</td><td>${e(x.timeTo)}</td><td>${(x.hours || 0).toFixed(2)}</td><td>${e(x.status || '')}</td><td>${x.ok || 0}</td><td>${x.nok || 0}</td><td>${e(x.comment || '')}</td></tr>`).join('')}
+                </tbody></table></div>`).join('');
+            $('fullReport').innerHTML = `<h2 class="fr-title">Informe completo · ${e(name)}</h2>
+                <div class="fr-meta">Undora · Tonificación Consumos · generado el ${new Date().toLocaleString('es-ES')} · ${orders.length} pedidos</div>
+                <div class="fr-totals"><div><b>${orders.length}</b>Pedidos</div><div><b>${T.s}</b>Sesiones</div><div><b>${T.h.toFixed(1)} h</b>Horas</div><div><b>${T.ok} / ${T.nok}</b>OK / No OK</div><div><b>${pct(T.ok, T.nok)}</b>Merma</div></div>
+                <table class="fr-table"><thead><tr><th>Orden</th><th>Estado</th><th>Sustrato</th><th>Material</th><th>Gráfica</th><th>Sesiones</th><th>Horas</th><th>OK</th><th>No OK</th><th>Merma</th></tr></thead><tbody>${rows}</tbody></table>
+                <h3>Detalle por pedido</h3>${detail}`;
+            const prevTitle = document.title;
+            document.title = `Informe_completo_${name}`;
+            document.body.classList.add('print-full');
+            window.print();
+            setTimeout(() => { document.body.classList.remove('print-full'); document.title = prevTitle; }, 1000);
         }
 
         function exportCSV() {
