@@ -101,6 +101,7 @@
         .card-person { display: flex; align-items: center; gap: 14px; min-width: 0; }
         .card-avatar { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 8px; background: #d9eeeb; color: #175b54; font-weight: 800; }
         .card-selector:nth-child(2) .card-avatar { background: #dce8f4; color: #2e5275; }
+        .card-selector:nth-child(3) .card-avatar { background: #f4e6d4; color: #7a4a1c; }
         .card-copy { min-width: 0; }
         .card-title { font-size: 1.1rem; font-weight: 700; }
         .card-subtitle { font-size: 0.85rem; color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
@@ -315,6 +316,16 @@
                     </div>
                     <span class="card-arrow" aria-hidden="true">›</span>
                 </button>
+                <button type="button" class="card-selector" onclick="selectDecorator('Decorador 3')">
+                    <div class="card-person">
+                        <span class="card-avatar" aria-hidden="true">B</span>
+                        <div class="card-copy">
+                            <div class="card-title">Basilio</div>
+                            <div class="card-subtitle" id="statusDec3">Cargando estado...</div>
+                        </div>
+                    </div>
+                    <span class="card-arrow" aria-hidden="true">›</span>
+                </button>
             </div>
 
             <div class="home-tools">
@@ -490,8 +501,8 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        const DECORATORS = { 'Decorador 1': 'dec1_', 'Decorador 2': 'dec2_' };
-        const DECORATOR_NAMES = { 'Decorador 1': 'Alejandro', 'Decorador 2': 'Iván' };
+        const DECORATORS = { 'Decorador 1': 'dec1_', 'Decorador 2': 'dec2_', 'Decorador 3': 'dec3_' };
+        const DECORATOR_NAMES = { 'Decorador 1': 'Alejandro', 'Decorador 2': 'Iván', 'Decorador 3': 'Basilio' };
         const KERAJET_HOURS = 16;
 
         let currentDecorator = '';

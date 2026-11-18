@@ -23,7 +23,7 @@ export function mergeBackups(current, incoming) {
     const old = current.decorators?.[dec] || {};
     const next = incoming.decorators?.[dec] || {};
     const rows = new Map();
-    const prefix = dec === 'Decorador 1' ? 'dec1_' : 'dec2_';
+    const prefix = ({ 'Decorador 1': 'dec1_', 'Decorador 2': 'dec2_', 'Decorador 3': 'dec3_' })[dec] || 'dec2_';
     [...(old.history || []), ...(next.history || [])].forEach((row, index) => {
       const id = row.id || `legacy-${prefix}-${row.date}-${row.timeFrom}-${index}`;
       const item = { ...row, id, updatedAt: row.updatedAt || '1970-01-01T00:00:00.000Z' };
