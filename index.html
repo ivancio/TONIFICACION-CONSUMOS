@@ -287,7 +287,7 @@
         .pl-table th { background: var(--soft-bg); padding: 6px 4px; font-size: 0.75rem; }
         .pl-table th.today { background: #fde68a; }
         .pl-table td input { width: 100%; border: 0; border-radius: 0; padding: 7px 4px; font: inherit; background: transparent; text-align: center; min-width: 0; }
-        .pl-table td.pl-deco input { text-align: left; min-width: 320px; }
+
         body.planning-open .container { max-width: 1240px; }
         .pl-table td.pl-sap input { min-width: 90px; }
         .pl-table td.filled { background: #57534e; }
@@ -295,6 +295,30 @@
         .pl-reton { border: 0; background: transparent; font: inherit; font-weight: 700; padding: 7px 6px; cursor: pointer; width: 100%; }
         .pl-reton.si { background: #d6d3d1; }
         .pl-del { border: 0; background: transparent; cursor: pointer; padding: 6px; font-size: 0.9rem; }
+        .pl-cell { width: 100%; min-height: 34px; border: 0; background: transparent; font: inherit; font-weight: 700; cursor: pointer; color: transparent; }
+        .pl-cell:hover, .pl-cell:focus-visible { background: var(--soft-bg); color: var(--muted); outline: none; }
+        td.filled .pl-cell { color: #fff; }
+        td.filled .pl-cell:hover { background: #44403c; color: #fff; }
+        .pl-name { border: 0; background: transparent; font: inherit; text-align: left; padding: 7px 6px; cursor: pointer; width: 100%; min-width: 300px; }
+        .pl-name small { display: block; color: var(--muted); font-size: 0.72rem; }
+        .pl-name:hover { background: var(--soft-bg); }
+        tr.pl-idle .pl-name { opacity: 0.55; }
+        .pl-sep td { background: var(--soft-bg); font-size: 0.72rem; color: var(--muted); text-align: left !important; padding: 4px 8px; font-weight: 700; }
+        .pl-hint { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
+        .pl-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: none; align-items: flex-end; justify-content: center; z-index: 50; padding: 12px; }
+        .pl-modal.open { display: flex; }
+        @media (min-width: 640px) { .pl-modal { align-items: center; } }
+        .pl-sheet { background: var(--card-bg); border-radius: 14px; width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+        .pl-sheet h2 { margin: 0 0 12px; font-size: 1.15rem; }
+        .pl-days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 10px; }
+        .pl-day { border: 2px solid var(--border-color); border-radius: 10px; padding: 6px; text-align: center; }
+        .pl-day.today { border-color: #f59e0b; }
+        .pl-day.has { background: var(--soft-bg); border-color: var(--primary-color); }
+        .pl-day span { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+        .pl-day input { text-align: center; font-size: 1.2rem; font-weight: 700; padding: 6px; margin-top: 4px; }
+        .pl-quick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .pl-quick button { border: 1px solid var(--border-color); background: var(--card-bg); border-radius: 999px; padding: 6px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+        .pl-sheet-actions { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-top: 8px; }
         .pl-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
         .pl-totals td { font-weight: 700; padding: 6px 4px; background: var(--soft-bg); }
         @media print {
@@ -444,10 +468,12 @@
                             <option value="alveo">Alveo</option>
                             <option value="anticato">Anticato</option>
                             <option value="apomazado">Apomazado</option>
+                            <option value="arenado">Arenado</option>
                             <option value="arenisca">Arenisca</option>
                             <option value="bamboo">Bamboo</option>
                             <option value="lineal">Lineal</option>
                             <option value="muro">Muro</option>
+                            <option value="olivillo">Olivillo</option>
                             <option value="pausa">Pausa</option>
                             <option value="piano">Piano</option>
                             <option value="prisma">Prisma</option>
@@ -580,9 +606,40 @@
                 <label>F. actualización <input type="date" id="plUpdated" onchange="setPlanningWeekField('updated', this.value)"></label>
                 <label class="no-print"><input type="checkbox" id="plOnlyWeek" onchange="renderPlanning()"> Solo filas con faena esta semana</label>
             </div>
+            <div class="pl-actions no-print" style="margin:0 0 10px">
+                <button type="button" class="btn btn-primary" onclick="openPlanningEditor(-1)">＋ Añadir producción</button>
+            </div>
             <div class="pl-scroll"><table class="pl-table" id="plTable"></table></div>
+            <p class="pl-hint no-print">Toca cualquier casilla o el nombre de la decoración para poner o cambiar las planchas.</p>
+            <div class="pl-modal" id="plModal" onclick="if (event.target === this) closePlanningEditor()">
+                <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="plEdTitle">
+                    <h2 id="plEdTitle">Producción</h2>
+                    <div class="form-group">
+                        <label for="plEdSearch">Decoración (busca por SAP o nombre)</label>
+                        <input type="text" id="plEdSearch" list="codesSearch" placeholder="Ej.: 100382628 o TRAV ALABAS LINEAL" autocomplete="off">
+                        <datalist id="codesSearch"></datalist>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="plEdSap">SAP</label><input type="text" id="plEdSap" inputmode="numeric"></div>
+                        <div class="form-group"><label>Retonificado</label>
+                            <div class="shift-picker" style="margin:0"><button type="button" class="shift-btn" id="plEdNo" onclick="setEdReton(false)">NO</button><button type="button" class="shift-btn" id="plEdSi" onclick="setEdReton(true)">SÍ</button></div>
+                        </div>
+                    </div>
+                    <div class="form-group"><label for="plEdDeco">Nombre</label><input type="text" id="plEdDeco"></div>
+                    <label>Planchas por día · <span id="plEdWeek"></span></label>
+                    <div class="pl-days" id="plEdDays"></div>
+                    <div class="pl-quick" id="plEdQuick"></div>
+                    <div class="pl-sheet-actions">
+                        <button type="button" class="btn btn-secondary btn-small" id="plEdDelete" onclick="deletePlanningFromEditor()">🗑 Borrar fila</button>
+                        <span style="display:flex;gap:8px">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="closePlanningEditor()">Cancelar</button>
+                            <button type="button" class="btn btn-primary btn-small" onclick="savePlanningEditor()">Guardar</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
             <div class="pl-actions no-print">
-                <button type="button" class="btn btn-primary btn-small" onclick="addPlanningRow()">＋ Añadir fila</button>
+                <button type="button" class="btn btn-primary btn-small" onclick="openPlanningEditor(-1)">＋ Añadir producción</button>
                 <button type="button" class="btn btn-secondary btn-small" onclick="printPlanning()">🖨 Imprimir / PDF</button>
             </div>
         </div>
@@ -619,7 +676,7 @@
         const CODE_BY_SAP = new Map(UNDORA_CODES);
         const CODE_BY_NAME = new Map();
         UNDORA_CODES.forEach(([c, n]) => { if (!CODE_BY_NAME.has(n.toUpperCase())) CODE_BY_NAME.set(n.toUpperCase(), c); });
-        const SUBSTRATE_HINTS = [['ALVEO', 'alveo'], ['ANTI', 'anticato'], ['APOMAZ', 'apomazado'], ['ARENIS', 'arenisca'], ['BAMBOO', 'bamboo'],
+        const SUBSTRATE_HINTS = [['ALVEO', 'alveo'], ['ANTI', 'anticato'], ['APOMAZ', 'apomazado'], ['ARENADO', 'arenado'], ['ARENIS', 'arenisca'], ['OLIVILLO', 'olivillo'], ['BAMBOO', 'bamboo'],
             ['LINEAL', 'lineal'], ['MURO', 'muro'], ['PAUSA', 'pausa'], ['PIANO', 'piano'], ['PRISMA', 'prisma'], ['ROCA', 'roca'], ['RUST', 'rústico']];
         function substrateFromName(name) {
             const words = ' ' + String(name || '').toUpperCase() + ' ';
@@ -699,56 +756,106 @@
             $('plShift').value = wk.shift || '';
             $('plUpdated').value = wk.updated || '';
             const only = $('plOnlyWeek').checked;
-            const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             const e = escapeHtml;
+            const totals = keys.map(k => p.rows.reduce((a, r) => a + (Number((r.qty || {})[k]) || 0), 0));
             let html = `<thead><tr><th>Retonif.</th><th>SAP</th><th>Programación decoración</th>${days.map((d, i) =>
-                `<th class="${keys[i] === today ? 'today' : ''}">${dayNames[i]}<br>${formatDate(keys[i]).slice(0, 5)}</th>`).join('')}<th class="no-print"></th></tr></thead><tbody>`;
-            const totals = keys.map(() => 0);
-            p.rows.forEach((r, i) => {
+                `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}</small></th>`).join('')}</tr></thead><tbody>`;
+            // Orden tipo Gantt: primero lo que tiene faena esta semana, por el primer día
+            const firstDay = r => { const j = keys.findIndex(k => Number((r.qty || {})[k]) > 0); return j < 0 ? 99 : j; };
+            const order = p.rows.map((r, i) => ({ r, i, f: firstDay(r) })).sort((a, b) => a.f - b.f || a.i - b.i);
+            let sepDone = false;
+            order.forEach(({ r, i, f }) => {
+                if (f === 99) {
+                    if (only) return;
+                    if (!sepDone) { html += `<tr class="pl-sep"><td colspan="${3 + keys.length}">Sin faena esta semana</td></tr>`; sepDone = true; }
+                }
                 const q = r.qty || {};
-                keys.forEach((k, j) => totals[j] += Number(q[k]) || 0);
-                if (only && !keys.some(k => Number(q[k]) > 0)) return;
-                html += `<tr>
+                html += `<tr class="${f === 99 ? 'pl-idle' : ''}">
                     <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
-                    <td class="pl-sap"><input value="${e(r.sap || '')}" list="codesSap" onchange="editPlanningRow(${i}, 'sap', this.value)" inputmode="numeric"></td>
-                    <td class="pl-deco"><input value="${e(r.deco || '')}" list="codesName" onchange="editPlanningRow(${i}, 'deco', this.value)"></td>
-                    ${keys.map(k => `<td class="${Number(q[k]) > 0 ? 'filled' : ''}"><input type="number" min="0" value="${q[k] ?? ''}" onchange="editPlanningQty(${i}, '${k}', this.value)" inputmode="numeric"></td>`).join('')}
-                    <td class="no-print"><button type="button" class="pl-del" title="Borrar fila" onclick="deletePlanningRow(${i})">🗑</button></td>
+                    <td>${e(r.sap || '—')}</td>
+                    <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${e(r.deco || 'Sin nombre')}</button></td>
+                    ${keys.map(k => `<td class="${Number(q[k]) > 0 ? 'filled' : ''}"><button type="button" class="pl-cell" onclick="openPlanningEditor(${i}, '${k}')">${Number(q[k]) > 0 ? q[k] : '＋'}</button></td>`).join('')}
                 </tr>`;
             });
-            html += `</tbody><tfoot><tr class="pl-totals"><td colspan="3" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}<td class="no-print"></td></tr></tfoot>`;
+            if (!p.rows.length) html += `<tr><td colspan="${3 + keys.length}" style="padding:16px">Todavía no hay producción. Pulsa «＋ Añadir producción».</td></tr>`;
+            html += `</tbody><tfoot><tr class="pl-totals"><td colspan="3" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr></tfoot>`;
             $('plTable').innerHTML = html;
         }
 
-        function editPlanningRow(i, field, value) {
-            const p = readPlanning(), r = p.rows[i], v = value.trim();
-            r[field] = v;
-            // Autocompletar con el listado de códigos Undora
-            if (field === 'sap' && CODE_BY_SAP.has(v)) r.deco = CODE_BY_SAP.get(v);
-            if (field === 'deco' && !r.sap && CODE_BY_NAME.has(v.toUpperCase())) r.sap = CODE_BY_NAME.get(v.toUpperCase());
-            writePlanning(p); renderPlanning();
+        const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        let edIndex = -1, edReton = false;
+        function setEdReton(v) { edReton = v; $('plEdSi').classList.toggle('active', v); $('plEdNo').classList.toggle('active', !v); }
+        function fillEditorFromCode(sap) {
+            if (edIndex < 0) {
+                // Si esa decoración ya está en el planning, abrimos su fila para no perder sus otros días
+                const existing = readPlanning().rows.findIndex(x => x.sap === sap);
+                if (existing >= 0) { openPlanningEditor(existing, edLastDay?.dataset.k); toast('Ya estaba en el planning: añade los días que falten'); return true; }
+            }
+            if (!CODE_BY_SAP.has(sap)) return false;
+            $('plEdSap').value = sap; $('plEdDeco').value = CODE_BY_SAP.get(sap); $('plEdSearch').value = '';
+            return true;
         }
-        function editPlanningQty(i, key, value) {
-            const p = readPlanning(), r = p.rows[i];
-            r.qty = r.qty || {};
-            const n = parseInt(value, 10);
-            if (n > 0) r.qty[key] = n; else delete r.qty[key];
-            writePlanning(p); renderPlanning();
+        function openPlanningEditor(i, focusKey) {
+            const p = readPlanning(), r = i >= 0 ? p.rows[i] : { sap: '', deco: '', reton: false, qty: {} };
+            edIndex = i;
+            if (!$('codesSearch').options.length)
+                $('codesSearch').innerHTML = UNDORA_CODES.map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
+            $('plEdTitle').textContent = i >= 0 ? 'Editar producción' : 'Añadir producción';
+            $('plEdSearch').value = ''; $('plEdSap').value = r.sap || ''; $('plEdDeco').value = r.deco || '';
+            setEdReton(!!r.reton);
+            $('plEdDelete').style.visibility = i >= 0 ? 'visible' : 'hidden';
+            const days = weekDays(), keys = days.map(isoDate), today = todayLocal();
+            $('plEdWeek').textContent = `semana ${isoWeek(planningMonday).week}`;
+            $('plEdDays').innerHTML = keys.map((k, j) => `<label class="pl-day ${k === today ? 'today' : ''} ${Number(r.qty?.[k]) > 0 ? 'has' : ''}">
+                <span>${DAY_NAMES[j]} ${formatDate(k).slice(0, 5)}</span>
+                <input type="number" min="0" inputmode="numeric" data-k="${k}" value="${Number(r.qty?.[k]) > 0 ? r.qty[k] : ''}" placeholder="0"
+                    onfocus="edLastDay = this" oninput="this.parentElement.classList.toggle('has', Number(this.value) > 0)"></label>`).join('');
+            $('plEdQuick').innerHTML = '<span style="font-size:.8rem;color:var(--muted);align-self:center">Rápido:</span>' +
+                [10, 12, 16, 50, 90, 100, 250, 300].map(n => `<button type="button" onclick="quickQty(${n})">${n}</button>`).join('') +
+                '<button type="button" onclick="quickQty(0)">Borrar</button>';
+            $('plModal').classList.add('open');
+            const target = document.querySelector(`#plEdDays input[data-k="${focusKey || (keys.includes(today) ? today : keys[0])}"]`);
+            edLastDay = target;
+            setTimeout(() => (i < 0 ? $('plEdSearch') : target).focus(), 50);
+        }
+        let edLastDay = null;
+        function quickQty(n) {
+            if (!edLastDay) return;
+            edLastDay.value = n || '';
+            edLastDay.parentElement.classList.toggle('has', n > 0);
+            edLastDay.focus();
+        }
+        function closePlanningEditor() { $('plModal').classList.remove('open'); }
+        function savePlanningEditor() {
+            const sap = $('plEdSap').value.trim(), deco = $('plEdDeco').value.trim();
+            if (!sap && !deco) { toast('Pon el SAP o el nombre de la decoración', true); $('plEdSearch').focus(); return; }
+            const p = readPlanning();
+            let r = edIndex >= 0 ? p.rows[edIndex] : null;
+            if (!r) { r = { id: 'r' + Date.now().toString(36), qty: {} }; p.rows.push(r); }
+            r.sap = sap; r.deco = deco; r.reton = edReton; r.qty = r.qty || {};
+            document.querySelectorAll('#plEdDays input').forEach(inp => {
+                const n = parseInt(inp.value, 10);
+                if (n > 0) r.qty[inp.dataset.k] = n; else delete r.qty[inp.dataset.k];
+            });
+            writePlanning(p); closePlanningEditor(); renderPlanning();
+            toast('Planning guardado');
+        }
+        function deletePlanningFromEditor() {
+            if (edIndex < 0) return;
+            const p = readPlanning(), r = p.rows[edIndex];
+            if (!confirm(`¿Borrar la fila ${r.sap || ''} ${r.deco || ''} de todas las semanas?`)) return;
+            p.rows.splice(edIndex, 1); writePlanning(p); closePlanningEditor(); renderPlanning();
         }
         function togglePlanningReton(i) { const p = readPlanning(); p.rows[i].reton = !p.rows[i].reton; writePlanning(p); renderPlanning(); }
-        function addPlanningRow() {
-            const p = readPlanning();
-            p.rows.push({ id: 'r' + Date.now().toString(36), reton: false, sap: '', deco: '', qty: {} });
-            writePlanning(p);
-            $('plOnlyWeek').checked = false;
-            renderPlanning();
-            const inputs = document.querySelectorAll('#plTable tbody tr:last-child .pl-sap input');
-            if (inputs[0]) inputs[0].focus();
-        }
-        function deletePlanningRow(i) {
-            const p = readPlanning(), r = p.rows[i];
-            if (!confirm(`¿Borrar la fila ${r.sap || ''} ${r.deco || ''}?`)) return;
-            p.rows.splice(i, 1); writePlanning(p); renderPlanning();
+        function initPlanningEditor() {
+            $('plEdSearch').addEventListener('change', () => {
+                const v = $('plEdSearch').value.trim(), sap = v.split(' · ')[0].trim();
+                if (fillEditorFromCode(sap)) { edLastDay && edLastDay.focus(); return; }
+                const byName = CODE_BY_NAME.get(v.toUpperCase());
+                if (byName) fillEditorFromCode(byName);
+            });
+            $('plEdSap').addEventListener('change', () => fillEditorFromCode($('plEdSap').value.trim()));
+            document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('plModal').classList.contains('open')) closePlanningEditor(); });
         }
         function printPlanning() {
             const prev = document.title;
@@ -897,7 +1004,7 @@
         });
 
         function updateHomeStatuses() {
-            if (!$('codesSap').options.length) fillCodeLists();
+            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); }
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
                 const el = $('statusDec' + (i + 1));
