@@ -295,12 +295,24 @@
         .pl-reton { border: 0; background: transparent; font: inherit; font-weight: 700; padding: 7px 6px; cursor: pointer; width: 100%; }
         .pl-reton.si { background: #d6d3d1; }
         .pl-del { border: 0; background: transparent; cursor: pointer; padding: 6px; font-size: 0.9rem; }
+        .pl-table td, .pl-reton, .pl-name, .pl-quick button, .pl-day input { color: var(--text-color); }
         .pl-cell { width: 100%; min-height: 34px; border: 0; background: transparent; font: inherit; font-weight: 700; cursor: pointer; color: transparent; }
+        td.filled .pl-cell { cursor: grab; touch-action: none; user-select: none; }
+        .pl-drag-ghost { position: fixed; z-index: 60; pointer-events: none; padding: 6px 12px; border-radius: 8px; background: #f59e0b; color: #111; font-weight: 800; box-shadow: 0 6px 18px rgba(0,0,0,.3); transform: translate(-50%, -120%); }
+        td.pl-drop { outline: 3px dashed #f59e0b; outline-offset: -3px; background: rgba(245, 158, 11, 0.18); }
+        body.pl-dragging, body.pl-dragging * { cursor: grabbing !important; }
         .pl-cell:hover, .pl-cell:focus-visible { background: var(--soft-bg); color: var(--muted); outline: none; }
         td.filled .pl-cell { color: #fff; }
         td.filled .pl-cell:hover { background: #44403c; color: #fff; }
         .pl-name { border: 0; background: transparent; font: inherit; text-align: left; padding: 7px 6px; cursor: pointer; width: 100%; min-width: 300px; }
         .pl-name small { display: block; color: var(--muted); font-size: 0.72rem; }
+        @media (prefers-color-scheme: dark) {
+            .pl-table td.filled { background: #f59e0b; }
+            td.filled .pl-cell, td.filled .pl-cell:hover { color: #111; }
+            td.filled .pl-cell:hover { background: #fbbf24; }
+            .pl-reton.si { background: #475569; }
+            .pl-table th.today { background: #b45309; color: #fff; }
+        }
         .pl-name:hover { background: var(--soft-bg); }
         tr.pl-idle .pl-name { opacity: 0.55; }
         .pl-sep td { background: var(--soft-bg); font-size: 0.72rem; color: var(--muted); text-align: left !important; padding: 4px 8px; font-weight: 700; }
@@ -610,7 +622,7 @@
                 <button type="button" class="btn btn-primary" onclick="openPlanningEditor(-1)">＋ Añadir producción</button>
             </div>
             <div class="pl-scroll"><table class="pl-table" id="plTable"></table></div>
-            <p class="pl-hint no-print">Toca cualquier casilla o el nombre de la decoración para poner o cambiar las planchas.</p>
+            <p class="pl-hint no-print">Toca una casilla o el nombre para poner o cambiar planchas. Para cambiar una faena de día, <b>arrástrala</b> a otra casilla de la misma fila (en el móvil, mantén el dedo y desliza).</p>
             <div class="pl-modal" id="plModal" onclick="if (event.target === this) closePlanningEditor()">
                 <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="plEdTitle">
                     <h2 id="plEdTitle">Producción</h2>
@@ -774,7 +786,7 @@
                     <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
                     <td>${e(r.sap || '—')}</td>
                     <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${e(r.deco || 'Sin nombre')}</button></td>
-                    ${keys.map(k => `<td class="${Number(q[k]) > 0 ? 'filled' : ''}"><button type="button" class="pl-cell" onclick="openPlanningEditor(${i}, '${k}')">${Number(q[k]) > 0 ? q[k] : '＋'}</button></td>`).join('')}
+                    ${keys.map(k => `<td class="${Number(q[k]) > 0 ? 'filled' : ''}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${Number(q[k]) > 0 ? q[k] : '＋'}</button></td>`).join('')}
                 </tr>`;
             });
             if (!p.rows.length) html += `<tr><td colspan="${3 + keys.length}" style="padding:16px">Todavía no hay producción. Pulsa «＋ Añadir producción».</td></tr>`;
@@ -847,7 +859,57 @@
             p.rows.splice(edIndex, 1); writePlanning(p); closePlanningEditor(); renderPlanning();
         }
         function togglePlanningReton(i) { const p = readPlanning(); p.rows[i].reton = !p.rows[i].reton; writePlanning(p); renderPlanning(); }
+        // ---------- Arrastrar faena a otro día ----------
+        let plDrag = null, plJustDragged = false;
+        function plCellAt(x, y) { const el = document.elementFromPoint(x, y); return el && el.closest('#plTable td[data-k]'); }
+        function initPlanningDrag() {
+            const table = $('plTable');
+            table.addEventListener('pointerdown', ev => {
+                const td = ev.target.closest('td.filled[data-k]');
+                if (!td || ev.button > 0) return;
+                plDrag = { td, row: td.dataset.row, k: td.dataset.k, x: ev.clientX, y: ev.clientY, active: false, ghost: null, over: null };
+            });
+            window.addEventListener('pointermove', ev => {
+                if (!plDrag) return;
+                if (!plDrag.active) {
+                    if (Math.hypot(ev.clientX - plDrag.x, ev.clientY - plDrag.y) < 8) return;
+                    plDrag.active = true;
+                    document.body.classList.add('pl-dragging');
+                    plDrag.ghost = document.createElement('div');
+                    plDrag.ghost.className = 'pl-drag-ghost';
+                    plDrag.ghost.textContent = plDrag.td.textContent.trim() + ' pl.';
+                    document.body.appendChild(plDrag.ghost);
+                }
+                ev.preventDefault();
+                plDrag.ghost.style.left = ev.clientX + 'px'; plDrag.ghost.style.top = ev.clientY + 'px';
+                const over = plCellAt(ev.clientX, ev.clientY);
+                const ok = over && over.dataset.row === plDrag.row && over.dataset.k !== plDrag.k ? over : null;
+                if (plDrag.over !== ok) { plDrag.over?.classList.remove('pl-drop'); ok?.classList.add('pl-drop'); plDrag.over = ok; }
+            }, { passive: false });
+            const end = () => {
+                if (!plDrag) return;
+                const d = plDrag; plDrag = null;
+                if (!d.active) return;
+                document.body.classList.remove('pl-dragging');
+                d.ghost?.remove(); d.over?.classList.remove('pl-drop');
+                plJustDragged = true; setTimeout(() => { plJustDragged = false; }, 300);
+                if (!d.over) return;
+                movePlanningDay(Number(d.row), d.k, d.over.dataset.k);
+            };
+            window.addEventListener('pointerup', end);
+            window.addEventListener('pointercancel', end);
+        }
+        function movePlanningDay(i, fromK, toK) {
+            const p = readPlanning(), r = p.rows[i], n = Number(r.qty?.[fromK]) || 0;
+            if (!n) return;
+            delete r.qty[fromK];
+            r.qty[toK] = (Number(r.qty[toK]) || 0) + n;
+            writePlanning(p); renderPlanning();
+            toast(`Movido: ${n} pl. del ${formatDate(fromK).slice(0, 5)} al ${formatDate(toK).slice(0, 5)}`);
+        }
+
         function initPlanningEditor() {
+            initPlanningDrag();
             $('plEdSearch').addEventListener('change', () => {
                 const v = $('plEdSearch').value.trim(), sap = v.split(' · ')[0].trim();
                 if (fillEditorFromCode(sap)) { edLastDay && edLastDay.focus(); return; }
