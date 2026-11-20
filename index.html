@@ -358,6 +358,16 @@
         .kc-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.2); }
         .kc-calc { background: var(--soft-bg); border-radius: 10px; padding: 10px 12px; margin: 8px 0; color: var(--text-color); }
         .kc-calc input { width: 110px; display: inline-block; }
+        .order-summary { border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; color: var(--text-color); }
+        .order-summary b { font-size: 1.02rem; }
+        .order-summary small { display: block; color: var(--muted); font-size: 0.82rem; margin-top: 2px; }
+        .order-summary:empty { display: none; }
+        .order-edit { border: 1px dashed var(--border-color); border-radius: 12px; padding: 10px 12px 12px; margin-bottom: 14px; }
+        .order-edit[hidden] { display: none; }
+        .date-line { margin: 4px 0 12px; color: var(--text-color); }
+        .link-btn { border: 0; background: none; color: var(--muted); text-decoration: underline; font: inherit; font-size: 0.85rem; cursor: pointer; padding: 0 4px; }
+        .status-btn.active { border-color: var(--primary-color); background: var(--soft-bg); }
+        .comments-box summary { cursor: pointer; color: var(--muted); font-weight: 600; }
         .today-jobs { border: 2px dashed var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
         .today-jobs h3 { margin: 0 0 8px; font-size: 0.95rem; }
         .tj-list { display: grid; gap: 6px; }
@@ -592,13 +602,9 @@
             </div>
 
             <div class="no-print">
-                <div class="guide" aria-label="Cómo apuntar una prueba">
-                    <div><b>1 · Elige la faena</b>Toca la del planning o escribe gráfica y SAP</div>
-                    <div><b>2 · Turno y horas</b>Mañana, tarde o «Ahora»</div>
-                    <div><b>3 · Planchas</b>Apunta OK y No OK y guarda la sesión</div>
-                    <div><b>4 · Al terminar</b>Cierra el pedido: pasa a Pedidos anteriores</div>
-                </div>
                 <div class="today-jobs" id="todayJobs"></div>
+                <div class="order-summary" id="orderSummary"></div>
+                <div class="order-edit" id="orderEdit">
                 <div class="form-row order-fields">
                     <div class="form-group">
                         <label for="orderNumber">Número de Orden</label>
@@ -650,13 +656,16 @@
                         <input type="text" id="sapField" inputmode="numeric" placeholder="Código">
                     </div>
                 </div>
+                <button type="button" class="btn btn-secondary btn-small" id="orderDone" onclick="setOrderEditing(false)">✓ Listo</button>
+                </div>
 
                 <div id="editBanner" class="edit-banner">
                     <span>✏️ Editando un registro del historial</span>
                     <button type="button" class="btn btn-secondary btn-small" onclick="cancelEdit()">Cancelar</button>
                 </div>
 
-                <div class="form-group">
+                <div class="date-line">📅 <b id="dateLabel">Hoy</b> <button type="button" class="link-btn" id="dateToggle" onclick="toggleDateField(true)">cambiar fecha</button></div>
+                <div class="form-group" id="dateGroup" hidden>
                     <label for="dateField">Fecha de Sesión</label>
                     <input type="date" id="dateField">
                 </div>
@@ -681,8 +690,12 @@
                 <div class="hours-preview" id="hoursPreview"></div>
 
                 <div class="form-group">
-                    <label for="statusField">Estatus</label>
-                    <select id="statusField">
+                    <label>Estatus</label>
+                    <div class="shift-picker" style="margin:0">
+                        <button type="button" class="shift-btn status-btn" data-status="Pendiente" onclick="setStatus('Pendiente')">⏳ Pendiente<small>sigue en curso</small></button>
+                        <button type="button" class="shift-btn status-btn" data-status="Fin" onclick="setStatus('Fin')">✅ Fin<small>terminado</small></button>
+                    </div>
+                    <select id="statusField" hidden>
                         <option value="Pendiente">Pendiente</option>
                         <option value="Fin">Fin</option>
                     </select>
@@ -710,10 +723,10 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="comments">Comentarios</label>
-                    <textarea id="comments" maxlength="500" placeholder="Incidencias, observaciones del turno..."></textarea>
-                </div>
+                <details class="form-group comments-box" id="commentsBox">
+                    <summary>💬 Añadir comentario</summary>
+                    <textarea id="comments" maxlength="500" placeholder="Incidencias, observaciones del turno..." style="margin-top:8px"></textarea>
+                </details>
 
                 <div class="save-container">
                     <button type="button" id="saveBtn" class="btn btn-save" onclick="saveSession()">💾 GUARDAR REGISTRO DE HOY</button>
@@ -1156,6 +1169,37 @@
         }
 
 
+
+        // ---------- Perfil simplificado: tarjeta del pedido, fecha, estatus ----------
+        let orderEditing = false;
+        function setOrderEditing(on) { orderEditing = on; renderOrderSummary(); if (on) $('graphicName').focus(); }
+        function renderOrderSummary() {
+            const g = $('graphicName').value.trim(), sap = $('sapField').value.trim(), e = escapeHtml;
+            const has = !!(g || sap || $('orderNumber').value.trim());
+            const editing = orderEditing || !has;
+            $('orderEdit').hidden = !editing;
+            $('orderDone').hidden = !has;
+            if (!has) { $('orderSummary').innerHTML = ''; return; }
+            const m = parseModel(g || CODE_BY_SAP.get(sap) || '');
+            const sub = $('substrate').selectedIndex > 0 ? $('substrate').selectedOptions[0].textContent : '';
+            const mat = $('material').value ? $('material').selectedOptions[0].textContent : '';
+            const bits = [sap && 'SAP ' + sap, sub, mat, $('orderNumber').value.trim() && 'Orden ' + $('orderNumber').value.trim()].filter(Boolean).map(e).join(' · ');
+            $('orderSummary').innerHTML = editing ? '' : `<span><b>${e(m.model || g || sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<small>${bits || 'Faltan datos'}</small></span>
+                <button type="button" class="btn btn-secondary btn-small" onclick="setOrderEditing(true)">✏️ Cambiar</button>`;
+        }
+        function toggleDateField(show) { $('dateGroup').hidden = !show; $('dateToggle').hidden = show; if (show) $('dateField').focus(); }
+        function updateDateLabel() {
+            const v = $('dateField').value, t = todayLocal();
+            $('dateLabel').textContent = !v || v === t ? `Hoy · ${formatDate(t)}` : formatDate(v);
+            if (v && v !== t) toggleDateField(true);
+        }
+        function setStatus(v) { $('statusField').value = v; $('statusField').dispatchEvent(new Event('change')); syncStatusButtons(); }
+        function syncStatusButtons() { document.querySelectorAll('.status-btn').forEach(b => b.classList.toggle('active', b.dataset.status === $('statusField').value)); }
+        function syncSessionUI() {
+            updateDateLabel(); syncStatusButtons();
+            if ($('comments').value.trim()) $('commentsBox').open = true;
+        }
+
         // ---------- Planning ↔ registros: lo producido de cada faena ----------
         function productionMap() {
             const map = new Map();
@@ -1200,7 +1244,7 @@
             $('graphicName').value = r.deco ? shortName(r.deco) : '';
             $('graphicName').dispatchEvent(new Event('change'));
             if (!$('orderNumber').value.trim() && r.sap) $('orderNumber').value = r.sap;
-            saveHeaderDraft(); renderTodayJobs();
+            orderEditing = false; saveHeaderDraft(); renderTodayJobs();
             toast('Faena cargada: ' + parseModel(r.deco).model);
             $('countOk').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -1793,6 +1837,7 @@
                 await prompt.prompt();
             });
             $('statusField').addEventListener('change', checkKerajetAlert);
+            $('dateField').addEventListener('change', updateDateLabel);
             $('sapField').addEventListener('change', () => {
                 const sap = $('sapField').value.trim();
                 if (CODE_BY_SAP.has(sap) && !$('graphicName').value.trim()) { $('graphicName').value = shortName(CODE_BY_SAP.get(sap)); $('graphicName').dispatchEvent(new Event('change')); }
@@ -1880,6 +1925,7 @@
 
             historyData = readHistory(DECORATORS[decoratorName]);
             renderTodayJobs();
+            orderEditing = false; renderOrderSummary();
             resetSessionFields();
             renderHistory();
             renderArchive();
@@ -1901,6 +1947,7 @@
             editingIndex = -1;
             $('editBanner').style.display = 'none';
             $('saveBtn').innerText = '💾 GUARDAR REGISTRO DE HOY';
+            $('commentsBox').open = false; toggleDateField(false); syncSessionUI();
             updateHoursPreview();
         }
 
@@ -1922,6 +1969,7 @@
             localStorage.setItem(getStorageKey('material'), $('material').value);
             localStorage.setItem(getStorageKey('graphic'), $('graphicName').value.trim());
             localStorage.setItem(getStorageKey('sap'), $('sapField').value.trim());
+            renderOrderSummary();
         }
 
         // ---------- Contadores ----------
@@ -2062,6 +2110,7 @@
             $('comments').value = x.comment || '';
             $('editBanner').style.display = 'flex';
             $('saveBtn').innerText = '💾 GUARDAR CAMBIOS';
+            syncSessionUI();
             updateHoursPreview();
             renderHistory();
             checkKerajetAlert();
@@ -2317,7 +2366,9 @@
             $('material').value = '';
             $('graphicName').value = '';
             $('sapField').value = '';
+            orderEditing = false;
             resetSessionFields();
+            renderOrderSummary();
             renderHistory();
             renderArchive();
             renderTodayJobs();
