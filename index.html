@@ -275,6 +275,29 @@
         #fullReport { display: none; }
         #planningView { display: none; }
         #keraView { display: none; }
+        #summaryView { display: none; }
+        .sum-btn { background: #1d4ed8; }
+        .sum-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 12px 0; }
+        .sum-kpi { border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center; color: var(--text-color); }
+        .sum-kpi b { display: block; font-size: 1.35rem; }
+        .sum-kpi small { color: var(--muted); font-size: 0.78rem; }
+        .sum-kpi.bad b { color: #dc2626; }
+        .sum-section { margin-top: 18px; }
+        .sum-section h3 { font-size: 1rem; margin: 0 0 8px; }
+        .sum-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .sum-table th, .sum-table td { border-bottom: 1px solid var(--border-color); padding: 6px; text-align: right; color: var(--text-color); }
+        .sum-table th { font-size: 0.75rem; color: var(--muted); }
+        .sum-table th:first-child, .sum-table td:first-child { text-align: left; }
+        .sum-table td.bad { color: #dc2626; font-weight: 800; }
+        .sum-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding: 6px 0; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+        .sum-col { flex: 1; min-width: 26px; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; height: 100%; position: relative; }
+        .sum-col i { display: block; }
+        .sum-col .ok { background: #16a34a; } .sum-col .nok { background: #dc2626; }
+        .sum-col .plan { position: absolute; left: -2px; right: -2px; border-top: 2px dashed var(--text-color); opacity: 0.6; }
+        .sum-days { display: flex; gap: 6px; font-size: 0.68rem; color: var(--muted); overflow: hidden; }
+        .sum-days span { flex: 1; min-width: 26px; text-align: center; }
+        .sum-legend { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+        .sum-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 10px; vertical-align: -1px; }
         .kera-btn { background: #0f766e; }
         .kc-list { display: grid; gap: 10px; margin-top: 12px; }
         .kc-card { border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; background: var(--card-bg); color: var(--text-color); text-align: left; font: inherit; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
@@ -291,6 +314,23 @@
         .kc-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.2); }
         .kc-calc { background: var(--soft-bg); border-radius: 10px; padding: 10px 12px; margin: 8px 0; color: var(--text-color); }
         .kc-calc input { width: 110px; display: inline-block; }
+        .today-jobs { border: 2px dashed var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+        .today-jobs h3 { margin: 0 0 8px; font-size: 0.95rem; }
+        .tj-list { display: grid; gap: 6px; }
+        .tj { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; text-align: left; border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 10px; background: var(--card-bg); color: var(--text-color); font: inherit; cursor: pointer; }
+        .tj:hover, .tj.current { border-color: var(--primary-color); background: var(--soft-bg); }
+        .tj b { font-size: 0.95rem; } .tj small { color: var(--muted); font-size: 0.78rem; }
+        .tj .tj-q { font-weight: 800; text-align: right; }
+        .tj-bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--soft-bg); overflow: hidden; }
+        .tj-bar span { display: block; height: 100%; background: #16a34a; }
+        .tj-more { margin-top: 6px; font-size: 0.85rem; }
+        .pl-cell small { display: block; font-size: 0.66rem; font-weight: 700; line-height: 1.1; }
+        .pl-table td.done { background: #15803d !important; }
+        .pl-table td.done .pl-cell { color: #fff !important; }
+        .pl-table td.partial { background: linear-gradient(to top, #16a34a var(--pct), #57534e var(--pct)) !important; }
+        .pl-table td.partial .pl-cell { color: #fff !important; }
+        .pl-table td.extra { background: #dcfce7; }
+        .pl-table td.extra .pl-cell { color: #166534; }
         .pl-forecast { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--soft-bg); font-size: 0.88rem; color: var(--text-color); }
         .pl-forecast b { font-size: 1rem; }
         .planning-btn { width: 100%; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-radius: 8px; border: 0; background: var(--primary-color); color: #fff; font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; text-align: left; }
@@ -319,6 +359,7 @@
         td.filled .pl-cell { cursor: grab; touch-action: none; user-select: none; }
         .pl-drag-ghost { position: fixed; z-index: 60; pointer-events: none; padding: 6px 12px; border-radius: 8px; background: #f59e0b; color: #111; font-weight: 800; box-shadow: 0 6px 18px rgba(0,0,0,.3); transform: translate(-50%, -120%); }
         td.pl-drop { outline: 3px dashed #f59e0b; outline-offset: -3px; background: rgba(245, 158, 11, 0.18); }
+        [data-weekdrop].pl-drop { outline: 3px dashed #f59e0b; background: rgba(245, 158, 11, 0.3) !important; }
         body.pl-dragging, body.pl-dragging * { cursor: grabbing !important; }
         .pl-cell:hover, .pl-cell:focus-visible { background: var(--soft-bg); color: var(--muted); outline: none; }
         td.filled .pl-cell { color: #fff; }
@@ -355,6 +396,8 @@
         .pl-totals td { font-weight: 700; padding: 6px 4px; background: var(--soft-bg); }
         @media print {
             body.print-planning #homeView, body.print-planning #decoratorView { display: none !important; }
+            body.print-summary #homeView, body.print-summary #decoratorView { display: none !important; }
+            body.print-summary #summaryView { display: block !important; }
             body.print-planning #planningView { display: block !important; }
             body.print-planning .pl-scroll { overflow: visible; border: 0; }
             .pl-table td.filled { background: #9ca3af !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -410,6 +453,11 @@
 
             <button type="button" class="planning-btn kera-btn" onclick="openKera()">
                 <span>🎨 Consumos de tinta (KERAcost)<small id="keraSummary">Fichas de consumo por modelo</small></span>
+                <span aria-hidden="true">›</span>
+            </button>
+
+            <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
+                <span>📊 Resumen de producción<small>Planchas, merma, cumplimiento del planning y coste de tinta</small></span>
                 <span aria-hidden="true">›</span>
             </button>
 
@@ -486,6 +534,7 @@
             </div>
 
             <div class="no-print">
+                <div class="today-jobs" id="todayJobs"></div>
                 <div class="form-row order-fields">
                     <div class="form-group">
                         <label for="orderNumber">Número de Orden</label>
@@ -527,9 +576,15 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="graphicName">Nombre de Gráfica</label>
-                    <input type="text" id="graphicName" list="codesName" placeholder="Escribe para buscar en el listado Undora...">
+                <div class="form-row">
+                    <div class="form-group" style="flex:3">
+                        <label for="graphicName">Nombre de Gráfica</label>
+                        <input type="text" id="graphicName" list="codesName" placeholder="Escribe para buscar en el listado Undora...">
+                    </div>
+                    <div class="form-group" style="flex:1.2">
+                        <label for="sapField">SAP</label>
+                        <input type="text" id="sapField" inputmode="numeric" placeholder="Código">
+                    </div>
                 </div>
 
                 <div id="editBanner" class="edit-banner">
@@ -627,12 +682,27 @@
             </div>
         </div>
 
+        <div id="summaryView">
+            <button type="button" class="nav-back no-print" onclick="closeSummary()">← Volver</button>
+            <h1 style="margin-bottom:4px">Resumen de producción</h1>
+            <div class="pl-meta" style="margin-top:8px">
+                <label>Periodo <select id="sumPeriod" onchange="renderSummary()">
+                    <option value="week">Esta semana</option><option value="lastweek">Semana anterior</option>
+                    <option value="month">Este mes</option><option value="lastmonth">Mes anterior</option><option value="all">Todo</option>
+                </select></label>
+                <span id="sumRange"></span>
+                <button type="button" class="btn btn-secondary btn-small no-print" onclick="printSummary()">🖨 Imprimir / PDF</button>
+            </div>
+            <div id="sumBody"></div>
+        </div>
+
         <div id="keraView">
             <button type="button" class="nav-back no-print" onclick="closeKera()">← Volver</button>
             <h1 style="margin-bottom:4px">Consumos de tinta</h1>
             <p class="pl-hint" style="margin-top:0">Copia aquí los datos de la pestaña <b>Costes</b> de KERAjet (Cálculo de consumos) para cada modelo. Con ellos la app calcula la tinta y el coste por plancha y la previsión del planning.</p>
             <div class="pl-actions no-print" style="margin:10px 0 0">
                 <button type="button" class="btn btn-primary" onclick="openKeraEditor(-1)">＋ Nueva ficha de consumo</button>
+                <button type="button" class="btn btn-secondary" id="kcUndo" onclick="undoKera()">↶ Deshacer</button>
             </div>
             <input type="text" id="kcFilter" placeholder="🔍 Buscar modelo o SAP..." oninput="renderKera()" style="margin-top:12px">
             <div class="kc-list" id="kcList"></div>
@@ -671,11 +741,14 @@
             <h1 style="margin-bottom:4px">Planning semanal</h1>
             <div class="pl-toolbar">
                 <div class="pl-week">
-                    <button type="button" class="no-print" onclick="movePlanningWeek(-1)" aria-label="Semana anterior">‹</button>
+                    <button type="button" class="no-print" data-weekdrop="-1" onclick="movePlanningWeek(-1)" aria-label="Semana anterior">‹</button>
                     <span id="plWeekLabel"></span>
-                    <button type="button" class="no-print" onclick="movePlanningWeek(1)" aria-label="Semana siguiente">›</button>
+                    <button type="button" class="no-print" data-weekdrop="1" onclick="movePlanningWeek(1)" aria-label="Semana siguiente">›</button>
                 </div>
-                <button type="button" class="btn btn-secondary btn-small no-print" onclick="planningToday()">Hoy</button>
+                <span style="display:flex;gap:6px">
+                    <button type="button" class="btn btn-secondary btn-small no-print" id="plUndo" onclick="undoPlanning()">↶ Deshacer</button>
+                    <button type="button" class="btn btn-secondary btn-small no-print" onclick="planningToday()">Hoy</button>
+                </span>
             </div>
             <div class="pl-meta">
                 <label>Turno <select id="plShift" onchange="setPlanningWeekField('shift', this.value)"><option value="">—</option><option>Mañana</option><option>Tarde</option></select></label>
@@ -687,7 +760,7 @@
             </div>
             <div class="pl-scroll"><table class="pl-table" id="plTable"></table></div>
             <div class="pl-forecast" id="plForecast"></div>
-            <p class="pl-hint no-print">Toca una casilla o el nombre para poner o cambiar planchas. Para cambiar una faena de día, <b>arrástrala</b> a otra casilla de la misma fila (en el móvil, mantén el dedo y desliza).</p>
+            <p class="pl-hint no-print">Toca una casilla o el nombre para poner o cambiar planchas. Para cambiar una faena de día, <b>arrástrala</b> a otra casilla de la misma fila; para pasarla a otra semana, suéltala sobre las flechas ‹ › (en el móvil, mantén el dedo y desliza).</p>
             <div class="pl-modal" id="plModal" onclick="if (event.target === this) closePlanningEditor()">
                 <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="plEdTitle">
                     <h2 id="plEdTitle">Producción</h2>
@@ -774,6 +847,8 @@
             $('codesSap').innerHTML = UNDORA_CODES.map(([c, n]) => `<option value="${c}">${e(n)}</option>`).join('');
             $('codesName').innerHTML = [...new Set(UNDORA_CODES.map(([, n]) => shortName(n)))].sort().map(n => `<option value="${e(n)}"></option>`).join('');
             $('graphicName').addEventListener('change', () => {
+                const code = CODE_BY_NAME.get($('graphicName').value.trim().toUpperCase());
+                if (code && !$('sapField').value.trim()) { $('sapField').value = code; saveHeaderDraft(); }
                 const sub = substrateFromName($('graphicName').value);
                 if (sub && [...$('substrate').options].some(o => o.value === sub) && $('substrate').value !== sub) {
                     $('substrate').value = sub;
@@ -783,6 +858,75 @@
             });
         }
 
+
+        // ---------- Colecciones compartidas: fusión fila a fila + deshacer ----------
+        function mergeCollection(a, b, listKey) {
+            const ok = x => x && Array.isArray(x[listKey]);
+            if (!ok(a)) return ok(b) ? b : undefined;
+            if (!ok(b)) return a;
+            const newer = (b.updatedAt || '') > (a.updatedAt || '') ? b : a, older = newer === a ? b : a;
+            const deleted = { ...(a.deleted || {}) };
+            Object.entries(b.deleted || {}).forEach(([id, d]) => { if (!deleted[id] || d > deleted[id]) deleted[id] = d; });
+            const rows = new Map();
+            [...newer[listKey], ...older[listKey]].forEach(row => {
+                if (!row || !row.id) return;
+                const prev = rows.get(row.id);
+                if (!prev || (row.updatedAt || '') > (prev.updatedAt || '')) rows.set(row.id, row);
+            });
+            const result = { ...older, ...newer, deleted, updatedAt: newer.updatedAt || '' };
+            result[listKey] = [...rows.values()].filter(row => !(deleted[row.id] && deleted[row.id] >= (row.updatedAt || '')));
+            if (a.weeks || b.weeks) {
+                result.weeks = {};
+                new Set([...Object.keys(a.weeks || {}), ...Object.keys(b.weeks || {})]).forEach(k => {
+                    const x = a.weeks?.[k], y = b.weeks?.[k];
+                    result.weeks[k] = !x ? y : !y ? x : ((y.updatedAt || '') > (x.updatedAt || '') ? y : x);
+                });
+            }
+            return result;
+        }
+        // Marca con fecha solo las filas que han cambiado y apunta las borradas, para fusionar sin pisar a nadie
+        function stampCollection(prev, next, listKey) {
+            const now = new Date().toISOString(), strip = r => JSON.stringify({ ...r, updatedAt: undefined });
+            const before = new Map((prev?.[listKey] || []).map(r => [r.id, r]));
+            next.deleted = { ...(prev?.deleted || {}), ...(next.deleted || {}) };
+            next[listKey].forEach(r => {
+                if (!r.id) r.id = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                const old = before.get(r.id);
+                if (!old || strip(old) !== strip(r) || !r.updatedAt) r.updatedAt = old && strip(old) === strip(r) && old.updatedAt ? old.updatedAt : now;
+                before.delete(r.id);
+            });
+            before.forEach((_, id) => { next.deleted[id] = now; });
+            if (next.weeks) Object.entries(next.weeks).forEach(([k, w]) => {
+                const old = prev?.weeks?.[k];
+                if (!old || JSON.stringify({ ...old, updatedAt: undefined }) !== JSON.stringify({ ...w, updatedAt: undefined })) w.updatedAt = now;
+            });
+            next.updatedAt = now;
+            return next;
+        }
+        // Huella para saber si dos versiones tienen las mismas filas (sin depender del orden de las claves)
+        function collectionSig(x, listKey) {
+            if (!x || !Array.isArray(x[listKey])) return '';
+            return JSON.stringify([x[listKey].map(r => r.id + '@' + (r.updatedAt || '')).sort(),
+                Object.keys(x.deleted || {}).sort(), Object.entries(x.weeks || {}).map(([k, w]) => k + '@' + (w?.updatedAt || '')).sort()]);
+        }
+        function pushUndo(key, raw) {
+            if (!raw) return;
+            try {
+                const stack = JSON.parse(localStorage.getItem(key + '_undo') || '[]');
+                if (stack[stack.length - 1] === raw) return;
+                stack.push(raw); while (stack.length > 25) stack.shift();
+                localStorage.setItem(key + '_undo', JSON.stringify(stack));
+            } catch (e) {}
+        }
+        function popUndo(key) {
+            try {
+                const stack = JSON.parse(localStorage.getItem(key + '_undo') || '[]');
+                const raw = stack.pop();
+                localStorage.setItem(key + '_undo', JSON.stringify(stack));
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+        const undoCount = key => { try { return JSON.parse(localStorage.getItem(key + '_undo') || '[]').length; } catch (e) { return 0; } };
 
         // ---------- Consumos de tinta (KERAcost / KERAjet Cálculo de consumos) ----------
         const KERA_KEY = 'keracost';
@@ -795,7 +939,17 @@
             try { const k = JSON.parse(localStorage.getItem(KERA_KEY)); if (k && Array.isArray(k.items)) return k; } catch (e) {}
             return JSON.parse(JSON.stringify(KERA_SEED));
         }
-        function writeKera(k) { k.updatedAt = new Date().toISOString(); localStorage.setItem(KERA_KEY, JSON.stringify(k)); updateKeraSummary(); }
+        function writeKera(k, { undo = true } = {}) {
+            const raw = localStorage.getItem(KERA_KEY), prev = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(KERA_SEED));
+            if (undo) pushUndo(KERA_KEY, raw || JSON.stringify(KERA_SEED));
+            localStorage.setItem(KERA_KEY, JSON.stringify(stampCollection(prev, k, 'items')));
+            updateKeraSummary(); updateUndoButtons();
+        }
+        function undoKera() {
+            const prev = popUndo(KERA_KEY);
+            if (!prev) { toast('No hay nada que deshacer'); return; }
+            writeKera(prev, { undo: false }); renderKera(); toast('Cambio deshecho ↶');
+        }
         const nf = (n, d = 2) => Number(n || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
         const plateM2 = it => (Number(it.w) || 270.4) * (Number(it.h) || 120.4) / 10000;
         function keraTotals(it) {
@@ -809,7 +963,7 @@
             return items.find(it => it.sap && row.sap && it.sap === row.sap)
                 || items.find(it => it.sap === '' && row.deco && it.name && parseModel(it.name).model === parseModel(row.deco).model);
         }
-        function openKera() { $('homeView').style.display = 'none'; $('keraView').style.display = 'block'; renderKera(); window.scrollTo(0, 0); }
+        function openKera() { $('homeView').style.display = 'none'; $('keraView').style.display = 'block'; renderKera(); updateUndoButtons(); window.scrollTo(0, 0); }
         function closeKera() { $('keraView').style.display = 'none'; $('homeView').style.display = 'block'; updateKeraSummary(); }
         function inkBar(it) {
             const t = keraTotals(it).g || 1;
@@ -903,6 +1057,140 @@
                 (missing.size ? `<br><small style="color:#b45309">Sin ficha de consumo: ${[...missing].map(e).join(', ')}. Añádelas en «Consumos de tinta».</small>` : '');
         }
 
+
+        // ---------- Planning ↔ registros: lo producido de cada faena ----------
+        function productionMap() {
+            const map = new Map();
+            const add = (sap, x, who) => {
+                if (!sap || !x.date) return;
+                const k = sap + '|' + x.date, v = map.get(k) || { ok: 0, nok: 0, who: new Set() };
+                v.ok += Number(x.ok) || 0; v.nok += Number(x.nok) || 0; v.who.add(who); map.set(k, v);
+            };
+            Object.entries(DECORATORS).forEach(([dec, prefix]) => {
+                const who = displayDecorator(dec), headSap = localStorage.getItem(prefix + 'sap') || '';
+                readHistory(prefix).forEach(x => add(x.sap || headSap, x, who));
+                readArchive(prefix).forEach(a => (a.history || []).forEach(x => add(x.sap || a.sap, x, who)));
+            });
+            return map;
+        }
+        function renderTodayJobs() {
+            const box = $('todayJobs'); if (!box) return;
+            const p = readPlanning(), today = todayLocal(), prod = productionMap(), cur = $('sapField').value.trim();
+            const mon = mondayOf(new Date()), keys = Array.from({ length: 6 }, (_, i) => { const d = new Date(mon); d.setDate(d.getDate() + i); return isoDate(d); });
+            const jobs = (day) => p.rows.filter(r => Number(r.qty?.[day]) > 0).map(r => ({ r, day, q: Number(r.qty[day]), done: prod.get(r.sap + '|' + day)?.ok || 0 }));
+            const todays = jobs(today);
+            const pending = keys.filter(k => k !== today).flatMap(jobs).filter(j => j.done < j.q);
+            const card = j => { const m = parseModel(j.r.deco), pct = Math.min(100, j.done / j.q * 100);
+                return `<button type="button" class="tj ${j.r.sap && j.r.sap === cur ? 'current' : ''}" onclick="pickPlanningJob('${escapeHtml(j.r.id)}')">
+                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>SAP ${escapeHtml(j.r.sap || '—')}${j.day !== today ? ' · ' + formatDate(j.day).slice(0, 5) : ''}${j.r.reton ? ' · retonificado' : ''}</small></span>
+                    <span class="tj-q">${j.done} / ${j.q}<br><small>planchas OK</small></span>
+                    <span class="tj-bar"><span style="width:${pct}%"></span></span></button>`; };
+            box.innerHTML = `<h3>📅 Faena de hoy en el planning</h3>` +
+                (todays.length ? `<div class="tj-list">${todays.map(card).join('')}</div>` : '<p class="pl-hint" style="margin:0">Hoy no hay faena programada.</p>') +
+                (pending.length ? `<details class="tj-more"><summary>Pendiente de otros días de esta semana (${pending.length})</summary><div class="tj-list" style="margin-top:6px">${pending.map(card).join('')}</div></details>` : '') +
+                `<p class="pl-hint" style="margin:6px 0 0">Toca una faena para rellenar gráfica, SAP y sustrato.</p>`;
+        }
+        function pickPlanningJob(id) {
+            const r = readPlanning().rows.find(x => x.id === id); if (!r) return;
+            const curSap = $('sapField').value.trim(), curGraphic = $('graphicName').value.trim();
+            const same = (r.sap && r.sap === curSap) || (!curSap && !curGraphic);
+            if (!same && historyData.length) {
+                if (!confirm(`Tienes abierto el pedido de «${curGraphic || curSap}».\n\n¿Cerrarlo (se guarda en Pedidos anteriores) y empezar con «${parseModel(r.deco).model}»?`)) return;
+                clearHistory(true);
+            }
+            $('sapField').value = r.sap || '';
+            $('graphicName').value = r.deco ? shortName(r.deco) : '';
+            $('graphicName').dispatchEvent(new Event('change'));
+            if (!$('orderNumber').value.trim() && r.sap) $('orderNumber').value = r.sap;
+            saveHeaderDraft(); renderTodayJobs();
+            toast('Faena cargada: ' + parseModel(r.deco).model);
+            $('countOk').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+
+        // ---------- Resumen de producción ----------
+        function openSummary() { $('homeView').style.display = 'none'; $('summaryView').style.display = 'block'; renderSummary(); window.scrollTo(0, 0); }
+        function closeSummary() { $('summaryView').style.display = 'none'; $('homeView').style.display = 'block'; }
+        function summaryRange(kind) {
+            const now = new Date(), d = x => isoDate(x);
+            if (kind === 'week' || kind === 'lastweek') {
+                const m = mondayOf(now); if (kind === 'lastweek') m.setDate(m.getDate() - 7);
+                const e = new Date(m); e.setDate(e.getDate() + 6); return [d(m), d(e)];
+            }
+            if (kind === 'month' || kind === 'lastmonth') {
+                const off = kind === 'lastmonth' ? -1 : 0;
+                return [d(new Date(now.getFullYear(), now.getMonth() + off, 1)), d(new Date(now.getFullYear(), now.getMonth() + off + 1, 0))];
+            }
+            return ['0000-00-00', '9999-12-31'];
+        }
+        function allEntries() {
+            const out = [];
+            Object.entries(DECORATORS).forEach(([dec, prefix]) => {
+                const who = displayDecorator(dec);
+                const head = { sap: localStorage.getItem(prefix + 'sap') || '', graphic: localStorage.getItem(prefix + 'graphic') || '' };
+                readHistory(prefix).forEach(x => out.push({ ...x, who, sap: x.sap || head.sap, graphic: x.graphic || head.graphic }));
+                readArchive(prefix).forEach(a => (a.history || []).forEach(x => out.push({ ...x, who, sap: x.sap || a.sap || '', graphic: x.graphic || a.graphic || '' })));
+            });
+            return out;
+        }
+        function renderSummary() {
+            const [from, to] = summaryRange($('sumPeriod').value), e = escapeHtml;
+            $('sumRange').textContent = $('sumPeriod').value === 'all' ? '' : `${formatDate(from)} – ${formatDate(to)}`;
+            const rows = allEntries().filter(x => x.date >= from && x.date <= to);
+            const kera = x => findKeraFor({ sap: x.sap, deco: x.graphic });
+            const T = { ok: 0, nok: 0, h: 0, g: 0, c: 0, noInk: 0 };
+            const byWho = new Map(), byModel = new Map(), byDay = new Map();
+            rows.forEach(x => {
+                const ok = Number(x.ok) || 0, nok = Number(x.nok) || 0, h = Number(x.hours) || 0, k = kera(x), t = k ? keraTotals(k) : null;
+                T.ok += ok; T.nok += nok; T.h += h;
+                if (t) { T.g += t.gPlate * (ok + nok); T.c += t.cPlate * (ok + nok); } else if (ok + nok) T.noInk += ok + nok;
+                const w = byWho.get(x.who) || { ok: 0, nok: 0, h: 0 }; w.ok += ok; w.nok += nok; w.h += h; byWho.set(x.who, w);
+                const mk = x.sap || parseModel(x.graphic).model || '—';
+                const m = byModel.get(mk) || { name: parseModel(x.graphic || CODE_BY_SAP.get(x.sap) || '').model || x.graphic || '—', caraM: parseModel(x.graphic || CODE_BY_SAP.get(x.sap) || '').caraM, sap: x.sap, ok: 0, nok: 0, c: 0, hasInk: !!t };
+                m.ok += ok; m.nok += nok; if (t) m.c += t.cPlate * (ok + nok); byModel.set(mk, m);
+                const dd = byDay.get(x.date) || { ok: 0, nok: 0 }; dd.ok += ok; dd.nok += nok; byDay.set(x.date, dd);
+            });
+            // Cumplimiento del planning
+            const plan = readPlanning(), prod = productionMap(); let planned = 0, doneOfPlanned = 0; const plannedDay = new Map();
+            plan.rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
+                if (k < from || k > to) return; q = Number(q) || 0;
+                planned += q; doneOfPlanned += Math.min(q, prod.get(r.sap + '|' + k)?.ok || 0);
+                plannedDay.set(k, (plannedDay.get(k) || 0) + q);
+            }));
+            const merma = (ok, nok) => ok + nok ? nok / (ok + nok) * 100 : 0;
+            const pct = n => nf(n, 1) + '%';
+            const M = merma(T.ok, T.nok);
+            let html = `<div class="sum-kpis">
+                <div class="sum-kpi"><b>${T.ok}</b><small>Planchas OK</small></div>
+                <div class="sum-kpi ${T.nok ? 'bad' : ''}"><b>${T.nok}</b><small>No OK</small></div>
+                <div class="sum-kpi ${M >= 10 ? 'bad' : ''}"><b>${pct(M)}</b><small>Merma</small></div>
+                <div class="sum-kpi"><b>${nf(T.h, 1)} h</b><small>${T.h ? nf((T.ok + T.nok) / T.h, 1) : '0'} planchas/hora</small></div>
+                <div class="sum-kpi"><b>${planned ? pct(doneOfPlanned / planned * 100) : '—'}</b><small>Planning cumplido<br>${doneOfPlanned} de ${planned} pl.</small></div>
+                <div class="sum-kpi"><b>${nf(T.c, 0)} €</b><small>Tinta estimada · ${nf(T.g / 1000, 1)} kg</small></div>
+            </div>`;
+            if (T.noInk) html += `<p class="pl-hint" style="color:#b45309">${T.noInk} planchas sin ficha de consumo: su tinta no está en el coste.</p>`;
+            const days = [...new Set([...byDay.keys(), ...plannedDay.keys()])].sort();
+            if (days.length && days.length <= 62) {
+                const max = Math.max(1, ...days.map(k => Math.max((byDay.get(k)?.ok || 0) + (byDay.get(k)?.nok || 0), plannedDay.get(k) || 0)));
+                html += `<div class="sum-section"><h3>Por día</h3><div class="sum-chart">${days.map(k => { const v = byDay.get(k) || { ok: 0, nok: 0 }, pl = plannedDay.get(k) || 0;
+                    return `<div class="sum-col" title="${formatDate(k)}: ${v.ok} OK · ${v.nok} No OK · ${pl} programadas">${pl ? `<span class="plan" style="bottom:${pl / max * 100}%"></span>` : ''}<i class="nok" style="height:${v.nok / max * 100}%"></i><i class="ok" style="height:${v.ok / max * 100}%"></i></div>`; }).join('')}</div>
+                    <div class="sum-days">${days.map(k => `<span>${formatDate(k).slice(0, 5)}</span>`).join('')}</div>
+                    <div class="sum-legend"><i style="background:#16a34a"></i>OK<i style="background:#dc2626"></i>No OK<i style="border-top:2px dashed currentColor;height:0"></i>Programado</div></div>`;
+            }
+            html += `<div class="sum-section"><h3>Por persona</h3><table class="sum-table"><thead><tr><th>Persona</th><th>OK</th><th>No OK</th><th>Merma</th><th>Horas</th><th>Pl./hora</th></tr></thead><tbody>${
+                [...byWho].sort((a, b) => b[1].ok - a[1].ok).map(([w, v]) => { const m = merma(v.ok, v.nok);
+                    return `<tr><td>${e(w)}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${nf(v.h, 1)}</td><td>${v.h ? nf((v.ok + v.nok) / v.h, 1) : '—'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></div>`;
+            html += `<div class="sum-section"><h3>Por modelo (de más a menos merma)</h3><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>OK</th><th>No OK</th><th>Merma</th><th>Tinta €</th></tr></thead><tbody>${
+                [...byModel.values()].sort((a, b) => merma(b.ok, b.nok) - merma(a.ok, a.nok) || b.ok - a.ok).map(v => { const m = merma(v.ok, v.nok);
+                    return `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></div>`;
+            $('sumBody').innerHTML = html;
+        }
+        function printSummary() {
+            const prev = document.title; document.title = 'Resumen_produccion_' + $('sumPeriod').value;
+            document.body.classList.add('print-summary'); window.print();
+            setTimeout(() => { document.body.classList.remove('print-summary'); document.title = prev; }, 1000);
+        }
+
         // ---------- Planning semanal ----------
         const PLANNING_KEY = 'planning';
         const PLANNING_SEED = {"updatedAt": "2026-11-18T07:00:00.000Z", "weeks": {"2026-W47": {"shift": "Tarde", "updated": "2026-11-12"}}, "rows": [{"id": "seed-1", "reton": false, "sap": "100380178", "deco": "UNDR. CAMPASP. GR. APOMAZ. EM 1200X2700", "qty": {"2026-11-13": 250}}, {"id": "seed-2", "reton": false, "sap": "100383786", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700", "qty": {"2026-11-13": 90}}, {"id": "seed-3", "reton": false, "sap": "100384156", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700 M", "qty": {"2026-11-13": 16}}, {"id": "seed-4", "reton": true, "sap": "100387360", "deco": "UNDR. AVORIO ROCA EM 1200X2700 M", "qty": {"2026-11-13": 12}}, {"id": "seed-5", "reton": false, "sap": "100384007", "deco": "UNDR. CAPRI BLANCO ARENISCA EM 1200X2700", "qty": {"2026-11-16": 300}}, {"id": "seed-6", "reton": false, "sap": "100384059", "deco": "UNDR. CAPRI BLA ARENISCA EM 1200X2700 M", "qty": {"2026-11-16": 12}}, {"id": "seed-7", "reton": false, "sap": "100382615", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700", "qty": {"2026-11-17": 300}}, {"id": "seed-8", "reton": false, "sap": "100383113", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700 M", "qty": {"2026-11-17": 10}}, {"id": "seed-9", "reton": false, "sap": "100382628", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700", "qty": {"2026-11-18": 300}}, {"id": "seed-10", "reton": false, "sap": "100384153", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700 M", "qty": {"2026-11-18": 10}}, {"id": "seed-11", "reton": false, "sap": "100380186", "deco": "UNDR. TRAV ALABAS ANTICATO EM 1200X2700", "qty": {"2026-11-19": 300}}, {"id": "seed-12", "reton": false, "sap": "100384155", "deco": "UNDR. TRAV ALABAS ANTICA EM 1200X2700 M", "qty": {"2026-11-19": 10}}, {"id": "seed-13", "reton": false, "sap": "100383773", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700", "qty": {}}, {"id": "seed-14", "reton": false, "sap": "100384046", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700 M", "qty": {}}, {"id": "seed-15", "reton": false, "sap": "100384056", "deco": "UNDR. TUNDRA GREY LINEAL EM 1197X2700 M", "qty": {}}]};
@@ -915,10 +1203,22 @@
             } catch (e) {}
             return JSON.parse(JSON.stringify(PLANNING_SEED));
         }
-        function writePlanning(p) {
-            p.updatedAt = new Date().toISOString();
-            localStorage.setItem(PLANNING_KEY, JSON.stringify(p));
-            updatePlanningSummary();
+        function writePlanning(p, { undo = true } = {}) {
+            const raw = localStorage.getItem(PLANNING_KEY), prev = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(PLANNING_SEED));
+            if (undo) pushUndo(PLANNING_KEY, raw || JSON.stringify(PLANNING_SEED));
+            localStorage.setItem(PLANNING_KEY, JSON.stringify(stampCollection(prev, p, 'rows')));
+            updatePlanningSummary(); updateUndoButtons();
+        }
+        function undoPlanning() {
+            const prev = popUndo(PLANNING_KEY);
+            if (!prev) { toast('No hay nada que deshacer'); return; }
+            writePlanning(prev, { undo: false }); renderPlanning(); toast('Cambio deshecho ↶');
+        }
+        function updateUndoButtons() {
+            [['plUndo', PLANNING_KEY], ['kcUndo', KERA_KEY]].forEach(([id, key]) => {
+                const b = $(id); if (!b) return; const n = undoCount(key);
+                b.disabled = !n; b.textContent = n ? `↶ Deshacer (${n})` : '↶ Deshacer';
+            });
         }
         const isoDate = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         function mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
@@ -936,7 +1236,7 @@
             $('homeView').style.display = 'none';
             $('planningView').style.display = 'block';
             document.body.classList.add('planning-open');
-            renderPlanning();
+            renderPlanning(); updateUndoButtons();
             window.scrollTo(0, 0);
         }
         function closePlanning() {
@@ -964,6 +1264,21 @@
             const only = $('plOnlyWeek').checked;
             const e = escapeHtml;
             const totals = keys.map(k => p.rows.reduce((a, r) => a + (Number((r.qty || {})[k]) || 0), 0));
+            const prod = productionMap();
+            const cellClass = (r, k) => {
+                const q = Number((r.qty || {})[k]) || 0, d = prod.get(r.sap + '|' + k)?.ok || 0;
+                if (q > 0 && d >= q) return 'filled done';
+                if (q > 0 && d > 0) return `filled partial" style="--pct:${Math.round(d / q * 100)}%`;
+                if (q > 0) return 'filled';
+                return d > 0 ? 'extra' : '';
+            };
+            const cellText = (r, k) => {
+                const q = Number((r.qty || {})[k]) || 0, v = prod.get(r.sap + '|' + k), d = v?.ok || 0;
+                const who = v ? [...v.who].join(', ') : '';
+                if (q > 0 && d > 0) return `${q}<small title="${escapeHtml(who)}">${d >= q ? '✓ ' : ''}${d} hechas</small>`;
+                if (q > 0) return String(q);
+                return d > 0 ? `<small title="${escapeHtml(who)}">${d} hechas<br>sin programar</small>` : '＋';
+            };
             let html = `<thead><tr><th>Retonif.</th><th>SAP</th><th>Programación decoración</th>${days.map((d, i) =>
                 `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}</small></th>`).join('')}</tr></thead><tbody>`;
             // Orden tipo Gantt: primero lo que tiene faena esta semana, por el primer día
@@ -980,7 +1295,7 @@
                     <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
                     <td>${e(r.sap || '—')}</td>
                     <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre'; })()}</button></td>
-                    ${keys.map(k => `<td class="${Number(q[k]) > 0 ? 'filled' : ''}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${Number(q[k]) > 0 ? q[k] : '＋'}</button></td>`).join('')}
+                    ${keys.map(k => `<td class="${cellClass(r, k)}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${cellText(r, k)}</button></td>`).join('')}
                 </tr>`;
             });
             if (!p.rows.length) html += `<tr><td colspan="${3 + keys.length}" style="padding:16px">Todavía no hay producción. Pulsa «＋ Añadir producción».</td></tr>`;
@@ -1073,13 +1388,14 @@
                     document.body.classList.add('pl-dragging');
                     plDrag.ghost = document.createElement('div');
                     plDrag.ghost.className = 'pl-drag-ghost';
-                    plDrag.ghost.textContent = plDrag.td.textContent.trim() + ' pl.';
+                    plDrag.ghost.textContent = (readPlanning().rows[plDrag.row]?.qty?.[plDrag.k] || '') + ' pl.';
                     document.body.appendChild(plDrag.ghost);
                 }
                 ev.preventDefault();
                 plDrag.ghost.style.left = ev.clientX + 'px'; plDrag.ghost.style.top = ev.clientY + 'px';
+                const el = document.elementFromPoint(ev.clientX, ev.clientY), weekBtn = el && el.closest('[data-weekdrop]');
                 const over = plCellAt(ev.clientX, ev.clientY);
-                const ok = over && over.dataset.row === plDrag.row && over.dataset.k !== plDrag.k ? over : null;
+                const ok = weekBtn || (over && over.dataset.row === plDrag.row && over.dataset.k !== plDrag.k ? over : null);
                 if (plDrag.over !== ok) { plDrag.over?.classList.remove('pl-drop'); ok?.classList.add('pl-drop'); plDrag.over = ok; }
             }, { passive: false });
             const end = () => {
@@ -1090,6 +1406,12 @@
                 d.ghost?.remove(); d.over?.classList.remove('pl-drop');
                 plJustDragged = true; setTimeout(() => { plJustDragged = false; }, 300);
                 if (!d.over) return;
+                if (d.over.dataset.weekdrop) {
+                    const dir = Number(d.over.dataset.weekdrop), t = new Date(d.k + 'T12:00:00'); t.setDate(t.getDate() + 7 * dir);
+                    movePlanningDay(Number(d.row), d.k, isoDate(t));
+                    movePlanningWeek(dir);
+                    return;
+                }
                 movePlanningDay(Number(d.row), d.k, d.over.dataset.k);
             };
             window.addEventListener('pointerup', end);
@@ -1211,6 +1533,11 @@
                 await prompt.prompt();
             });
             $('statusField').addEventListener('change', checkKerajetAlert);
+            $('sapField').addEventListener('change', () => {
+                const sap = $('sapField').value.trim();
+                if (CODE_BY_SAP.has(sap) && !$('graphicName').value.trim()) { $('graphicName').value = shortName(CODE_BY_SAP.get(sap)); $('graphicName').dispatchEvent(new Event('change')); }
+                saveHeaderDraft(); renderTodayJobs();
+            });
             initSync();
             ['timeFrom', 'timeTo'].forEach(id => $(id).addEventListener('input', () => { highlightShift(); updateHoursPreview(); checkKerajetAlert(); }));
             // Guardar la cabecera del pedido al escribir (no se pierde si se cierra la app)
@@ -1289,8 +1616,10 @@
             $('substrate').value = localStorage.getItem(getStorageKey('substrate')) || '';
             $('material').value = localStorage.getItem(getStorageKey('material')) || '';
             $('graphicName').value = localStorage.getItem(getStorageKey('graphic')) || '';
+            $('sapField').value = localStorage.getItem(getStorageKey('sap')) || '';
 
             historyData = readHistory(DECORATORS[decoratorName]);
+            renderTodayJobs();
             resetSessionFields();
             renderHistory();
             renderArchive();
@@ -1332,6 +1661,7 @@
             localStorage.setItem(getStorageKey('substrate'), $('substrate').value);
             localStorage.setItem(getStorageKey('material'), $('material').value);
             localStorage.setItem(getStorageKey('graphic'), $('graphicName').value.trim());
+            localStorage.setItem(getStorageKey('sap'), $('sapField').value.trim());
         }
 
         // ---------- Contadores ----------
@@ -1438,7 +1768,9 @@
                 status: $('statusField').value,
                 ok: counts.ok,
                 nok: counts.nok,
-                comment: $('comments').value.trim()
+                comment: $('comments').value.trim(),
+                sap: $('sapField').value.trim(),
+                graphic: $('graphicName').value.trim()
             };
 
             if (wasEditing) historyData[editingIndex] = entry;
@@ -1448,6 +1780,7 @@
             resetSessionFields();
             renderHistory();
             checkKerajetAlert();
+            renderTodayJobs();
             toast(wasEditing ? 'Registro actualizado ✔' : `Registro de ${displayDecorator(currentDecorator)} guardado ✔`);
         }
 
@@ -1641,6 +1974,7 @@
                     substrate: localStorage.getItem(p + 'substrate') || '',
                     material: localStorage.getItem(p + 'material') || '',
                     graphic: localStorage.getItem(p + 'graphic') || '',
+                    sap: localStorage.getItem(p + 'sap') || '',
                     history: readHistory(p),
                     archive: readArchive(p)
                 };
@@ -1671,6 +2005,7 @@
                         localStorage.setItem(p + 'substrate', d.substrate || '');
                         localStorage.setItem(p + 'material', d.material || '');
                         localStorage.setItem(p + 'graphic', d.graphic || '');
+                        localStorage.setItem(p + 'sap', d.sap || '');
                         localStorage.setItem(p + 'history', JSON.stringify(Array.isArray(d.history) ? d.history : []));
                         localStorage.setItem(p + 'archive', JSON.stringify(Array.isArray(d.archive) ? d.archive : []));
                     });
@@ -1690,9 +2025,9 @@
             catch (e) { return []; }
         }
 
-        function clearHistory() {
-            if (!historyData.length && !$('orderNumber').value.trim()) { toast('No hay ningún pedido abierto'); return; }
-            if (!confirm(`¿Cerrar el pedido actual de ${displayDecorator(currentDecorator)} y empezar uno nuevo?\n\nEl pedido se guardará en "Pedidos anteriores".`)) return;
+        function clearHistory(skipConfirm) {
+            if (!historyData.length && !$('orderNumber').value.trim()) { if (!skipConfirm) toast('No hay ningún pedido abierto'); return; }
+            if (!skipConfirm && !confirm(`¿Cerrar el pedido actual de ${displayDecorator(currentDecorator)} y empezar uno nuevo?\n\nEl pedido se guardará en "Pedidos anteriores".`)) return;
 
             const sel = $('substrate');
             if (historyData.length) {
@@ -1707,21 +2042,24 @@
                     substrate: sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '',
                     material: $('material').value ? $('material').selectedOptions[0].textContent : '',
                     graphic: $('graphicName').value.trim(),
+                    sap: $('sapField').value.trim(),
                     history: historyData
                 });
                 localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
             }
 
-            ['history', 'order', 'tech', 'substrate', 'material', 'graphic'].forEach(k => localStorage.removeItem(getStorageKey(k)));
+            ['history', 'order', 'tech', 'substrate', 'material', 'graphic', 'sap'].forEach(k => localStorage.removeItem(getStorageKey(k)));
             historyData = [];
             $('orderNumber').value = '';
             $('technician').value = displayDecorator(currentDecorator);
             $('substrate').selectedIndex = 0;
             $('material').value = '';
             $('graphicName').value = '';
+            $('sapField').value = '';
             resetSessionFields();
             renderHistory();
             renderArchive();
+            renderTodayJobs();
             checkKerajetAlert();
             toast('Pedido archivado. Listo para uno nuevo.');
         }
@@ -1925,6 +2263,7 @@
                     localStorage.setItem(p + 'substrate', d.substrate || '');
                     localStorage.setItem(p + 'material', d.material || '');
                     localStorage.setItem(p + 'graphic', d.graphic || '');
+                    localStorage.setItem(p + 'sap', d.sap || '');
                     localStorage.setItem(p + 'history', JSON.stringify(Array.isArray(d.history) ? d.history : []));
                     localStorage.setItem(p + 'archive', JSON.stringify(Array.isArray(d.archive) ? d.archive : []));
                 });
@@ -1958,7 +2297,7 @@
                     });
                     localStorage.setItem(prefix + 'archive', JSON.stringify([...archives.values()]));
                     const useCloudHeader = (remote.exportedAt || '') > (localStorage.getItem(LOCAL_TS_KEY) || '');
-                    ['order', 'tech', 'substrate', 'material', 'graphic'].forEach(key => {
+                    ['order', 'tech', 'substrate', 'material', 'graphic', 'sap'].forEach(key => {
                         if (key === 'material' && useCloudHeader) {
                             localStorage.setItem(prefix + key, cloudDec.material || '');
                             return;
@@ -1968,18 +2307,18 @@
                 });
                 localStorage.setItem('deleted_records', JSON.stringify(deleted));
                 localStorage.setItem('deleted_archives', JSON.stringify(deletedArchives));
-                const localPlan = JSON.parse(localStorage.getItem(PLANNING_KEY) || 'null');
-                if (remote.planning && Array.isArray(remote.planning.rows) && (remote.planning.updatedAt || '') > (localPlan?.updatedAt || '')) {
-                    localStorage.setItem(PLANNING_KEY, JSON.stringify(remote.planning));
-                    if ($('planningView').style.display === 'block') renderPlanning();
-                    updatePlanningSummary();
-                }
-                const localKera = JSON.parse(localStorage.getItem(KERA_KEY) || 'null');
-                if (remote.keracost && Array.isArray(remote.keracost.items) && (remote.keracost.updatedAt || '') > (localKera?.updatedAt || '')) {
-                    localStorage.setItem(KERA_KEY, JSON.stringify(remote.keracost));
-                    if ($('keraView').style.display === 'block') renderKera();
-                    updateKeraSummary();
-                }
+                [[PLANNING_KEY, 'planning', 'rows'], [KERA_KEY, 'keracost', 'items']].forEach(([key, field, list]) => {
+                    const localRaw = localStorage.getItem(key);
+                    const merged = mergeCollection(localRaw ? JSON.parse(localRaw) : null, remote[field], list);
+                    if (!merged) return;
+                    const next = JSON.stringify(merged);
+                    if (next === localRaw) return;
+                    localStorage.setItem(key, next);
+                    if (collectionSig(merged, list) !== collectionSig(remote[field], list)) localStorage.setItem(LOCAL_TS_KEY, new Date().toISOString());
+                });
+                if ($('planningView').style.display === 'block' && !$('plModal').classList.contains('open')) renderPlanning();
+                if ($('keraView').style.display === 'block' && !$('kcModal').classList.contains('open')) renderKera();
+                updatePlanningSummary(); updateKeraSummary();
             } finally { applyingRemote = false; }
         }
 

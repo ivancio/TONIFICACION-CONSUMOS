@@ -146,3 +146,17 @@ testPlan('keracost keeps the newest version', () => {
   assertPlan.equal(mergePlanning(a, b).keracost.items[0].id, 'b');
   assertPlan.equal(mergePlanning(b, { decorators: {} }).keracost.items[0].id, 'b');
 });
+
+import { mergeCollection } from './worker/merge.js';
+testPlan('planning merges row by row without losing edits', () => {
+  const base = { updatedAt: '1', rows: [{ id: 'a', qty: { d: 1 }, updatedAt: '1' }, { id: 'b', qty: {}, updatedAt: '1' }] };
+  const alice = { updatedAt: '3', rows: [{ id: 'a', qty: { d: 5 }, updatedAt: '3' }, { id: 'b', qty: {}, updatedAt: '1' }] };
+  const bob = { updatedAt: '4', rows: [{ id: 'a', qty: { d: 1 }, updatedAt: '1' }, { id: 'b', qty: { d: 9 }, updatedAt: '4' }, { id: 'c', updatedAt: '4' }] };
+  const m = mergeCollection(alice, bob, 'rows');
+  assertPlan.equal(m.rows.find(r => r.id === 'a').qty.d, 5);
+  assertPlan.equal(m.rows.find(r => r.id === 'b').qty.d, 9);
+  assertPlan.ok(m.rows.find(r => r.id === 'c'));
+  const del = mergeCollection({ updatedAt: '5', rows: [{ id: 'b', updatedAt: '1' }], deleted: { a: '5' } }, base, 'rows');
+  assertPlan.equal(del.rows.find(r => r.id === 'a'), undefined);
+  assertPlan.equal(mergeCollection(undefined, base, 'rows'), base);
+});
