@@ -73,6 +73,8 @@ function mergeBackups_(current, incoming) {
   if (planning) merged.planning = planning;
   const keracost = mergeCollection_(current.keracost, incoming.keracost, 'items');
   if (keracost) merged.keracost = keracost;
+  const tono = mergeCollection_(current.tono, incoming.tono, 'items');
+  if (tono) merged.tono = tono;
   return merged;
 }
 

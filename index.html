@@ -275,6 +275,34 @@
         #fullReport { display: none; }
         #planningView { display: none; }
         #keraView { display: none; }
+        #tonoView { display: none; }
+        .tono-btn { background: #7c3aed; }
+        .tn-steps { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+        .tn-mode { border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+        .tn-mode.active { color: #fff; }
+        .tn-mode[data-m="ref"].active { background: #2563eb; border-color: #2563eb; }
+        .tn-mode[data-m="prod"].active { background: #ea580c; border-color: #ea580c; }
+        .tn-mode[data-m="gray"].active { background: #6b7280; border-color: #6b7280; }
+        .tn-mode .ok { margin-left: 4px; }
+        .tn-stage { position: relative; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #111; touch-action: none; }
+        .tn-stage canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+        .tn-empty { padding: 40px 16px; text-align: center; color: #cbd5e1; }
+        .tn-result { margin-top: 12px; border-radius: 12px; padding: 12px 14px; background: var(--soft-bg); color: var(--text-color); }
+        .tn-swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .tn-sw { border-radius: 10px; height: 64px; display: flex; align-items: flex-end; padding: 6px 8px; font-size: 0.78rem; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+        .tn-de { font-size: 1.5rem; font-weight: 800; }
+        .tn-de small { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+        .tn-dir { display: grid; gap: 4px; margin: 8px 0; font-size: 0.92rem; }
+        .tn-dir div { display: flex; gap: 8px; align-items: center; }
+        .tn-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--card-bg); position: relative; max-width: 220px; }
+        .tn-bar i { position: absolute; top: -2px; width: 4px; height: 12px; border-radius: 2px; background: var(--text-color); }
+        .tn-bar::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+        .tn-hist { display: grid; gap: 8px; margin-top: 10px; }
+        .tn-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 10px; color: var(--text-color); }
+        .tn-item .pair { display: flex; } .tn-item .pair span { width: 22px; height: 34px; } .tn-item .pair span:first-child { border-radius: 6px 0 0 6px; } .tn-item .pair span:last-child { border-radius: 0 6px 6px 0; }
+        .tn-item img { width: 56px; height: 34px; object-fit: cover; border-radius: 6px; }
+        .tn-item small { color: var(--muted); }
+        .tn-warn { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
         #summaryView { display: none; }
         .sum-btn { background: #1d4ed8; }
         .planning-btn[hidden] { display: none; }
@@ -464,6 +492,11 @@
 
             <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
                 <span>📊 Resumen de producción<small>Metros, merma, coste de tinta y previsión</small></span>
+                <span aria-hidden="true">›</span>
+            </button>
+
+            <button type="button" class="planning-btn tono-btn" onclick="openTono()">
+                <span>🎯 Comparar tono con foto<small>Referencia frente a producción · orientativo</small></span>
                 <span aria-hidden="true">›</span>
             </button>
 
@@ -700,6 +733,28 @@
                 <button type="button" class="btn btn-secondary btn-small no-print" onclick="printSummary()">🖨 Imprimir / PDF</button>
             </div>
             <div id="sumBody"></div>
+        </div>
+
+        <div id="tonoView">
+            <button type="button" class="nav-back no-print" onclick="closeTono()">← Volver</button>
+            <h1 style="margin-bottom:4px">Comparar tono</h1>
+            <p class="pl-hint" style="margin-top:0">Haz <b>una sola foto</b> con la pieza de referencia y la producida <b>juntas</b>, con la misma luz y sin reflejos. Si tienes una tarjeta gris, ponla al lado. Es una ayuda <b>orientativa</b>: no sustituye al espectrofotómetro ni al ojo.</p>
+            <div class="form-row">
+                <div class="form-group" style="flex:2"><label for="tnModel">Modelo</label><input type="text" id="tnModel" list="codesSearch" placeholder="Busca por nombre o SAP" autocomplete="off"></div>
+                <div class="form-group"><label>&nbsp;</label>
+                    <label class="btn btn-primary" style="display:block;text-align:center;cursor:pointer">📷 Hacer / elegir foto<input type="file" id="tnFile" accept="image/*" capture="environment" hidden></label>
+                </div>
+            </div>
+            <div class="tn-steps" id="tnSteps">
+                <button type="button" class="tn-mode active" data-m="ref" onclick="setTonoMode('ref')">1 · Referencia<span class="ok" id="tnOkref"></span></button>
+                <button type="button" class="tn-mode" data-m="prod" onclick="setTonoMode('prod')">2 · Producción<span class="ok" id="tnOkprod"></span></button>
+                <button type="button" class="tn-mode" data-m="gray" onclick="setTonoMode('gray')">Gris (opcional)<span class="ok" id="tnOkgray"></span></button>
+            </div>
+            <div class="tn-stage" id="tnStage"><div class="tn-empty">Haz o elige una foto. Después arrastra un recuadro sobre cada pieza (zonas parecidas del diseño).</div><canvas id="tnCanvas" hidden></canvas></div>
+            <div id="tnResult"></div>
+            <h3 style="margin-top:20px">Comparaciones guardadas</h3>
+            <input type="text" id="tnFilter" placeholder="🔍 Filtrar por modelo o SAP..." oninput="renderTonoHistory()">
+            <div class="tn-hist" id="tnHist"></div>
         </div>
 
         <div id="keraView">
@@ -1212,6 +1267,165 @@
             setTimeout(() => { document.body.classList.remove('print-summary'); document.title = prev; }, 1000);
         }
 
+
+        // ---------- Comparar tono con foto (orientativo) ----------
+        const TONO_KEY = 'tono', TONO_THUMBS = 'tono_thumbs';
+        let tnImg = null, tnMode = 'ref', tnRects = {}, tnDragStart = null, tnLast = null;
+        function readTono() { try { const t = JSON.parse(localStorage.getItem(TONO_KEY)); if (t && Array.isArray(t.items)) return t; } catch (e) {} return { items: [] }; }
+        function writeTono(t) {
+            const raw = localStorage.getItem(TONO_KEY), prev = raw ? JSON.parse(raw) : { items: [] };
+            localStorage.setItem(TONO_KEY, JSON.stringify(stampCollection(prev, t, 'items')));
+        }
+        function openTono() {
+            $('homeView').style.display = 'none'; $('tonoView').style.display = 'block';
+            if (!$('codesSearch').options.length)
+                $('codesSearch').innerHTML = UNDORA_CODES.map(([c, n]) => [c, shortName(n)]).sort((a, b) => a[1].localeCompare(b[1])).map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
+            renderTonoHistory(); window.scrollTo(0, 0);
+        }
+        function closeTono() { $('tonoView').style.display = 'none'; $('homeView').style.display = 'block'; }
+        function setTonoMode(m) { tnMode = m; document.querySelectorAll('.tn-mode').forEach(b => b.classList.toggle('active', b.dataset.m === m)); }
+
+        // Color: sRGB → lineal → XYZ (D65) → CIELAB
+        const toLin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+        const fromLin = c => Math.round(255 * Math.max(0, Math.min(1, c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055)));
+        function linToLab([r, g, b]) {
+            const X = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047, Y = 0.2126 * r + 0.7152 * g + 0.0722 * b, Z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+            const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+            return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+        }
+        function deltaE2000([L1, a1, b1], [L2, a2, b2]) {
+            const rad = Math.PI / 180, C1 = Math.hypot(a1, b1), C2 = Math.hypot(a2, b2), Cm = (C1 + C2) / 2;
+            const G = 0.5 * (1 - Math.sqrt(Math.pow(Cm, 7) / (Math.pow(Cm, 7) + Math.pow(25, 7))));
+            const a1p = (1 + G) * a1, a2p = (1 + G) * a2, C1p = Math.hypot(a1p, b1), C2p = Math.hypot(a2p, b2);
+            const h = (b, a) => { const v = Math.atan2(b, a) / rad; return v < 0 ? v + 360 : v; };
+            const h1p = h(b1, a1p), h2p = h(b2, a2p);
+            const dLp = L2 - L1, dCp = C2p - C1p;
+            let dhp = h2p - h1p; if (C1p * C2p === 0) dhp = 0; else if (dhp > 180) dhp -= 360; else if (dhp < -180) dhp += 360;
+            const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(dhp * rad / 2);
+            const Lm = (L1 + L2) / 2, Cmp = (C1p + C2p) / 2;
+            let hm = h1p + h2p; if (C1p * C2p !== 0) hm = Math.abs(h1p - h2p) > 180 ? (hm + (hm < 360 ? 360 : -360)) / 2 : hm / 2;
+            const T = 1 - 0.17 * Math.cos((hm - 30) * rad) + 0.24 * Math.cos(2 * hm * rad) + 0.32 * Math.cos((3 * hm + 6) * rad) - 0.2 * Math.cos((4 * hm - 63) * rad);
+            const SL = 1 + 0.015 * Math.pow(Lm - 50, 2) / Math.sqrt(20 + Math.pow(Lm - 50, 2)), SC = 1 + 0.045 * Cmp, SH = 1 + 0.015 * Cmp * T;
+            const RT = -2 * Math.sqrt(Math.pow(Cmp, 7) / (Math.pow(Cmp, 7) + Math.pow(25, 7))) * Math.sin(60 * Math.exp(-Math.pow((hm - 275) / 25, 2)) * rad);
+            return Math.sqrt(Math.pow(dLp / SL, 2) + Math.pow(dCp / SC, 2) + Math.pow(dHp / SH, 2) + RT * (dCp / SC) * (dHp / SH));
+        }
+        // Media robusta de una zona (descarta el 10 % más claro y el 10 % más oscuro: vetas, brillos, motas)
+        function areaLinear(rect) {
+            const c = $('tnCanvas'), ctx = c.getContext('2d');
+            const x = Math.round(Math.min(rect.x0, rect.x1)), y = Math.round(Math.min(rect.y0, rect.y1));
+            const w = Math.max(1, Math.round(Math.abs(rect.x1 - rect.x0))), hgt = Math.max(1, Math.round(Math.abs(rect.y1 - rect.y0)));
+            const d = ctx.getImageData(x, y, w, hgt).data, px = [];
+            const step = Math.max(1, Math.floor(Math.sqrt(w * hgt / 40000)));
+            for (let j = 0; j < hgt; j += step) for (let i = 0; i < w; i += step) {
+                const k = (j * w + i) * 4, r = toLin(d[k]), g = toLin(d[k + 1]), b = toLin(d[k + 2]);
+                px.push([r, g, b, 0.2126 * r + 0.7152 * g + 0.0722 * b]);
+            }
+            px.sort((p, q) => p[3] - q[3]);
+            const cut = Math.floor(px.length * 0.1), keep = px.slice(cut, px.length - cut || undefined);
+            const m = [0, 0, 0]; keep.forEach(p => { m[0] += p[0]; m[1] += p[1]; m[2] += p[2]; });
+            return m.map(v => v / Math.max(1, keep.length));
+        }
+        function drawTono() {
+            const c = $('tnCanvas'), ctx = c.getContext('2d');
+            ctx.drawImage(tnImg, 0, 0, c.width, c.height);
+            const col = { ref: '#2563eb', prod: '#ea580c', gray: '#9ca3af' }, lab = { ref: 'REFERENCIA', prod: 'PRODUCCIÓN', gray: 'GRIS' };
+            ctx.lineWidth = Math.max(3, c.width / 300); ctx.font = `bold ${Math.max(14, c.width / 45)}px system-ui, sans-serif`;
+            Object.entries(tnRects).forEach(([m, r]) => {
+                const x = Math.min(r.x0, r.x1), y = Math.min(r.y0, r.y1), w = Math.abs(r.x1 - r.x0), h = Math.abs(r.y1 - r.y0);
+                ctx.strokeStyle = col[m]; ctx.strokeRect(x, y, w, h);
+                ctx.fillStyle = col[m]; const tw = ctx.measureText(lab[m]).width + 10, th = Math.max(18, c.width / 38);
+                ctx.fillRect(x, Math.max(0, y - th), tw, th); ctx.fillStyle = '#fff'; ctx.fillText(lab[m], x + 5, Math.max(th - 5, y - 5));
+            });
+            ['ref', 'prod', 'gray'].forEach(m => { $('tnOk' + m).textContent = tnRects[m] ? '✓' : ''; });
+        }
+        function tonoPoint(ev) { const c = $('tnCanvas'), r = c.getBoundingClientRect(); return [(ev.clientX - r.left) * c.width / r.width, (ev.clientY - r.top) * c.height / r.height]; }
+        function initTono() {
+            $('tnFile').addEventListener('change', () => {
+                const f = $('tnFile').files[0]; if (!f) return;
+                const img = new Image();
+                img.onload = () => {
+                    const max = 1600, k = Math.min(1, max / Math.max(img.width, img.height)), c = $('tnCanvas');
+                    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+                    tnImg = img; tnRects = {}; c.hidden = false; document.querySelector('#tnStage .tn-empty')?.remove();
+                    setTonoMode('ref'); drawTono(); $('tnResult').innerHTML = '';
+                    URL.revokeObjectURL(img.src);
+                };
+                img.src = URL.createObjectURL(f);
+            });
+            const c = $('tnCanvas');
+            c.addEventListener('pointerdown', ev => { if (!tnImg) return; c.setPointerCapture(ev.pointerId); const [x, y] = tonoPoint(ev); tnDragStart = { x0: x, y0: y, x1: x, y1: y }; tnRects[tnMode] = tnDragStart; drawTono(); });
+            c.addEventListener('pointermove', ev => { if (!tnDragStart) return; const [x, y] = tonoPoint(ev); tnDragStart.x1 = x; tnDragStart.y1 = y; drawTono(); });
+            c.addEventListener('pointerup', () => {
+                if (!tnDragStart) return;
+                const r = tnDragStart; tnDragStart = null;
+                if (Math.abs(r.x1 - r.x0) < 8 || Math.abs(r.y1 - r.y0) < 8) { delete tnRects[tnMode]; drawTono(); toast('Arrastra para dibujar un recuadro', true); return; }
+                if (tnMode === 'ref') setTonoMode('prod'); else if (tnMode === 'prod' && !tnRects.gray) setTonoMode('gray');
+                drawTono(); computeTono();
+            });
+            $('tnModel').addEventListener('change', () => {
+                const v = $('tnModel').value.trim(), sap = v.split(' · ')[0].trim();
+                if (CODE_BY_SAP.has(sap)) $('tnModel').value = `${sap} · ${shortName(CODE_BY_SAP.get(sap))}`;
+            });
+        }
+        function computeTono() {
+            if (!tnRects.ref || !tnRects.prod) { $('tnResult').innerHTML = ''; return; }
+            let ref = areaLinear(tnRects.ref), prod = areaLinear(tnRects.prod);
+            // Balance de blancos con la tarjeta gris (si se marcó)
+            if (tnRects.gray) { const g = areaLinear(tnRects.gray), m = (g[0] + g[1] + g[2]) / 3; const k = g.map(v => m / Math.max(1e-6, v)); ref = ref.map((v, i) => v * k[i]); prod = prod.map((v, i) => v * k[i]); }
+            const L1 = linToLab(ref), L2 = linToLab(prod), dE = deltaE2000(L1, L2);
+            const dL = L2[0] - L1[0], da = L2[1] - L1[1], db = L2[2] - L1[2];
+            const hex = lin => '#' + lin.map(v => fromLin(v).toString(16).padStart(2, '0')).join('');
+            tnLast = { ref: hex(ref), prod: hex(prod), dL, da, db, dE, gray: !!tnRects.gray };
+            const verdict = dE < 1 ? ['Prácticamente igual', '#16a34a'] : dE < 2 ? ['Diferencia muy leve', '#16a34a'] : dE < 3.5 ? ['Se nota de cerca', '#d97706'] : ['Diferencia clara', '#dc2626'];
+            const tips = [], T = 1;
+            if (dL < -T) tips.push('Más <b>oscura</b> → bajar carga general (Black / Brown)'); else if (dL > T) tips.push('Más <b>clara</b> → subir carga general');
+            if (db > T) tips.push('Más <b>amarilla</b> → bajar Yellow'); else if (db < -T) tips.push('Más <b>azulada</b> → subir Yellow o bajar Cyan');
+            if (da > T) tips.push('Más <b>rojiza</b> → bajar Brown / Magenta'); else if (da < -T) tips.push('Más <b>verdosa</b> → subir Brown / Magenta o bajar Cyan');
+            const bar = (v, neg, pos) => `<div>${neg}<span class="tn-bar"><i style="left:calc(${Math.max(0, Math.min(100, 50 + v * 5))}% - 2px)"></i></span>${pos} <small>(${v > 0 ? '+' : ''}${nf(v, 1)})</small></div>`;
+            $('tnResult').innerHTML = `<div class="tn-result">
+                <div class="tn-swatches"><div class="tn-sw" style="background:${tnLast.ref}">Referencia</div><div class="tn-sw" style="background:${tnLast.prod}">Producción</div></div>
+                <div class="tn-de" style="color:${verdict[1]}">ΔE ${nf(dE, 1)} <small>· ${verdict[0]}</small></div>
+                <div class="tn-dir">${bar(dL, 'Oscura', 'Clara')}${bar(db, 'Azulada', 'Amarilla')}${bar(da, 'Verdosa', 'Rojiza')}</div>
+                ${tips.length ? `<div><b>Producción respecto a la referencia:</b><br>${tips.join('<br>')}</div>` : '<div>Sin una dirección clara: el tono está muy cerca.</div>'}
+                <div class="tn-warn">Orientativo. Para confirmar, cambia las piezas de sitio, repite la foto y mira si sale lo mismo.${tnRects.gray ? ' Corregido con la tarjeta gris.' : ' Sin tarjeta gris: la luz puede influir más.'}</div>
+                <div class="form-group" style="margin-top:10px"><label for="tnNotes">Notas (qué vas a ajustar…)</label><input type="text" id="tnNotes" placeholder="Ej.: bajo Yellow 3 %, vuelvo a probar"></div>
+                <button type="button" class="btn btn-primary btn-small" onclick="saveTono()">💾 Guardar comparación</button>
+            </div>`;
+        }
+        function saveTono() {
+            if (!tnLast) return;
+            const v = $('tnModel').value.trim(), sap = v.split(' · ')[0].trim();
+            const t = readTono(), id = 't' + Date.now().toString(36);
+            t.items.unshift({ id, date: todayLocal(), time: new Date().toTimeString().slice(0, 5), sap: CODE_BY_SAP.has(sap) ? sap : '', model: CODE_BY_SAP.has(sap) ? shortName(CODE_BY_SAP.get(sap)) : v,
+                ref: tnLast.ref, prod: tnLast.prod, dE: +tnLast.dE.toFixed(2), dL: +tnLast.dL.toFixed(2), da: +tnLast.da.toFixed(2), db: +tnLast.db.toFixed(2), gray: tnLast.gray, notes: ($('tnNotes')?.value || '').trim() });
+            writeTono(t);
+            // Miniatura solo en este aparato (no se sube a la nube para no ocupar espacio)
+            try {
+                const c = document.createElement('canvas'), k = 160 / Math.max($('tnCanvas').width, $('tnCanvas').height);
+                c.width = Math.round($('tnCanvas').width * k); c.height = Math.round($('tnCanvas').height * k);
+                c.getContext('2d').drawImage($('tnCanvas'), 0, 0, c.width, c.height);
+                const th = JSON.parse(localStorage.getItem(TONO_THUMBS) || '{}'); th[id] = c.toDataURL('image/jpeg', 0.6);
+                const keys = Object.keys(th); while (keys.length > 60) delete th[keys.shift()];
+                localStorage.setItem(TONO_THUMBS, JSON.stringify(th));
+            } catch (e) {}
+            renderTonoHistory(); toast('Comparación guardada');
+        }
+        function renderTonoHistory() {
+            const t = readTono(), f = ($('tnFilter')?.value || '').trim().toUpperCase(), e = escapeHtml;
+            let th = {}; try { th = JSON.parse(localStorage.getItem(TONO_THUMBS) || '{}'); } catch (x) {}
+            const list = t.items.filter(x => !f || (x.model || '').toUpperCase().includes(f) || (x.sap || '').includes(f))
+                .sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || ''))).slice(0, 80);
+            $('tnHist').innerHTML = list.map(x => { const col = x.dE < 2 ? '#16a34a' : x.dE < 3.5 ? '#d97706' : '#dc2626';
+                const dir = [x.dL < -1 ? 'oscura' : x.dL > 1 ? 'clara' : '', x.db > 1 ? 'amarilla' : x.db < -1 ? 'azulada' : '', x.da > 1 ? 'rojiza' : x.da < -1 ? 'verdosa' : ''].filter(Boolean).join(', ');
+                return `<div class="tn-item">${th[x.id] ? `<img src="${th[x.id]}" alt="">` : `<span class="pair"><span style="background:${e(x.ref)}"></span><span style="background:${e(x.prod)}"></span></span>`}
+                    <span><b>${e(x.model || 'Sin modelo')}</b> <small>${x.sap ? 'SAP ' + e(x.sap) + ' · ' : ''}${formatDate(x.date)} ${e(x.time || '')}</small><br><small>${dir ? 'Más ' + dir : 'Sin dirección clara'}${x.notes ? ' · ' + e(x.notes) : ''}</small></span>
+                    <span style="font-weight:800;color:${col}">ΔE ${nf(x.dE, 1)} <button type="button" class="pl-del" title="Borrar" onclick="deleteTono('${e(x.id)}')">🗑</button></span></div>`; }).join('') || '<p class="pl-hint">Aún no hay comparaciones guardadas.</p>';
+        }
+        function deleteTono(id) {
+            if (!confirm('¿Borrar esta comparación?')) return;
+            const t = readTono(); t.items = t.items.filter(x => x.id !== id); writeTono(t); renderTonoHistory();
+        }
+
         // ---------- Planning semanal ----------
         const PLANNING_KEY = 'planning';
         const PLANNING_SEED = {"updatedAt": "2026-11-18T07:00:00.000Z", "weeks": {"2026-W47": {"shift": "Tarde", "updated": "2026-11-12"}}, "rows": [{"id": "seed-1", "reton": false, "sap": "100380178", "deco": "UNDR. CAMPASP. GR. APOMAZ. EM 1200X2700", "qty": {"2026-11-13": 250}}, {"id": "seed-2", "reton": false, "sap": "100383786", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700", "qty": {"2026-11-13": 90}}, {"id": "seed-3", "reton": false, "sap": "100384156", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700 M", "qty": {"2026-11-13": 16}}, {"id": "seed-4", "reton": true, "sap": "100387360", "deco": "UNDR. AVORIO ROCA EM 1200X2700 M", "qty": {"2026-11-13": 12}}, {"id": "seed-5", "reton": false, "sap": "100384007", "deco": "UNDR. CAPRI BLANCO ARENISCA EM 1200X2700", "qty": {"2026-11-16": 300}}, {"id": "seed-6", "reton": false, "sap": "100384059", "deco": "UNDR. CAPRI BLA ARENISCA EM 1200X2700 M", "qty": {"2026-11-16": 12}}, {"id": "seed-7", "reton": false, "sap": "100382615", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700", "qty": {"2026-11-17": 300}}, {"id": "seed-8", "reton": false, "sap": "100383113", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700 M", "qty": {"2026-11-17": 10}}, {"id": "seed-9", "reton": false, "sap": "100382628", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700", "qty": {"2026-11-18": 300}}, {"id": "seed-10", "reton": false, "sap": "100384153", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700 M", "qty": {"2026-11-18": 10}}, {"id": "seed-11", "reton": false, "sap": "100380186", "deco": "UNDR. TRAV ALABAS ANTICATO EM 1200X2700", "qty": {"2026-11-19": 300}}, {"id": "seed-12", "reton": false, "sap": "100384155", "deco": "UNDR. TRAV ALABAS ANTICA EM 1200X2700 M", "qty": {"2026-11-19": 10}}, {"id": "seed-13", "reton": false, "sap": "100383773", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700", "qty": {}}, {"id": "seed-14", "reton": false, "sap": "100384046", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700 M", "qty": {}}, {"id": "seed-15", "reton": false, "sap": "100384056", "deco": "UNDR. TUNDRA GREY LINEAL EM 1197X2700 M", "qty": {}}]};
@@ -1610,7 +1824,7 @@
         });
 
         function updateHomeStatuses() {
-            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); }
+            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); }
             updateKeraSummary();
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
@@ -1988,6 +2202,7 @@
             data.deletedArchives = JSON.parse(localStorage.getItem('deleted_archives') || '{}');
             if (localStorage.getItem(PLANNING_KEY)) data.planning = readPlanning();
             if (localStorage.getItem(KERA_KEY)) data.keracost = readKera();
+            if (localStorage.getItem(TONO_KEY)) data.tono = readTono();
             Object.entries(DECORATORS).forEach(([dec, p]) => {
                 data.decorators[dec] = {
                     order: localStorage.getItem(p + 'order') || '',
@@ -2185,7 +2400,7 @@
             // Cualquier cambio en los datos marca la hora y programa una subida
             const origSet = Storage.prototype.setItem, origRemove = Storage.prototype.removeItem;
             const touch = key => {
-                if (applyingRemote || !(/^dec\d_/.test(key) || key === PLANNING_KEY || key === KERA_KEY)) return;
+                if (applyingRemote || !(/^dec\d_/.test(key) || key === PLANNING_KEY || key === KERA_KEY || key === TONO_KEY)) return;
                 origSet.call(localStorage, LOCAL_TS_KEY, new Date().toISOString());
                 schedulePush();
             };
@@ -2328,7 +2543,7 @@
                 });
                 localStorage.setItem('deleted_records', JSON.stringify(deleted));
                 localStorage.setItem('deleted_archives', JSON.stringify(deletedArchives));
-                [[PLANNING_KEY, 'planning', 'rows'], [KERA_KEY, 'keracost', 'items']].forEach(([key, field, list]) => {
+                [[PLANNING_KEY, 'planning', 'rows'], [KERA_KEY, 'keracost', 'items'], [TONO_KEY, 'tono', 'items']].forEach(([key, field, list]) => {
                     const localRaw = localStorage.getItem(key);
                     const merged = mergeCollection(localRaw ? JSON.parse(localRaw) : null, remote[field], list);
                     if (!merged) return;
@@ -2339,6 +2554,7 @@
                 });
                 if ($('planningView').style.display === 'block' && !$('plModal').classList.contains('open')) renderPlanning();
                 if ($('keraView').style.display === 'block' && !$('kcModal').classList.contains('open')) renderKera();
+                if ($('tonoView').style.display === 'block') renderTonoHistory();
                 updatePlanningSummary(); updateKeraSummary();
             } finally { applyingRemote = false; }
         }
