@@ -6,8 +6,8 @@ const html = fs.readFileSync('index.html', 'utf8');
 const inline = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].at(-1)?.[1];
 assert.ok(inline, 'No se encontro el script de la app');
 new vm.Script(inline);
-assert.match(html, /class="card-title">Alejandro <span class="role-tag">Diseño<\/span><\/div>/);
-assert.match(html, /class="card-title">Iván <span class="role-tag">Diseño<\/span><\/div>/);
+assert.match(html, /class="card-title">Alejandro<\/div>/);
+assert.match(html, /class="card-title">Iván<\/div>/);
 assert.match(inline, /const DECORATORS = \{ 'Decorador 1': 'dec1_', 'Decorador 2': 'dec2_', 'Decorador 3': 'dec3_' \}/);
 assert.match(inline, /const DECORATOR_NAMES = \{ 'Decorador 1': 'Alejandro', 'Decorador 2': 'Iván', 'Decorador 3': 'Basilio' \}/);
 
