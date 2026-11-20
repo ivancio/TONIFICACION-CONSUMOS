@@ -285,6 +285,11 @@
         .sum-kpi.bad b { color: #dc2626; }
         .sum-section { margin-top: 18px; }
         .sum-section h3 { font-size: 1rem; margin: 0 0 8px; }
+        details.sum-section { border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+        details.sum-section summary { cursor: pointer; color: var(--text-color); }
+        details.sum-section summary small { color: var(--muted); }
+        details.sum-section[open] summary { margin-bottom: 8px; }
+        @media print { details.sum-section { border: 0; padding: 0; } }
         .sum-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .sum-table th, .sum-table td { border-bottom: 1px solid var(--border-color); padding: 6px; text-align: right; color: var(--text-color); }
         .sum-table th { font-size: 0.75rem; color: var(--muted); }
@@ -457,8 +462,8 @@
                 <span aria-hidden="true">›</span>
             </button>
 
-            <button type="button" class="planning-btn sum-btn" onclick="openSummary()" hidden>
-                <span>📊 Resumen de producción<small>Planchas, merma, cumplimiento del planning y coste de tinta</small></span>
+            <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
+                <span>📊 Resumen de producción<small>Producción, merma y tinta prevista</small></span>
                 <span aria-hidden="true">›</span>
             </button>
 
@@ -1165,41 +1170,43 @@
             });
             // Cumplimiento del planning
             const plan = readPlanning(), prod = productionMap(); let planned = 0, doneOfPlanned = 0; const plannedDay = new Map();
+            const F = { g: 0, c: 0, plates: 0, missing: new Set() };
             plan.rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
                 if (k < from || k > to) return; q = Number(q) || 0;
                 planned += q; doneOfPlanned += Math.min(q, prod.get(r.sap + '|' + k)?.ok || 0);
                 plannedDay.set(k, (plannedDay.get(k) || 0) + q);
+                const it = findKeraFor(r);
+                if (it) { const t = keraTotals(it); F.g += t.gPlate * q; F.c += t.cPlate * q; F.plates += q; } else if (q) F.missing.add(parseModel(r.deco).model || r.sap);
             }));
             const merma = (ok, nok) => ok + nok ? nok / (ok + nok) * 100 : 0;
             const pct = n => nf(n, 1) + '%';
             const M = merma(T.ok, T.nok);
             let html = `<div class="sum-kpis">
-                <div class="sum-kpi"><b>${T.ok}</b><small>Planchas OK</small></div>
-                <div class="sum-kpi ${T.nok ? 'bad' : ''}"><b>${T.nok}</b><small>No OK</small></div>
+                <div class="sum-kpi"><b>${T.ok}</b><small>Planchas OK · ${T.nok} No OK</small></div>
                 <div class="sum-kpi ${M >= 10 ? 'bad' : ''}"><b>${pct(M)}</b><small>Merma</small></div>
-                <div class="sum-kpi"><b>${nf(T.h, 1)} h</b><small>${T.h ? nf((T.ok + T.nok) / T.h, 1) : '0'} planchas/hora</small></div>
                 <div class="sum-kpi"><b>${planned ? pct(doneOfPlanned / planned * 100) : '—'}</b><small>Planning cumplido<br>${doneOfPlanned} de ${planned} pl.</small></div>
-                <div class="sum-kpi"><b>${nf(T.c, 0)} €</b><small>Tinta estimada · ${nf(T.g / 1000, 1)} kg</small></div>
+                <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta prevista (planning)<br>${nf(F.g / 1000, 1)} kg · ${F.plates} pl.</small></div>
             </div>`;
-            if (T.noInk) html += `<p class="pl-hint" style="color:#b45309">${T.noInk} planchas sin ficha de consumo: su tinta no está en el coste.</p>`;
+            if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309">Sin ficha de consumo (no entran en la tinta prevista): ${[...F.missing].map(e).join(', ')}.</p>`;
             const days = [...new Set([...byDay.keys(), ...plannedDay.keys()])].sort();
             if (days.length && days.length <= 62) {
                 const max = Math.max(1, ...days.map(k => Math.max((byDay.get(k)?.ok || 0) + (byDay.get(k)?.nok || 0), plannedDay.get(k) || 0)));
-                html += `<div class="sum-section"><h3>Por día</h3><div class="sum-chart">${days.map(k => { const v = byDay.get(k) || { ok: 0, nok: 0 }, pl = plannedDay.get(k) || 0;
+                html += `<details class="sum-section"><summary><h3 style="display:inline">Por día</h3></summary><div class="sum-chart">${days.map(k => { const v = byDay.get(k) || { ok: 0, nok: 0 }, pl = plannedDay.get(k) || 0;
                     return `<div class="sum-col" title="${formatDate(k)}: ${v.ok} OK · ${v.nok} No OK · ${pl} programadas">${pl ? `<span class="plan" style="bottom:${pl / max * 100}%"></span>` : ''}<i class="nok" style="height:${v.nok / max * 100}%"></i><i class="ok" style="height:${v.ok / max * 100}%"></i></div>`; }).join('')}</div>
                     <div class="sum-days">${days.map(k => `<span>${formatDate(k).slice(0, 5)}</span>`).join('')}</div>
-                    <div class="sum-legend"><i style="background:#16a34a"></i>OK<i style="background:#dc2626"></i>No OK<i style="border-top:2px dashed currentColor;height:0"></i>Programado</div></div>`;
+                    <div class="sum-legend"><i style="background:#16a34a"></i>OK<i style="background:#dc2626"></i>No OK<i style="border-top:2px dashed currentColor;height:0"></i>Programado</div></details>`;
             }
-            html += `<div class="sum-section"><h3>Por persona</h3><table class="sum-table"><thead><tr><th>Persona</th><th>OK</th><th>No OK</th><th>Merma</th><th>Horas</th><th>Pl./hora</th></tr></thead><tbody>${
+            html += `<details class="sum-section"><summary><h3 style="display:inline">Por persona</h3> <small>· ${nf(T.h, 1)} h · ${T.h ? nf((T.ok + T.nok) / T.h, 1) : '0'} pl./hora</small></summary><table class="sum-table"><thead><tr><th>Persona</th><th>OK</th><th>No OK</th><th>Merma</th><th>Horas</th><th>Pl./hora</th></tr></thead><tbody>${
                 [...byWho].sort((a, b) => b[1].ok - a[1].ok).map(([w, v]) => { const m = merma(v.ok, v.nok);
-                    return `<tr><td>${e(w)}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${nf(v.h, 1)}</td><td>${v.h ? nf((v.ok + v.nok) / v.h, 1) : '—'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></div>`;
-            html += `<div class="sum-section"><h3>Por modelo (de más a menos merma)</h3><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>OK</th><th>No OK</th><th>Merma</th><th>Tinta €</th></tr></thead><tbody>${
+                    return `<tr><td>${e(w)}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${nf(v.h, 1)}</td><td>${v.h ? nf((v.ok + v.nok) / v.h, 1) : '—'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></details>`;
+            html += `<details class="sum-section"><summary><h3 style="display:inline">Por modelo</h3> <small>· de más a menos merma · tinta real ${nf(T.c, 0)} €</small></summary><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>OK</th><th>No OK</th><th>Merma</th><th>Tinta €</th></tr></thead><tbody>${
                 [...byModel.values()].sort((a, b) => merma(b.ok, b.nok) - merma(a.ok, a.nok) || b.ok - a.ok).map(v => { const m = merma(v.ok, v.nok);
-                    return `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></div>`;
+                    return `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></details>`;
             $('sumBody').innerHTML = html;
         }
         function printSummary() {
             const prev = document.title; document.title = 'Resumen_produccion_' + $('sumPeriod').value;
+            document.querySelectorAll('#sumBody details').forEach(d => d.open = true);
             document.body.classList.add('print-summary'); window.print();
             setTimeout(() => { document.body.classList.remove('print-summary'); document.title = prev; }, 1000);
         }
