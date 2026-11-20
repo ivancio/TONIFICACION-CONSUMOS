@@ -139,3 +139,10 @@ testPlan('planning keeps the newest version', () => {
   assertPlan.equal(mergePlanning(b, a).planning.rows[0].id, 'b');
   assertPlan.equal(mergePlanning(base, a).planning.rows[0].id, 'a');
 });
+
+testPlan('keracost keeps the newest version', () => {
+  const a = { decorators: {}, keracost: { updatedAt: '2026-11-20T08:00:00Z', items: [{ id: 'a' }] } };
+  const b = { decorators: {}, keracost: { updatedAt: '2026-11-20T09:00:00Z', items: [{ id: 'b' }] } };
+  assertPlan.equal(mergePlanning(a, b).keracost.items[0].id, 'b');
+  assertPlan.equal(mergePlanning(b, { decorators: {} }).keracost.items[0].id, 'b');
+});

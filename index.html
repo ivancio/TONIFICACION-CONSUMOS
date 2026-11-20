@@ -274,6 +274,25 @@
         }
         #fullReport { display: none; }
         #planningView { display: none; }
+        #keraView { display: none; }
+        .kera-btn { background: #0f766e; }
+        .kc-list { display: grid; gap: 10px; margin-top: 12px; }
+        .kc-card { border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; background: var(--card-bg); color: var(--text-color); text-align: left; font: inherit; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+        .kc-card:hover { border-color: var(--primary-color); }
+        .kc-card b { font-size: 1rem; }
+        .kc-card small { color: var(--muted); }
+        .kc-card .kc-cost { text-align: right; font-weight: 800; font-size: 1.05rem; }
+        .kc-inks { grid-column: 1 / -1; display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--soft-bg); margin-top: 4px; }
+        .kc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 6px 0 10px; }
+        .kc-table th, .kc-table td { border-bottom: 1px solid var(--border-color); padding: 4px 6px; text-align: right; color: var(--text-color); }
+        .kc-table th:first-child, .kc-table td:first-child { text-align: left; }
+        .kc-table input { width: 90px; padding: 5px 6px; text-align: right; }
+        .kc-table tfoot td { font-weight: 800; border-bottom: 0; }
+        .kc-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.2); }
+        .kc-calc { background: var(--soft-bg); border-radius: 10px; padding: 10px 12px; margin: 8px 0; color: var(--text-color); }
+        .kc-calc input { width: 110px; display: inline-block; }
+        .pl-forecast { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--soft-bg); font-size: 0.88rem; color: var(--text-color); }
+        .pl-forecast b { font-size: 1rem; }
         .planning-btn { width: 100%; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-radius: 8px; border: 0; background: var(--primary-color); color: #fff; font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; text-align: left; }
         .planning-btn small { display: block; font-weight: 400; opacity: 0.8; font-size: 0.82rem; margin-top: 2px; }
         .pl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 12px; flex-wrap: wrap; }
@@ -386,6 +405,11 @@
 
             <button type="button" class="planning-btn" onclick="openPlanning()">
                 <span>📅 Planning semanal<small id="planningSummary">Faena programada de la semana</small></span>
+                <span aria-hidden="true">›</span>
+            </button>
+
+            <button type="button" class="planning-btn kera-btn" onclick="openKera()">
+                <span>🎨 Consumos de tinta (KERAcost)<small id="keraSummary">Fichas de consumo por modelo</small></span>
                 <span aria-hidden="true">›</span>
             </button>
 
@@ -603,6 +627,45 @@
             </div>
         </div>
 
+        <div id="keraView">
+            <button type="button" class="nav-back no-print" onclick="closeKera()">← Volver</button>
+            <h1 style="margin-bottom:4px">Consumos de tinta</h1>
+            <p class="pl-hint" style="margin-top:0">Copia aquí los datos de la pestaña <b>Costes</b> de KERAjet (Cálculo de consumos) para cada modelo. Con ellos la app calcula la tinta y el coste por plancha y la previsión del planning.</p>
+            <div class="pl-actions no-print" style="margin:10px 0 0">
+                <button type="button" class="btn btn-primary" onclick="openKeraEditor(-1)">＋ Nueva ficha de consumo</button>
+            </div>
+            <input type="text" id="kcFilter" placeholder="🔍 Buscar modelo o SAP..." oninput="renderKera()" style="margin-top:12px">
+            <div class="kc-list" id="kcList"></div>
+            <div class="pl-modal" id="kcModal" onclick="if (event.target === this) closeKeraEditor()">
+                <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="kcTitle">
+                    <h2 id="kcTitle">Ficha de consumo</h2>
+                    <div class="form-group">
+                        <label for="kcSearch">Modelo del listado (opcional, para enlazarlo con el planning)</label>
+                        <input type="text" id="kcSearch" list="codesSearch" placeholder="Ej.: ALABAS ANTICATO o 100380186" autocomplete="off">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="kcName">Nombre (como sale en KERAjet)</label><input type="text" id="kcName" placeholder="TRAVERTINO ALABASTRINO ANT"></div>
+                        <div class="form-group"><label for="kcSap">SAP</label><input type="text" id="kcSap" inputmode="numeric"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="kcW">Ancho (cm)</label><input type="number" step="0.1" id="kcW"></div>
+                        <div class="form-group"><label for="kcH">Alto (cm)</label><input type="number" step="0.1" id="kcH"></div>
+                        <div class="form-group"><label for="kcDate">Fecha</label><input type="date" id="kcDate"></div>
+                    </div>
+                    <table class="kc-table" id="kcInks"></table>
+                    <div class="kc-calc" id="kcCalc"></div>
+                    <div class="form-group"><label for="kcNotes">Notas</label><input type="text" id="kcNotes" placeholder="Cliente, esquema, observaciones..."></div>
+                    <div class="pl-sheet-actions">
+                        <button type="button" class="btn btn-secondary btn-small" id="kcDelete" onclick="deleteKera()">🗑 Borrar ficha</button>
+                        <span style="display:flex;gap:8px">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="closeKeraEditor()">Cancelar</button>
+                            <button type="button" class="btn btn-primary btn-small" onclick="saveKera()">Guardar</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="planningView">
             <button type="button" class="nav-back no-print" onclick="closePlanning()">← Volver</button>
             <h1 style="margin-bottom:4px">Planning semanal</h1>
@@ -623,6 +686,7 @@
                 <button type="button" class="btn btn-primary" onclick="openPlanningEditor(-1)">＋ Añadir producción</button>
             </div>
             <div class="pl-scroll"><table class="pl-table" id="plTable"></table></div>
+            <div class="pl-forecast" id="plForecast"></div>
             <p class="pl-hint no-print">Toca una casilla o el nombre para poner o cambiar planchas. Para cambiar una faena de día, <b>arrástrala</b> a otra casilla de la misma fila (en el móvil, mantén el dedo y desliza).</p>
             <div class="pl-modal" id="plModal" onclick="if (event.target === this) closePlanningEditor()">
                 <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="plEdTitle">
@@ -719,6 +783,126 @@
             });
         }
 
+
+        // ---------- Consumos de tinta (KERAcost / KERAjet Cálculo de consumos) ----------
+        const KERA_KEY = 'keracost';
+        const INKS = [['Primer-BL', '#f5f5f4'], ['White', '#ffffff'], ['Yellow', '#facc15'], ['Magenta', '#db2777'], ['Brown', '#9f1d1d'],
+            ['Cyan', '#3b82f6'], ['Black', '#1f2937'], ['Varnish-BR', '#e7e5e4'], ['Varnish-MT', '#d6d3d1']];
+        const KERA_SEED = { updatedAt: '2026-11-20T09:30:00.000Z', items: [{ id: 'k1', name: 'TRAVERTINO ALABASTRINO ANT', sap: '', w: 270.4, h: 120.4, date: '2026-11-20', notes: 'KRION · ejemplo de la captura',
+            inks: { 'Primer-BL': [12.138, 0.583], 'White': [5.979, 0.299], 'Yellow': [0.733, 0.035], 'Brown': [1.412, 0.068], 'Cyan': [3.036, 0.146], 'Black': [0.281, 0.013], 'Varnish-BR': [29.932, 1.437], 'Varnish-MT': [0, 0] } }] };
+        let kcIndex = -1;
+        function readKera() {
+            try { const k = JSON.parse(localStorage.getItem(KERA_KEY)); if (k && Array.isArray(k.items)) return k; } catch (e) {}
+            return JSON.parse(JSON.stringify(KERA_SEED));
+        }
+        function writeKera(k) { k.updatedAt = new Date().toISOString(); localStorage.setItem(KERA_KEY, JSON.stringify(k)); updateKeraSummary(); }
+        const nf = (n, d = 2) => Number(n || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+        const plateM2 = it => (Number(it.w) || 270.4) * (Number(it.h) || 120.4) / 10000;
+        function keraTotals(it) {
+            let g = 0, c = 0;
+            Object.values(it.inks || {}).forEach(([gr, eur]) => { g += Number(gr) || 0; c += Number(eur) || 0; });
+            const m2 = plateM2(it);
+            return { g, c, m2, gPlate: g * m2, cPlate: c * m2 };
+        }
+        function findKeraFor(row) {
+            const items = readKera().items;
+            return items.find(it => it.sap && row.sap && it.sap === row.sap)
+                || items.find(it => it.sap === '' && row.deco && it.name && parseModel(it.name).model === parseModel(row.deco).model);
+        }
+        function openKera() { $('homeView').style.display = 'none'; $('keraView').style.display = 'block'; renderKera(); window.scrollTo(0, 0); }
+        function closeKera() { $('keraView').style.display = 'none'; $('homeView').style.display = 'block'; updateKeraSummary(); }
+        function inkBar(it) {
+            const t = keraTotals(it).g || 1;
+            return INKS.map(([n, col]) => { const g = Number(it.inks?.[n]?.[0]) || 0; return g ? `<span title="${n}: ${nf(g, 3)} g/m²" style="width:${g / t * 100}%;background:${col}"></span>` : ''; }).join('');
+        }
+        function renderKera() {
+            const k = readKera(), f = ($('kcFilter').value || '').trim().toUpperCase(), e = escapeHtml;
+            const list = k.items.map((it, i) => ({ it, i })).filter(({ it }) => !f || (it.name || '').toUpperCase().includes(f) || (it.sap || '').includes(f));
+            $('kcList').innerHTML = list.map(({ it, i }) => { const t = keraTotals(it);
+                return `<button type="button" class="kc-card" onclick="openKeraEditor(${i})">
+                    <span><b>${e(it.name || 'Sin nombre')}</b><br><small>${it.sap ? 'SAP ' + e(it.sap) + ' · ' : '<span style="color:#b45309">sin SAP (no se enlaza al planning)</span> · '}${nf(t.g, 1)} g/m² · ${nf(t.gPlate, 0)} g/plancha</small></span>
+                    <span class="kc-cost">${nf(t.cPlate)} €<br><small>por plancha · ${nf(t.c, 3)} €/m²</small></span>
+                    <span class="kc-inks">${inkBar(it)}</span></button>`; }).join('') || '<p class="pl-hint">No hay fichas. Pulsa «＋ Nueva ficha de consumo».</p>';
+        }
+        function openKeraEditor(i) {
+            const k = readKera(), it = i >= 0 ? k.items[i] : { name: '', sap: '', w: 270.4, h: 120.4, date: todayLocal(), notes: '', inks: {} };
+            kcIndex = i;
+            if (!$('codesSearch').options.length)
+                $('codesSearch').innerHTML = UNDORA_CODES.map(([c, n]) => [c, shortName(n)]).sort((a, b) => a[1].localeCompare(b[1])).map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
+            $('kcTitle').textContent = i >= 0 ? 'Ficha de consumo' : 'Nueva ficha de consumo';
+            $('kcSearch').value = ''; $('kcName').value = it.name || ''; $('kcSap').value = it.sap || '';
+            $('kcW').value = it.w || 270.4; $('kcH').value = it.h || 120.4; $('kcDate').value = it.date || ''; $('kcNotes').value = it.notes || '';
+            $('kcInks').innerHTML = `<thead><tr><th>Tinta</th><th>g/m²</th><th>€/m²</th></tr></thead><tbody>${INKS.map(([n, col]) => `<tr><td><span class="kc-dot" style="background:${col}"></span>${n}</td>
+                <td><input type="number" step="0.001" min="0" inputmode="decimal" data-ink="${n}" data-f="0" value="${it.inks?.[n]?.[0] ?? ''}" placeholder="0"></td>
+                <td><input type="number" step="0.001" min="0" inputmode="decimal" data-ink="${n}" data-f="1" value="${it.inks?.[n]?.[1] ?? ''}" placeholder="0"></td></tr>`).join('')}</tbody>
+                <tfoot><tr><td>Total</td><td id="kcTg"></td><td id="kcTc"></td></tr></tfoot>`;
+            $('kcDelete').style.visibility = i >= 0 ? 'visible' : 'hidden';
+            $('kcModal').classList.add('open');
+            updateKeraCalc();
+        }
+        function editorKeraItem() {
+            const inks = {};
+            document.querySelectorAll('#kcInks input').forEach(inp => {
+                inks[inp.dataset.ink] = inks[inp.dataset.ink] || [0, 0];
+                inks[inp.dataset.ink][Number(inp.dataset.f)] = parseFloat(String(inp.value).replace(',', '.')) || 0;
+            });
+            return { name: $('kcName').value.trim(), sap: $('kcSap').value.trim(), w: parseFloat($('kcW').value) || 270.4, h: parseFloat($('kcH').value) || 120.4,
+                date: $('kcDate').value, notes: $('kcNotes').value.trim(), inks };
+        }
+        function updateKeraCalc() {
+            if (!$('kcPlates')) $('kcCalc').innerHTML = `Plancha de <b id="kcM2"></b> → <b id="kcGp"></b> de tinta y <b id="kcCp"></b> por plancha.<br>
+                Para <input type="number" min="1" id="kcPlates" value="300" oninput="updateKeraCalc()"> planchas: <b id="kcRes"></b>`;
+            const it = editorKeraItem(), t = keraTotals(it), n = Math.max(0, parseInt($('kcPlates').value, 10) || 0);
+            $('kcTg').textContent = nf(t.g, 3); $('kcTc').textContent = nf(t.c, 3) + ' €';
+            $('kcM2').textContent = nf(t.m2, 3) + ' m²'; $('kcGp').textContent = nf(t.gPlate, 0) + ' g'; $('kcCp').textContent = nf(t.cPlate) + ' €';
+            $('kcRes').textContent = `${nf(t.gPlate * n / 1000, 1)} kg · ${nf(t.cPlate * n)} €`;
+        }
+        function closeKeraEditor() { $('kcModal').classList.remove('open'); }
+        function saveKera() {
+            const it = editorKeraItem();
+            if (!it.name && !it.sap) { toast('Pon el nombre del modelo o el SAP', true); return; }
+            const k = readKera();
+            if (kcIndex >= 0) k.items[kcIndex] = { ...k.items[kcIndex], ...it }; else k.items.push({ id: 'k' + Date.now().toString(36), ...it });
+            writeKera(k); closeKeraEditor(); renderKera(); toast('Ficha guardada');
+        }
+        function deleteKera() {
+            if (kcIndex < 0) return;
+            const k = readKera();
+            if (!confirm(`¿Borrar la ficha de ${k.items[kcIndex].name || k.items[kcIndex].sap}?`)) return;
+            k.items.splice(kcIndex, 1); writeKera(k); closeKeraEditor(); renderKera();
+        }
+        function updateKeraSummary() {
+            const el = $('keraSummary'); if (!el) return;
+            const n = readKera().items.length;
+            el.textContent = n ? `${n} ${n === 1 ? 'ficha' : 'fichas'} de consumo por modelo` : 'Añade el consumo de cada modelo';
+        }
+        function initKera() {
+            $('kcInks').addEventListener('input', updateKeraCalc);
+            ['kcW', 'kcH'].forEach(id => $(id).addEventListener('input', updateKeraCalc));
+            $('kcSearch').addEventListener('change', () => {
+                const v = $('kcSearch').value.trim(), sap = v.split(' · ')[0].trim();
+                const code = CODE_BY_SAP.has(sap) ? sap : CODE_BY_NAME.get(v.toUpperCase());
+                if (!code) return;
+                $('kcSap').value = code;
+                if (!$('kcName').value.trim()) $('kcName').value = shortName(CODE_BY_SAP.get(code));
+                $('kcSearch').value = '';
+            });
+            document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('kcModal').classList.contains('open')) closeKeraEditor(); });
+        }
+        function renderPlanningForecast(p, keys) {
+            let g = 0, c = 0, missing = new Set(); const perDay = keys.map(() => 0);
+            p.rows.forEach(r => keys.forEach((k, j) => {
+                const n = Number((r.qty || {})[k]) || 0; if (!n) return;
+                const it = findKeraFor(r);
+                if (!it) { missing.add(parseModel(r.deco).model || r.sap); return; }
+                const t = keraTotals(it); g += t.gPlate * n; c += t.cPlate * n; perDay[j] += t.cPlate * n;
+            }));
+            const e = escapeHtml;
+            $('plForecast').innerHTML = `🎨 <b>Tinta prevista esta semana: ${nf(g / 1000, 1)} kg · ${nf(c)} €</b>` +
+                (c ? `<br><small>${keys.map((k, j) => perDay[j] ? `${DAY_NAMES[j]}: ${nf(perDay[j], 0)} €` : '').filter(Boolean).join(' · ')}</small>` : '') +
+                (missing.size ? `<br><small style="color:#b45309">Sin ficha de consumo: ${[...missing].map(e).join(', ')}. Añádelas en «Consumos de tinta».</small>` : '');
+        }
+
         // ---------- Planning semanal ----------
         const PLANNING_KEY = 'planning';
         const PLANNING_SEED = {"updatedAt": "2026-11-18T07:00:00.000Z", "weeks": {"2026-W47": {"shift": "Tarde", "updated": "2026-11-12"}}, "rows": [{"id": "seed-1", "reton": false, "sap": "100380178", "deco": "UNDR. CAMPASP. GR. APOMAZ. EM 1200X2700", "qty": {"2026-11-13": 250}}, {"id": "seed-2", "reton": false, "sap": "100383786", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700", "qty": {"2026-11-13": 90}}, {"id": "seed-3", "reton": false, "sap": "100384156", "deco": "UNDR. TRAV ALABAS BAMBOO EM 1196X2700 M", "qty": {"2026-11-13": 16}}, {"id": "seed-4", "reton": true, "sap": "100387360", "deco": "UNDR. AVORIO ROCA EM 1200X2700 M", "qty": {"2026-11-13": 12}}, {"id": "seed-5", "reton": false, "sap": "100384007", "deco": "UNDR. CAPRI BLANCO ARENISCA EM 1200X2700", "qty": {"2026-11-16": 300}}, {"id": "seed-6", "reton": false, "sap": "100384059", "deco": "UNDR. CAPRI BLA ARENISCA EM 1200X2700 M", "qty": {"2026-11-16": 12}}, {"id": "seed-7", "reton": false, "sap": "100382615", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700", "qty": {"2026-11-17": 300}}, {"id": "seed-8", "reton": false, "sap": "100383113", "deco": "UNDR. TRAV ROSSO LINEAL EM 1197X2700 M", "qty": {"2026-11-17": 10}}, {"id": "seed-9", "reton": false, "sap": "100382628", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700", "qty": {"2026-11-18": 300}}, {"id": "seed-10", "reton": false, "sap": "100384153", "deco": "UNDR. TRAV ALABAS LINEAL EM 1197X2700 M", "qty": {"2026-11-18": 10}}, {"id": "seed-11", "reton": false, "sap": "100380186", "deco": "UNDR. TRAV ALABAS ANTICATO EM 1200X2700", "qty": {"2026-11-19": 300}}, {"id": "seed-12", "reton": false, "sap": "100384155", "deco": "UNDR. TRAV ALABAS ANTICA EM 1200X2700 M", "qty": {"2026-11-19": 10}}, {"id": "seed-13", "reton": false, "sap": "100383773", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700", "qty": {}}, {"id": "seed-14", "reton": false, "sap": "100384046", "deco": "UNDR. TRAV NAVONA BAMBOO EM 1196X2700 M", "qty": {}}, {"id": "seed-15", "reton": false, "sap": "100384056", "deco": "UNDR. TUNDRA GREY LINEAL EM 1197X2700 M", "qty": {}}]};
@@ -802,6 +986,7 @@
             if (!p.rows.length) html += `<tr><td colspan="${3 + keys.length}" style="padding:16px">Todavía no hay producción. Pulsa «＋ Añadir producción».</td></tr>`;
             html += `</tbody><tfoot><tr class="pl-totals"><td colspan="3" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr></tfoot>`;
             $('plTable').innerHTML = html;
+            renderPlanningForecast(p, keys);
         }
 
         const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -1077,7 +1262,8 @@
         });
 
         function updateHomeStatuses() {
-            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); }
+            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); }
+            updateKeraSummary();
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
                 const el = $('statusDec' + (i + 1));
@@ -1447,6 +1633,7 @@
             data.deletedRecords = JSON.parse(localStorage.getItem('deleted_records') || '{}');
             data.deletedArchives = JSON.parse(localStorage.getItem('deleted_archives') || '{}');
             if (localStorage.getItem(PLANNING_KEY)) data.planning = readPlanning();
+            if (localStorage.getItem(KERA_KEY)) data.keracost = readKera();
             Object.entries(DECORATORS).forEach(([dec, p]) => {
                 data.decorators[dec] = {
                     order: localStorage.getItem(p + 'order') || '',
@@ -1639,7 +1826,7 @@
             // Cualquier cambio en los datos marca la hora y programa una subida
             const origSet = Storage.prototype.setItem, origRemove = Storage.prototype.removeItem;
             const touch = key => {
-                if (applyingRemote || !(/^dec\d_/.test(key) || key === PLANNING_KEY)) return;
+                if (applyingRemote || !(/^dec\d_/.test(key) || key === PLANNING_KEY || key === KERA_KEY)) return;
                 origSet.call(localStorage, LOCAL_TS_KEY, new Date().toISOString());
                 schedulePush();
             };
@@ -1786,6 +1973,12 @@
                     localStorage.setItem(PLANNING_KEY, JSON.stringify(remote.planning));
                     if ($('planningView').style.display === 'block') renderPlanning();
                     updatePlanningSummary();
+                }
+                const localKera = JSON.parse(localStorage.getItem(KERA_KEY) || 'null');
+                if (remote.keracost && Array.isArray(remote.keracost.items) && (remote.keracost.updatedAt || '') > (localKera?.updatedAt || '')) {
+                    localStorage.setItem(KERA_KEY, JSON.stringify(remote.keracost));
+                    if ($('keraView').style.display === 'block') renderKera();
+                    updateKeraSummary();
                 }
             } finally { applyingRemote = false; }
         }

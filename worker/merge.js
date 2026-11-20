@@ -45,5 +45,7 @@ export function mergeBackups(current, incoming) {
   }
   const plans = [current.planning, incoming.planning].filter(x => x && Array.isArray(x.rows));
   if (plans.length) merged.planning = plans.reduce((a, b) => ((b.updatedAt || '') > (a.updatedAt || '') ? b : a));
+  const keras = [current.keracost, incoming.keracost].filter(x => x && Array.isArray(x.items));
+  if (keras.length) merged.keracost = keras.reduce((a, b) => ((b.updatedAt || '') > (a.updatedAt || '') ? b : a));
   return merged;
 }
