@@ -87,6 +87,16 @@
         .home-header h1 { text-align: left; margin: 0; }
         .home-kicker { color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
         .home-cards { display: grid; gap: 10px; margin-top: 22px; }
+        .home-section { margin-top: 22px; }
+        .home-section h2 { font-size: 1.05rem; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; color: var(--text-color); }
+        .home-section .planning-btn { margin-bottom: 10px; }
+        .step-n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); color: #fff; font-size: 0.8rem; flex: none; }
+        .section-help { margin: 0; font-size: 0.86rem; color: var(--muted); }
+        .role-tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; background: var(--soft-bg); color: var(--muted); vertical-align: 2px; border: 1px solid var(--border-color); }
+        .guide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 14px; counter-reset: g; }
+        .guide div { border: 1px solid var(--border-color); border-radius: 10px; padding: 8px; font-size: 0.78rem; color: var(--muted); line-height: 1.25; }
+        .guide b { display: block; color: var(--text-color); font-size: 0.85rem; margin-bottom: 2px; }
+        @media (max-width: 560px) { .guide { grid-template-columns: 1fr 1fr; } }
 
         .card-selector {
             background: var(--card-bg);
@@ -480,32 +490,15 @@
                 <h1>Tonificación Consumos</h1>
             </header>
 
-            <button type="button" class="planning-btn" onclick="openPlanning()">
-                <span>📅 Planning semanal<small id="planningSummary">Faena programada de la semana</small></span>
-                <span aria-hidden="true">›</span>
-            </button>
-
-            <button type="button" class="planning-btn kera-btn" onclick="openKera()">
-                <span>🎨 Consumos de tinta (KERAcost)<small id="keraSummary">Fichas de consumo por modelo</small></span>
-                <span aria-hidden="true">›</span>
-            </button>
-
-            <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
-                <span>📊 Resumen de producción<small>Metros, merma, coste de tinta y previsión</small></span>
-                <span aria-hidden="true">›</span>
-            </button>
-
-            <button type="button" class="planning-btn tono-btn" onclick="openTono()" hidden>
-                <span>🎯 Comparar tono con foto<small>Referencia frente a producción · orientativo</small></span>
-                <span aria-hidden="true">›</span>
-            </button>
-
-            <div class="home-cards">
+            <section class="home-section">
+                <h2><span class="step-n">1</span> Pruebas de tono en línea</h2>
+                <p class="section-help">Diseño echa planchas de prueba para ajustar el tono antes de que se produzca en masa. <b>Entra con tu nombre</b> para apuntar tus pruebas.</p>
+                <div class="home-cards" style="margin-top:10px">
                 <button type="button" class="card-selector" onclick="selectDecorator('Decorador 1')">
                     <div class="card-person">
                         <span class="card-avatar" aria-hidden="true">A</span>
                         <div class="card-copy">
-                            <div class="card-title">Alejandro</div>
+                            <div class="card-title">Alejandro <span class="role-tag">Diseño</span></div>
                             <div class="card-subtitle" id="statusDec1">Cargando estado...</div>
                         </div>
                     </div>
@@ -515,7 +508,7 @@
                     <div class="card-person">
                         <span class="card-avatar" aria-hidden="true">I</span>
                         <div class="card-copy">
-                            <div class="card-title">Iván</div>
+                            <div class="card-title">Iván <span class="role-tag">Diseño</span></div>
                             <div class="card-subtitle" id="statusDec2">Cargando estado...</div>
                         </div>
                     </div>
@@ -525,13 +518,39 @@
                     <div class="card-person">
                         <span class="card-avatar" aria-hidden="true">B</span>
                         <div class="card-copy">
-                            <div class="card-title">Basilio</div>
+                            <div class="card-title">Basilio <span class="role-tag">Encargado</span></div>
                             <div class="card-subtitle" id="statusDec3">Cargando estado...</div>
                         </div>
                     </div>
                     <span class="card-arrow" aria-hidden="true">›</span>
                 </button>
-            </div>
+                </div>
+            </section>
+
+            <section class="home-section">
+                <h2><span class="step-n">2</span> Producción y costes</h2>
+                <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
+                    <span>📊 Resumen de producción<small>Metros, merma, coste de tinta y previsión · para todos</small></span>
+                    <span aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="planning-btn kera-btn" onclick="openKera()">
+                    <span>🎨 Consumos de tinta (KERAcost)<small id="keraSummary">Fichas de consumo por modelo</small><small>Lo gestiona Augusto</small></span>
+                    <span aria-hidden="true">›</span>
+                </button>
+            </section>
+
+            <section class="home-section">
+                <h2><span class="step-n">3</span> Planificación</h2>
+                <button type="button" class="planning-btn" onclick="openPlanning()">
+                    <span>📅 Planning semanal<small id="planningSummary">Faena programada de la semana</small><small>Lo editan Basilio, Augusto y Dirección</small></span>
+                    <span aria-hidden="true">›</span>
+                </button>
+            </section>
+
+            <button type="button" class="planning-btn tono-btn" onclick="openTono()" hidden>
+                <span>🎯 Comparar tono con foto<small>Referencia frente a producción · orientativo</small></span>
+                <span aria-hidden="true">›</span>
+            </button>
 
             <div class="home-tools">
                 <button type="button" class="btn btn-secondary btn-small" onclick="exportBackup()" title="Descargar copia de seguridad">↓ Copia</button>
@@ -573,6 +592,12 @@
             </div>
 
             <div class="no-print">
+                <div class="guide" aria-label="Cómo apuntar una prueba">
+                    <div><b>1 · Elige la faena</b>Toca la del planning o escribe gráfica y SAP</div>
+                    <div><b>2 · Turno y horas</b>Mañana, tarde o «Ahora»</div>
+                    <div><b>3 · Planchas</b>Apunta OK y No OK y guarda la sesión</div>
+                    <div><b>4 · Al terminar</b>Cierra el pedido: pasa a Pedidos anteriores</div>
+                </div>
                 <div class="today-jobs" id="todayJobs"></div>
                 <div class="form-row order-fields">
                     <div class="form-group">
