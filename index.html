@@ -277,6 +277,7 @@
         #keraView { display: none; }
         #summaryView { display: none; }
         .sum-btn { background: #1d4ed8; }
+        .planning-btn[hidden] { display: none; }
         .sum-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 12px 0; }
         .sum-kpi { border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center; color: var(--text-color); }
         .sum-kpi b { display: block; font-size: 1.35rem; }
@@ -456,7 +457,7 @@
                 <span aria-hidden="true">›</span>
             </button>
 
-            <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
+            <button type="button" class="planning-btn sum-btn" onclick="openSummary()" hidden>
                 <span>📊 Resumen de producción<small>Planchas, merma, cumplimiento del planning y coste de tinta</small></span>
                 <span aria-hidden="true">›</span>
             </button>
