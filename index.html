@@ -368,6 +368,12 @@
         .link-btn { border: 0; background: none; color: var(--muted); text-decoration: underline; font: inherit; font-size: 0.85rem; cursor: pointer; padding: 0 4px; }
         .status-btn.active { border-color: var(--primary-color); background: var(--soft-bg); }
         .comments-box summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+        .reports-menu > summary { list-style: none; text-align: center; cursor: pointer; }
+        .reports-menu > summary::-webkit-details-marker { display: none; }
+        .reports-list { display: grid; gap: 6px; margin-top: 6px; }
+        .reports-list .btn { text-align: left; }
+        .reports-list small { display: block; font-weight: 400; opacity: 0.75; font-size: 0.8rem; }
+        .pl-test { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 800; background: #fef3c7; color: #92400e; vertical-align: 1px; }
         .today-jobs { border: 2px dashed var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
         .today-jobs h3 { margin: 0 0 8px; font-size: 0.95rem; }
         .tj-list { display: grid; gap: 6px; }
@@ -540,7 +546,7 @@
             <section class="home-section">
                 <h2><span class="step-n">2</span> Producción y costes</h2>
                 <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
-                    <span>📊 Resumen de producción<small>Metros, merma, coste de tinta y previsión · para todos</small></span>
+                    <span>📊 Resumen de producción<small>Producción programada, tinta prevista y gasto de pruebas de diseño</small></span>
                     <span aria-hidden="true">›</span>
                 </button>
                 <button type="button" class="planning-btn kera-btn" onclick="openKera()">
@@ -742,11 +748,14 @@
                 </div>
 
                 <div class="actions-grid no-print">
-                    <button type="button" class="btn btn-primary" onclick="generatePDF()">📄 Generar Informe PDF Acumulado</button>
-                    <button type="button" class="btn btn-primary" onclick="generateFullReport()">📚 Informe completo (todos los pedidos)</button>
-                    <div class="actions-row">
-                        <button type="button" class="btn btn-secondary btn-small" onclick="exportCSV()">📊 Exportar a Excel (CSV)</button>
-                    </div>
+                    <details class="reports-menu">
+                        <summary class="btn btn-primary">📄 Informes</summary>
+                        <div class="reports-list">
+                            <button type="button" class="btn btn-secondary" onclick="generatePDF()">📄 PDF de este pedido<small>Sesiones y totales del pedido abierto</small></button>
+                            <button type="button" class="btn btn-secondary" onclick="generateFullReport()">📚 PDF de todos mis pedidos<small>Abierto y cerrados, en un solo informe</small></button>
+                            <button type="button" class="btn btn-secondary" onclick="exportCSV()">📊 Excel (CSV)<small>Las sesiones para abrir en Excel</small></button>
+                        </div>
+                    </details>
                     <button type="button" class="btn btn-danger" onclick="clearHistory()">📦 Cerrar pedido / Empezar uno nuevo</button>
                 </div>
             </div>
@@ -1201,12 +1210,14 @@
         }
 
         // ---------- Planning ↔ registros: lo producido de cada faena ----------
-        function productionMap() {
+        // Planchas de prueba de diseño por SAP (retonificación). No cuentan como producción.
+        function testsMap() {
             const map = new Map();
             const add = (sap, x, who) => {
-                if (!sap || !x.date) return;
-                const k = sap + '|' + x.date, v = map.get(k) || { ok: 0, nok: 0, who: new Set() };
-                v.ok += Number(x.ok) || 0; v.nok += Number(x.nok) || 0; v.who.add(who); map.set(k, v);
+                if (!sap) return;
+                const v = map.get(sap) || { ok: 0, nok: 0, who: new Set(), last: '' };
+                v.ok += Number(x.ok) || 0; v.nok += Number(x.nok) || 0; v.who.add(who); if ((x.date || '') > v.last) v.last = x.date || '';
+                map.set(sap, v);
             };
             Object.entries(DECORATORS).forEach(([dec, prefix]) => {
                 const who = displayDecorator(dec), headSap = localStorage.getItem(prefix + 'sap') || '';
@@ -1217,20 +1228,23 @@
         }
         function renderTodayJobs() {
             const box = $('todayJobs'); if (!box) return;
-            const p = readPlanning(), today = todayLocal(), prod = productionMap(), cur = $('sapField').value.trim();
-            const mon = mondayOf(new Date()), keys = Array.from({ length: 6 }, (_, i) => { const d = new Date(mon); d.setDate(d.getDate() + i); return isoDate(d); });
-            const jobs = (day) => p.rows.filter(r => Number(r.qty?.[day]) > 0).map(r => ({ r, day, q: Number(r.qty[day]), done: prod.get(r.sap + '|' + day)?.ok || 0 }));
-            const todays = jobs(today);
-            const pending = keys.filter(k => k !== today).flatMap(jobs).filter(j => j.done < j.q);
-            const card = j => { const m = parseModel(j.r.deco), pct = Math.min(100, j.done / j.q * 100);
+            const p = readPlanning(), today = todayLocal(), tests = testsMap(), cur = $('sapField').value.trim();
+            // Lo que producción tiene programado desde hoy hasta el final de la semana que viene
+            const end = mondayOf(new Date()); end.setDate(end.getDate() + 13); const endK = isoDate(end);
+            const jobs = p.rows.map(r => {
+                const days = Object.entries(r.qty || {}).filter(([k, q]) => Number(q) > 0 && k >= today && k <= endK).sort();
+                return days.length ? { r, day: days[0][0], q: days.reduce((a, [, q]) => a + Number(q), 0) } : null;
+            }).filter(Boolean).sort((a, b) => a.day.localeCompare(b.day));
+            const card = j => { const m = parseModel(j.r.deco), t = tests.get(j.r.sap);
+                const when = j.day === today ? 'hoy' : formatDate(j.day).slice(0, 5);
                 return `<button type="button" class="tj ${j.r.sap && j.r.sap === cur ? 'current' : ''}" onclick="pickPlanningJob('${escapeHtml(j.r.id)}')">
-                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>SAP ${escapeHtml(j.r.sap || '—')}${j.day !== today ? ' · ' + formatDate(j.day).slice(0, 5) : ''}${j.r.reton ? ' · retonificado' : ''}</small></span>
-                    <span class="tj-q">${j.done} / ${j.q}<br><small>planchas OK</small></span>
-                    <span class="tj-bar"><span style="width:${pct}%"></span></span></button>`; };
-            box.innerHTML = `<h3>📅 Faena de hoy en el planning</h3>` +
-                (todays.length ? `<div class="tj-list">${todays.map(card).join('')}</div>` : '<p class="pl-hint" style="margin:0">Hoy no hay faena programada.</p>') +
-                (pending.length ? `<details class="tj-more"><summary>Pendiente de otros días de esta semana (${pending.length})</summary><div class="tj-list" style="margin-top:6px">${pending.map(card).join('')}</div></details>` : '') +
-                `<p class="pl-hint" style="margin:6px 0 0">Toca una faena para rellenar gráfica, SAP y sustrato.</p>`;
+                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>SAP ${escapeHtml(j.r.sap || '—')} · producción ${when}: ${j.q} pl.${j.r.reton ? ' · retonificado' : ''}</small></span>
+                    <span class="tj-q">${t ? `🎨 ${t.ok + t.nok}<br><small>pl. de prueba</small>` : '<small>sin pruebas</small>'}</span></button>`; };
+            const todays = jobs.filter(j => j.day === today), later = jobs.filter(j => j.day !== today);
+            box.innerHTML = `<h3>📅 Modelos del planning</h3>` +
+                (todays.length ? `<div class="tj-list">${todays.map(card).join('')}</div>` : '<p class="pl-hint" style="margin:0">Hoy producción no tiene nada programado.</p>') +
+                (later.length ? `<details class="tj-more"><summary>Próximos días (${later.length})</summary><div class="tj-list" style="margin-top:6px">${later.map(card).join('')}</div></details>` : '') +
+                `<p class="pl-hint" style="margin:6px 0 0">Toca un modelo para retonificarlo: se rellenan gráfica, SAP y sustrato. Tus planchas de prueba no cuentan como producción.</p>`;
         }
         function pickPlanningJob(id) {
             const r = readPlanning().rows.find(x => x.id === id); if (!r) return;
@@ -1245,7 +1259,7 @@
             $('graphicName').dispatchEvent(new Event('change'));
             if (!$('orderNumber').value.trim() && r.sap) $('orderNumber').value = r.sap;
             orderEditing = false; saveHeaderDraft(); renderTodayJobs();
-            toast('Faena cargada: ' + parseModel(r.deco).model);
+            toast('Listo para retonificar: ' + parseModel(r.deco).model);
             $('countOk').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
@@ -1276,57 +1290,50 @@
             return out;
         }
         function renderSummary() {
-            const [from, to] = summaryRange($('sumPeriod').value), e = escapeHtml;
+            const [from, to] = summaryRange($('sumPeriod').value), e = escapeHtml, DEFAULT_M2 = 2.704 * 1.204;
             $('sumRange').textContent = $('sumPeriod').value === 'all' ? '' : `${formatDate(from)} – ${formatDate(to)}`;
-            const rows = allEntries().filter(x => x.date >= from && x.date <= to);
-            const kera = x => findKeraFor({ sap: x.sap, deco: x.graphic });
-            const T = { ok: 0, nok: 0, h: 0, g: 0, c: 0, noInk: 0, m2ok: 0, m2nok: 0 };
-            const DEFAULT_M2 = 2.704 * 1.204;
-            const byWho = new Map(), byModel = new Map(), byDay = new Map();
-            rows.forEach(x => {
-                const ok = Number(x.ok) || 0, nok = Number(x.nok) || 0, h = Number(x.hours) || 0, k = kera(x), t = k ? keraTotals(k) : null;
-                T.ok += ok; T.nok += nok; T.h += h;
-                const m2 = t ? t.m2 : DEFAULT_M2; T.m2ok += ok * m2; T.m2nok += nok * m2;
-                if (t) { T.g += t.gPlate * (ok + nok); T.c += t.cPlate * (ok + nok); } else if (ok + nok) T.noInk += ok + nok;
-                const w = byWho.get(x.who) || { ok: 0, nok: 0, h: 0 }; w.ok += ok; w.nok += nok; w.h += h; byWho.set(x.who, w);
-                const mk = x.sap || parseModel(x.graphic).model || '—';
-                const m = byModel.get(mk) || { name: parseModel(x.graphic || CODE_BY_SAP.get(x.sap) || '').model || x.graphic || '—', caraM: parseModel(x.graphic || CODE_BY_SAP.get(x.sap) || '').caraM, sap: x.sap, ok: 0, nok: 0, c: 0, hasInk: !!t };
-                m.ok += ok; m.nok += nok; m.m2 = (m.m2 || 0) + (ok + nok) * m2; m.m2nok = (m.m2nok || 0) + nok * m2; if (t) m.c += t.cPlate * (ok + nok); byModel.set(mk, m);
-                const dd = byDay.get(x.date) || { ok: 0, nok: 0 }; dd.ok += ok; dd.nok += nok; byDay.set(x.date, dd);
-            });
-            // Cumplimiento del planning
-            const plan = readPlanning(), prod = productionMap(); let planned = 0, doneOfPlanned = 0; const plannedDay = new Map();
-            const F = { g: 0, c: 0, plates: 0, missing: new Set() };
+            const merma = (ok, nok) => ok + nok ? nok / (ok + nok) * 100 : 0, pct = n => nf(n, 1) + '%';
+            // Producción programada (planning)
+            const plan = readPlanning(), F = { plates: 0, m2: 0, g: 0, c: 0, missing: new Set() }, plannedDay = new Map();
             plan.rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
-                if (k < from || k > to) return; q = Number(q) || 0;
-                planned += q; doneOfPlanned += Math.min(q, prod.get(r.sap + '|' + k)?.ok || 0);
-                plannedDay.set(k, (plannedDay.get(k) || 0) + q);
-                const it = findKeraFor(r);
-                if (it) { const t = keraTotals(it); F.g += t.gPlate * q; F.c += t.cPlate * q; F.plates += q; } else if (q) F.missing.add((r.deco ? shortName(r.deco) : "") || r.sap);
+                if (k < from || k > to) return; q = Number(q) || 0; if (!q) return;
+                const it = findKeraFor(r), t = it ? keraTotals(it) : null;
+                F.plates += q; F.m2 += q * (t ? t.m2 : DEFAULT_M2); plannedDay.set(k, (plannedDay.get(k) || 0) + q);
+                if (t) { F.g += t.gPlate * q; F.c += t.cPlate * q; } else F.missing.add((r.deco ? shortName(r.deco) : '') || r.sap);
             }));
-            const merma = (ok, nok) => ok + nok ? nok / (ok + nok) * 100 : 0;
-            const pct = n => nf(n, 1) + '%';
-            const M = merma(T.ok, T.nok);
-            let html = `<div class="sum-kpis">
-                <div class="sum-kpi"><b>${nf(T.m2ok, 0)} m²</b><small>Producido OK<br>${T.ok} planchas</small></div>
-                <div class="sum-kpi ${M >= 10 ? 'bad' : ''}"><b>${pct(M)}</b><small>Merma<br>${T.nok} planchas · ${nf(T.m2nok, 0)} m²</small></div>
-                <div class="sum-kpi"><b>${nf(T.c, 0)} €</b><small>Tinta consumida<br>${nf(T.g / 1000, 1)} kg · ${T.m2ok + T.m2nok ? nf(T.c / (T.m2ok + T.m2nok), 2) : '0'} €/m²</small></div>
-                <div class="sum-kpi"><b>${planned ? pct(doneOfPlanned / planned * 100) : '—'}</b><small>Planning cumplido<br>${doneOfPlanned} de ${planned} pl.</small></div>
-                <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta prevista (planning)<br>${nf(F.g / 1000, 1)} kg · ${F.plates} pl.</small></div>
+            // Diseño: planchas gastadas en pruebas de tono (merma de diseño)
+            const rows = allEntries().filter(x => x.date >= from && x.date <= to);
+            const D = { ok: 0, nok: 0, m2: 0, g: 0, c: 0 }, byModel = new Map();
+            rows.forEach(x => {
+                const ok = Number(x.ok) || 0, nok = Number(x.nok) || 0, it = findKeraFor({ sap: x.sap, deco: x.graphic }), t = it ? keraTotals(it) : null;
+                const m2 = (ok + nok) * (t ? t.m2 : DEFAULT_M2);
+                D.ok += ok; D.nok += nok; D.m2 += m2; if (t) { D.g += t.gPlate * (ok + nok); D.c += t.cPlate * (ok + nok); }
+                const key = x.sap || parseModel(x.graphic).model || '—', name = x.graphic || CODE_BY_SAP.get(x.sap) || '';
+                const m = byModel.get(key) || { name: parseModel(name).model || '—', caraM: parseModel(name).caraM, sap: x.sap, ok: 0, nok: 0, m2: 0, c: 0, hasInk: !!t };
+                m.ok += ok; m.nok += nok; m.m2 += m2; if (t) m.c += t.cPlate * (ok + nok); byModel.set(key, m);
+            });
+            let html = `<div class="sum-section"><h3>🏭 Producción programada</h3><div class="sum-kpis" style="margin-top:6px">
+                <div class="sum-kpi"><b>${F.plates}</b><small>Planchas en el planning</small></div>
+                <div class="sum-kpi"><b>${nf(F.m2, 0)} m²</b><small>A producir</small></div>
+                <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta prevista<br>${nf(F.g / 1000, 1)} kg</small></div>
             </div>`;
-            if (T.noInk) html += `<p class="pl-hint" style="color:#b45309">${T.noInk} planchas producidas sin ficha de consumo: su tinta no está en el coste.</p>`;
-            if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309">Sin ficha de consumo (no entran en la tinta prevista): ${[...F.missing].map(e).join(', ')}.</p>`;
-            const days = [...new Set([...byDay.keys(), ...plannedDay.keys()])].sort();
+            if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309;margin-top:0">Sin ficha de consumo (no entran en la tinta prevista): ${[...F.missing].map(e).join(', ')}.</p>`;
+            const days = [...plannedDay.keys()].sort();
             if (days.length && days.length <= 62) {
-                const max = Math.max(1, ...days.map(k => Math.max((byDay.get(k)?.ok || 0) + (byDay.get(k)?.nok || 0), plannedDay.get(k) || 0)));
-                html += `<details class="sum-section"><summary><h3 style="display:inline">Por día</h3></summary><div class="sum-chart">${days.map(k => { const v = byDay.get(k) || { ok: 0, nok: 0 }, pl = plannedDay.get(k) || 0;
-                    return `<div class="sum-col" title="${formatDate(k)}: ${v.ok} OK · ${v.nok} No OK · ${pl} programadas">${pl ? `<span class="plan" style="bottom:${pl / max * 100}%"></span>` : ''}<i class="nok" style="height:${v.nok / max * 100}%"></i><i class="ok" style="height:${v.ok / max * 100}%"></i></div>`; }).join('')}</div>
-                    <div class="sum-days">${days.map(k => `<span>${formatDate(k).slice(0, 5)}</span>`).join('')}</div>
-                    <div class="sum-legend"><i style="background:#16a34a"></i>OK<i style="background:#dc2626"></i>No OK<i style="border-top:2px dashed currentColor;height:0"></i>Programado</div></details>`;
+                const max = Math.max(1, ...days.map(k => plannedDay.get(k)));
+                html += `<details><summary class="pl-hint" style="cursor:pointer">Planchas programadas por día</summary><div class="sum-chart">${days.map(k => `<div class="sum-col" title="${formatDate(k)}: ${plannedDay.get(k)} pl."><i class="ok" style="height:${plannedDay.get(k) / max * 100}%;background:#57534e"></i></div>`).join('')}</div>
+                    <div class="sum-days">${days.map(k => `<span>${formatDate(k).slice(0, 5)}</span>`).join('')}</div></details>`;
             }
-            html += `<details class="sum-section"><summary><h3 style="display:inline">Por modelo</h3> <small>· de más a menos merma</small></summary><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>OK</th><th>No OK</th><th>Merma</th><th>m²</th><th>Tinta €</th><th>€/m²</th></tr></thead><tbody>${
-                [...byModel.values()].sort((a, b) => merma(b.ok, b.nok) - merma(a.ok, a.nok) || b.ok - a.ok).map(v => { const m = merma(v.ok, v.nok);
-                    return `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${nf(v.m2 || 0, 0)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td><td>${v.hasInk && v.m2 ? nf(v.c / v.m2, 2) : '—'}</td></tr>`; }).join('') || '<tr><td colspan="8">Sin registros en este periodo.</td></tr>'}</tbody></table></details>`;
+            html += `</div><div class="sum-section"><h3>🎨 Diseño · pruebas de tono</h3>
+                <p class="pl-hint" style="margin-top:0">Planchas que gasta diseño retonificando modelos. Es un gasto aparte: no cuenta como producción.</p>
+                <div class="sum-kpis" style="margin-top:6px">
+                <div class="sum-kpi"><b>${D.ok + D.nok}</b><small>Planchas de prueba<br>${D.ok} OK · ${D.nok} No OK</small></div>
+                <div class="sum-kpi"><b>${nf(D.m2, 0)} m²</b><small>Gastados en pruebas</small></div>
+                <div class="sum-kpi"><b>${nf(D.c, 0)} €</b><small>Tinta en pruebas<br>${nf(D.g / 1000, 1)} kg</small></div>
+            </div>
+            <details><summary class="pl-hint" style="cursor:pointer">Por modelo (${byModel.size})</summary><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>Pruebas</th><th>OK</th><th>No OK</th><th>m²</th><th>Tinta €</th></tr></thead><tbody>${
+                [...byModel.values()].sort((a, b) => (b.ok + b.nok) - (a.ok + a.nok)).map(v =>
+                    `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok + v.nok}</td><td>${v.ok}</td><td>${v.nok}</td><td>${nf(v.m2, 0)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td></tr>`).join('') || '<tr><td colspan="7">Sin pruebas en este periodo.</td></tr>'}</tbody></table></details></div>`;
             $('sumBody').innerHTML = html;
         }
         function printSummary() {
@@ -1568,21 +1575,10 @@
             const only = $('plOnlyWeek').checked;
             const e = escapeHtml;
             const totals = keys.map(k => p.rows.reduce((a, r) => a + (Number((r.qty || {})[k]) || 0), 0));
-            const prod = productionMap();
-            const cellClass = (r, k) => {
-                const q = Number((r.qty || {})[k]) || 0, d = prod.get(r.sap + '|' + k)?.ok || 0;
-                if (q > 0 && d >= q) return 'filled done';
-                if (q > 0 && d > 0) return `filled partial" style="--pct:${Math.round(d / q * 100)}%`;
-                if (q > 0) return 'filled';
-                return d > 0 ? 'extra' : '';
-            };
-            const cellText = (r, k) => {
-                const q = Number((r.qty || {})[k]) || 0, v = prod.get(r.sap + '|' + k), d = v?.ok || 0;
-                const who = v ? [...v.who].join(', ') : '';
-                if (q > 0 && d > 0) return `${q}<small title="${escapeHtml(who)}">${d >= q ? '✓ ' : ''}${d} hechas</small>`;
-                if (q > 0) return String(q);
-                return d > 0 ? `<small title="${escapeHtml(who)}">${d} hechas<br>sin programar</small>` : '＋';
-            };
+            const tests = testsMap();
+            const cellClass = (r, k) => Number((r.qty || {})[k]) > 0 ? 'filled' : '';
+            const cellText = (r, k) => Number((r.qty || {})[k]) > 0 ? String(r.qty[k]) : '＋';
+            const testBadge = r => { const t = tests.get(r.sap); return t ? ` <span class="pl-test" title="Retonificado por ${escapeHtml([...t.who].join(', '))} · última prueba ${formatDate(t.last)}">🎨 ${t.ok + t.nok} pl. prueba</span>` : ''; };
             let html = `<thead><tr><th>Retonif.</th><th>SAP</th><th>Programación decoración</th>${days.map((d, i) =>
                 `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}</small></th>`).join('')}</tr></thead><tbody>`;
             // Orden tipo Gantt: primero lo que tiene faena esta semana, por el primer día
@@ -1598,7 +1594,7 @@
                 html += `<tr class="${f === 99 ? 'pl-idle' : ''}">
                     <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
                     <td>${e(r.sap || '—')}</td>
-                    <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre'; })()}</button></td>
+                    <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return (r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre') + testBadge(r); })()}</button></td>
                     ${keys.map(k => `<td class="${cellClass(r, k)}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${cellText(r, k)}</button></td>`).join('')}
                 </tr>`;
             });
