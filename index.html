@@ -463,7 +463,7 @@
             </button>
 
             <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
-                <span>📊 Resumen de producción<small>Producción, merma y tinta prevista</small></span>
+                <span>📊 Resumen de producción<small>Metros, merma, coste de tinta y previsión</small></span>
                 <span aria-hidden="true">›</span>
             </button>
 
@@ -1066,7 +1066,7 @@
             p.rows.forEach(r => keys.forEach((k, j) => {
                 const n = Number((r.qty || {})[k]) || 0; if (!n) return;
                 const it = findKeraFor(r);
-                if (!it) { missing.add(parseModel(r.deco).model || r.sap); return; }
+                if (!it) { missing.add((r.deco ? shortName(r.deco) : "") || r.sap); return; }
                 const t = keraTotals(it); g += t.gPlate * n; c += t.cPlate * n; perDay[j] += t.cPlate * n;
             }));
             const e = escapeHtml;
@@ -1156,16 +1156,18 @@
             $('sumRange').textContent = $('sumPeriod').value === 'all' ? '' : `${formatDate(from)} – ${formatDate(to)}`;
             const rows = allEntries().filter(x => x.date >= from && x.date <= to);
             const kera = x => findKeraFor({ sap: x.sap, deco: x.graphic });
-            const T = { ok: 0, nok: 0, h: 0, g: 0, c: 0, noInk: 0 };
+            const T = { ok: 0, nok: 0, h: 0, g: 0, c: 0, noInk: 0, m2ok: 0, m2nok: 0 };
+            const DEFAULT_M2 = 2.704 * 1.204;
             const byWho = new Map(), byModel = new Map(), byDay = new Map();
             rows.forEach(x => {
                 const ok = Number(x.ok) || 0, nok = Number(x.nok) || 0, h = Number(x.hours) || 0, k = kera(x), t = k ? keraTotals(k) : null;
                 T.ok += ok; T.nok += nok; T.h += h;
+                const m2 = t ? t.m2 : DEFAULT_M2; T.m2ok += ok * m2; T.m2nok += nok * m2;
                 if (t) { T.g += t.gPlate * (ok + nok); T.c += t.cPlate * (ok + nok); } else if (ok + nok) T.noInk += ok + nok;
                 const w = byWho.get(x.who) || { ok: 0, nok: 0, h: 0 }; w.ok += ok; w.nok += nok; w.h += h; byWho.set(x.who, w);
                 const mk = x.sap || parseModel(x.graphic).model || '—';
                 const m = byModel.get(mk) || { name: parseModel(x.graphic || CODE_BY_SAP.get(x.sap) || '').model || x.graphic || '—', caraM: parseModel(x.graphic || CODE_BY_SAP.get(x.sap) || '').caraM, sap: x.sap, ok: 0, nok: 0, c: 0, hasInk: !!t };
-                m.ok += ok; m.nok += nok; if (t) m.c += t.cPlate * (ok + nok); byModel.set(mk, m);
+                m.ok += ok; m.nok += nok; m.m2 = (m.m2 || 0) + (ok + nok) * m2; m.m2nok = (m.m2nok || 0) + nok * m2; if (t) m.c += t.cPlate * (ok + nok); byModel.set(mk, m);
                 const dd = byDay.get(x.date) || { ok: 0, nok: 0 }; dd.ok += ok; dd.nok += nok; byDay.set(x.date, dd);
             });
             // Cumplimiento del planning
@@ -1176,17 +1178,19 @@
                 planned += q; doneOfPlanned += Math.min(q, prod.get(r.sap + '|' + k)?.ok || 0);
                 plannedDay.set(k, (plannedDay.get(k) || 0) + q);
                 const it = findKeraFor(r);
-                if (it) { const t = keraTotals(it); F.g += t.gPlate * q; F.c += t.cPlate * q; F.plates += q; } else if (q) F.missing.add(parseModel(r.deco).model || r.sap);
+                if (it) { const t = keraTotals(it); F.g += t.gPlate * q; F.c += t.cPlate * q; F.plates += q; } else if (q) F.missing.add((r.deco ? shortName(r.deco) : "") || r.sap);
             }));
             const merma = (ok, nok) => ok + nok ? nok / (ok + nok) * 100 : 0;
             const pct = n => nf(n, 1) + '%';
             const M = merma(T.ok, T.nok);
             let html = `<div class="sum-kpis">
-                <div class="sum-kpi"><b>${T.ok}</b><small>Planchas OK · ${T.nok} No OK</small></div>
-                <div class="sum-kpi ${M >= 10 ? 'bad' : ''}"><b>${pct(M)}</b><small>Merma</small></div>
+                <div class="sum-kpi"><b>${nf(T.m2ok, 0)} m²</b><small>Producido OK<br>${T.ok} planchas</small></div>
+                <div class="sum-kpi ${M >= 10 ? 'bad' : ''}"><b>${pct(M)}</b><small>Merma<br>${T.nok} planchas · ${nf(T.m2nok, 0)} m²</small></div>
+                <div class="sum-kpi"><b>${nf(T.c, 0)} €</b><small>Tinta consumida<br>${nf(T.g / 1000, 1)} kg · ${T.m2ok + T.m2nok ? nf(T.c / (T.m2ok + T.m2nok), 2) : '0'} €/m²</small></div>
                 <div class="sum-kpi"><b>${planned ? pct(doneOfPlanned / planned * 100) : '—'}</b><small>Planning cumplido<br>${doneOfPlanned} de ${planned} pl.</small></div>
                 <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta prevista (planning)<br>${nf(F.g / 1000, 1)} kg · ${F.plates} pl.</small></div>
             </div>`;
+            if (T.noInk) html += `<p class="pl-hint" style="color:#b45309">${T.noInk} planchas producidas sin ficha de consumo: su tinta no está en el coste.</p>`;
             if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309">Sin ficha de consumo (no entran en la tinta prevista): ${[...F.missing].map(e).join(', ')}.</p>`;
             const days = [...new Set([...byDay.keys(), ...plannedDay.keys()])].sort();
             if (days.length && days.length <= 62) {
@@ -1196,12 +1200,9 @@
                     <div class="sum-days">${days.map(k => `<span>${formatDate(k).slice(0, 5)}</span>`).join('')}</div>
                     <div class="sum-legend"><i style="background:#16a34a"></i>OK<i style="background:#dc2626"></i>No OK<i style="border-top:2px dashed currentColor;height:0"></i>Programado</div></details>`;
             }
-            html += `<details class="sum-section"><summary><h3 style="display:inline">Por persona</h3> <small>· ${nf(T.h, 1)} h · ${T.h ? nf((T.ok + T.nok) / T.h, 1) : '0'} pl./hora</small></summary><table class="sum-table"><thead><tr><th>Persona</th><th>OK</th><th>No OK</th><th>Merma</th><th>Horas</th><th>Pl./hora</th></tr></thead><tbody>${
-                [...byWho].sort((a, b) => b[1].ok - a[1].ok).map(([w, v]) => { const m = merma(v.ok, v.nok);
-                    return `<tr><td>${e(w)}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${nf(v.h, 1)}</td><td>${v.h ? nf((v.ok + v.nok) / v.h, 1) : '—'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></details>`;
-            html += `<details class="sum-section"><summary><h3 style="display:inline">Por modelo</h3> <small>· de más a menos merma · tinta real ${nf(T.c, 0)} €</small></summary><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>OK</th><th>No OK</th><th>Merma</th><th>Tinta €</th></tr></thead><tbody>${
+            html += `<details class="sum-section"><summary><h3 style="display:inline">Por modelo</h3> <small>· de más a menos merma</small></summary><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>OK</th><th>No OK</th><th>Merma</th><th>m²</th><th>Tinta €</th><th>€/m²</th></tr></thead><tbody>${
                 [...byModel.values()].sort((a, b) => merma(b.ok, b.nok) - merma(a.ok, a.nok) || b.ok - a.ok).map(v => { const m = merma(v.ok, v.nok);
-                    return `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td></tr>`; }).join('') || '<tr><td colspan="6">Sin registros en este periodo.</td></tr>'}</tbody></table></details>`;
+                    return `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok}</td><td>${v.nok}</td><td class="${m >= 10 ? 'bad' : ''}">${pct(m)}</td><td>${nf(v.m2 || 0, 0)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td><td>${v.hasInk && v.m2 ? nf(v.c / v.m2, 2) : '—'}</td></tr>`; }).join('') || '<tr><td colspan="8">Sin registros en este periodo.</td></tr>'}</tbody></table></details>`;
             $('sumBody').innerHTML = html;
         }
         function printSummary() {
