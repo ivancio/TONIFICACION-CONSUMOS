@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1c1917">
+    <meta name="theme-color" content="#f2dfcf">
     <title>Tonificación Consumos - Undora</title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" href="/icons/icon-192.png">
@@ -13,23 +13,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #1c1917;
-            --primary-hover: #44403c;
+            /* Tema salmón (estilo papel de prensa económica) */
+            --primary-color: #33261d;
+            --primary-hover: #4a382b;
             --success-color: #16a34a;
             --success-hover: #15803d;
             --danger-color: #dc2626;
             --warn-bg: #fef3c7;
             --warn-border: #f59e0b;
             --warn-text: #92400e;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --soft-bg: #f1f5f9;
-            --soft-bg-2: #e2e8f0;
-            --text-color: #1e293b;
-            --muted: #64748b;
-            --border-color: #cbd5e1;
+            --bg-color: #f2dfcf;
+            --card-bg: #fdf1e7;
+            --soft-bg: #f6e3d4;
+            --soft-bg-2: #edd2bf;
+            --text-color: #2b1d14;
+            --muted: #7a5b48;
+            --border-color: #e0c1aa;
         }
-        @media (prefers-color-scheme: dark) {
+        @media (prefers-color-scheme: dark) and (max-width: 0px) {
             :root {
                 --bg-color: #0f172a;
                 --card-bg: #1e293b;
@@ -124,7 +125,7 @@
         .main-tiles { display: grid; gap: 14px; margin-top: 22px; }
         .main-tiles[hidden] { display: none; }
         @media (min-width: 760px) { .main-tiles { grid-template-columns: repeat(3, 1fr); } .tile { flex-direction: column; text-align: center; padding: 26px 16px 20px; } .tile .tile-go { display: none; } .tile .tile-ico { width: 96px; height: 96px; } .tile .tile-txt { justify-items: center; text-align: center; } }
-        @media (prefers-color-scheme: dark) { .tile-ico { background: #e2e8f0 !important; } }
+        @media (prefers-color-scheme: dark) and (max-width: 0px) { .tile-ico { background: #e2e8f0 !important; } }
         .tile { display: flex; align-items: center; gap: 16px; width: 100%; padding: 16px 18px; border-radius: 18px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.06); transition: transform .12s, box-shadow .12s, border-color .12s; position: relative; overflow: hidden; }
         .tile::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--tile); }
         @media (min-width: 760px) { .tile::before { inset: 0 0 auto 0; width: auto; height: 6px; } }
@@ -193,7 +194,7 @@
         .form-row { display: flex; gap: 12px; }
         .form-row .form-group { flex: 1; min-width: 0; }
         .shift-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-        .shift-btn { padding: 12px 8px; border: 2px solid var(--border-color, #d6d3d1); border-radius: 10px; background: #fff; font: inherit; font-weight: 700; cursor: pointer; text-align: center; line-height: 1.25; }
+        .shift-btn { padding: 12px 8px; border: 2px solid var(--border-color, #d6d3d1); border-radius: 10px; background: var(--card-bg); color: var(--text-color); font: inherit; font-weight: 700; cursor: pointer; text-align: center; line-height: 1.25; }
         .shift-btn small { display: block; font-weight: 500; color: var(--muted); margin-top: 2px; }
         .shift-btn.active { border-color: var(--primary-color); background: var(--soft-bg); }
         .now-btn { margin-top: 6px; width: 100%; padding: 8px; border: 1px dashed var(--border-color, #d6d3d1); border-radius: 8px; background: transparent; font: inherit; font-size: 0.85rem; cursor: pointer; }
@@ -302,7 +303,7 @@
         .brand { display: flex; justify-content: center; margin: 4px 0 6px; }
         .brand img { height: 34px; width: auto; }
         .brand-text { font-weight: 800; letter-spacing: 0; font-size: 1.3rem; display: none; }
-        @media (prefers-color-scheme: dark) { .brand img { filter: invert(1); } }
+        @media (prefers-color-scheme: dark) and (max-width: 0px) { .brand img { filter: invert(1); } }
         .brand-small img { height: 22px; }
         .archive-section { border-top: 2px solid var(--soft-bg); margin-top: 24px; padding-top: 18px; }
         .archive-item { border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
@@ -504,7 +505,7 @@
         .pl-table td.reton-cell { padding: 0; }
         .pl-table td.reton-cell .pl-reton { font-size: 0.74rem; white-space: nowrap; }
         .pl-group td { text-align: left !important; padding: 7px 10px !important; font-weight: 800; font-size: 0.85rem; }
-        .pl-group.prod td { background: #e7e5e4; color: #1c1917; }
+        .pl-group.prod td { background: var(--soft-bg-2); color: var(--text-color); }
         .pl-group.dis td { background: #ede9fe; color: #4c1d95; }
         .pl-table td.enc-state { font-size: 0.74rem; font-weight: 800; color: #6d28d9; white-space: nowrap; }
         .pl-table td.enc-state.ok { color: #15803d; } .pl-table td.enc-state.late { color: #dc2626; }
@@ -537,7 +538,7 @@
         .pl-name { border: 0; background: transparent; font: inherit; text-align: left; padding: 7px 6px; cursor: pointer; width: 100%; min-width: 300px; }
         .pl-m { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 800; background: #e0e7ff; color: #3730a3; vertical-align: 1px; }
         .pl-name small { display: block; color: var(--muted); font-size: 0.72rem; }
-        @media (prefers-color-scheme: dark) {
+        @media (prefers-color-scheme: dark) and (max-width: 0px) {
             .pl-table td.filled { background: #f59e0b; }
             td.filled .pl-cell, td.filled .pl-cell:hover { color: #111; }
             td.filled .pl-cell:hover { background: #fbbf24; }
