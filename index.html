@@ -577,6 +577,7 @@
                 <span aria-hidden="true">›</span>
             </button>
 
+            <button type="button" class="btn btn-secondary" style="width:100%;margin-top:18px" onclick="exportAllHistory()">📥 Descargar histórico completo (Excel)<br><small style="font-weight:400;opacity:.75">Todas las sesiones de todos, ordenadas por fecha</small></button>
             <div class="home-tools">
                 <button type="button" class="btn btn-secondary btn-small" onclick="exportBackup()" title="Descargar copia de seguridad">↓ Copia</button>
                 <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('importFile').click()" title="Restaurar una copia de seguridad">↑ Restaurar</button>
@@ -2300,6 +2301,34 @@
             const name = `Consumos_${($('orderNumber').value || 'orden').replace(/[^\w-]+/g, '_')}_${displayDecorator(currentDecorator)}.csv`;
             downloadFile(name, csv, 'text/csv;charset=utf-8');
             toast('CSV descargado');
+        }
+
+        // Histórico completo: una fila por sesión, de todos los perfiles, pedidos abiertos y cerrados
+        function exportAllHistory() {
+            const optText = (id, v) => { const o = [...$(id).options].find(o => o.value === v || o.text === v); return o && o.value ? o.text : (v || ''); };
+            const rows = [];
+            Object.entries(DECORATORS).forEach(([dec, prefix]) => {
+                const who = displayDecorator(dec);
+                const head = { order: localStorage.getItem(prefix + 'order') || '', sap: localStorage.getItem(prefix + 'sap') || '', graphic: localStorage.getItem(prefix + 'graphic') || '',
+                    substrate: optText('substrate', localStorage.getItem(prefix + 'substrate') || ''), material: optText('material', localStorage.getItem(prefix + 'material') || '') };
+                readHistory(prefix).forEach(x => rows.push({ x, who, h: head, state: 'Abierto', closed: '' }));
+                readArchive(prefix).forEach(a => (a.history || []).forEach(x => rows.push({ x, who,
+                    h: { order: a.order || '', sap: a.sap || '', graphic: a.graphic || '', substrate: optText('substrate', a.substrate || ''), material: optText('material', a.material || '') },
+                    state: 'Cerrado', closed: a.closedAt ? formatDate(isoDate(new Date(a.closedAt))) : '' })));
+            });
+            if (!rows.length) { toast('Todavía no hay registros', true); return; }
+            rows.sort((a, b) => (a.x.date + (a.x.timeFrom || '')).localeCompare(b.x.date + (b.x.timeFrom || '')) || a.who.localeCompare(b.who));
+            const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, num = n => String(Number(n) || 0).replace('.', ',');
+            const header = ['Fecha', 'Técnico', 'Nº de orden', 'Código SAP', 'Descripción', 'Cara M', 'Sustrato', 'Material', 'Hora inicio', 'Hora fin', 'Horas',
+                'Planchas OK', 'Planchas No OK', 'Total planchas', 'Estatus', 'Comentarios', 'Estado del pedido', 'Fecha de cierre'];
+            const lines = rows.map(({ x, who, h, state, closed }) => {
+                const sap = x.sap || h.sap, name = x.graphic || h.graphic || CODE_BY_SAP.get(sap) || '', m = parseModel(name);
+                return [formatDate(x.date), who, h.order, sap, m.model || name, m.caraM ? 'Sí' : '', h.substrate, h.material, x.timeFrom, x.timeTo,
+                    (Number(x.hours) || 0).toFixed(2).replace('.', ','), num(x.ok), num(x.nok), num((Number(x.ok) || 0) + (Number(x.nok) || 0)), x.status, x.comment || '', state, closed].map(q).join(';');
+            });
+            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + lines.join('\n');
+            downloadFile(`Historico_completo_${todayLocal()}.csv`, csv, 'text/csv;charset=utf-8');
+            toast(`Histórico descargado: ${rows.length} registros`);
         }
 
         function buildBackup() {
