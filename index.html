@@ -121,6 +121,23 @@
         details.fold[open] > summary::before { content: '▾ '; }
         details.fold > summary small { color: var(--muted); font-weight: 600; }
         @media print { details.fold > summary::before { content: ''; } }
+        .main-tiles { display: grid; gap: 14px; margin-top: 22px; }
+        .main-tiles[hidden] { display: none; }
+        @media (min-width: 760px) { .main-tiles { grid-template-columns: repeat(3, 1fr); } .tile { flex-direction: column; text-align: center; padding: 26px 16px 20px; } .tile .tile-go { display: none; } .tile .tile-ico { width: 96px; height: 96px; } .tile .tile-txt { justify-items: center; text-align: center; } }
+        @media (prefers-color-scheme: dark) { .tile-ico { background: #e2e8f0 !important; } }
+        .tile { display: flex; align-items: center; gap: 16px; width: 100%; padding: 16px 18px; border-radius: 18px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.06); transition: transform .12s, box-shadow .12s, border-color .12s; position: relative; overflow: hidden; }
+        .tile::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--tile); }
+        @media (min-width: 760px) { .tile::before { inset: 0 0 auto 0; width: auto; height: 6px; } }
+        .tile:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.12); border-color: var(--tile); }
+        .tile.dis { --tile: #7c3aed; } .tile.prod { --tile: #57534e; } .tile.plan { --tile: #2563eb; }
+        .tile-ico { width: 68px; height: 68px; flex: none; display: grid; place-items: center; border-radius: 16px; background: color-mix(in srgb, var(--tile, #7c3aed) 10%, transparent); }
+        .tile-ico svg { width: 82%; height: 82%; }
+        .tile-ico.sm { width: 40px; height: 40px; border-radius: 10px; background: var(--soft-bg); }
+        .tile-txt { flex: 1; display: grid; gap: 3px; }
+        .tile-txt b { font-size: 1.3rem; }
+        .tile-txt small { color: var(--muted); font-size: 0.86rem; }
+        .tile-go { font-size: 1.8rem; color: var(--muted); }
+        .area-title { display: flex; align-items: center; gap: 10px; }
         .area-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 20px; padding: 5px; border-radius: 14px; background: var(--soft-bg); }
         .area-tab { border: 0; border-radius: 10px; padding: 14px 8px; font: inherit; font-size: 1.05rem; font-weight: 800; background: transparent; color: var(--muted); cursor: pointer; }
         .area-tab.active { background: var(--card-bg); color: var(--text-color); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
@@ -604,12 +621,27 @@
                 <h1>Tonificación Consumos</h1>
             </header>
 
-            <div class="area-tabs" role="tablist">
-                <button type="button" role="tab" class="area-tab" data-area="diseno" onclick="setArea('diseno')">🎨 Diseño</button>
-                <button type="button" role="tab" class="area-tab" data-area="produccion" onclick="setArea('produccion')">🏭 Producción</button>
-            </div>
+            <nav class="main-tiles" id="mainTiles">
+                <button type="button" class="tile dis" onclick="setArea('diseno')">
+                    <span class="tile-ico"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="10" width="40" height="44" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="2.5"/><path d="M6 40c8-6 14 2 22-3s12-10 18-8v19a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6z" fill="#c4b5fd"/><circle cx="16" cy="21" r="4" fill="#f59e0b"/><circle cx="27" cy="19" r="4" fill="#0ea5e9"/><circle cx="36" cy="25" r="4" fill="#9f1d1d"/><path d="M58 8 38 36" stroke="#4c1d95" stroke-width="5" stroke-linecap="round"/><path d="M38.5 35.5c-3 1-6 3.5-6.5 7.5 3.5.5 7-1 8.5-4z" fill="#7c3aed"/></svg></span>
+                    <span class="tile-txt"><b>Diseño</b><small id="tileDis">Pruebas de tono y encargos</small></span>
+                    <span class="tile-go" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="tile prod" onclick="setArea('produccion')">
+                    <span class="tile-ico"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="12" width="56" height="14" rx="4" fill="#44403c"/><rect x="10" y="26" width="6" height="5" rx="1" fill="#0ea5e9"/><rect x="20" y="26" width="6" height="5" rx="1" fill="#db2777"/><rect x="30" y="26" width="6" height="5" rx="1" fill="#facc15"/><rect x="40" y="26" width="6" height="5" rx="1" fill="#1f2937"/><path d="M13 33v4M23 33v3M33 33v5M43 33v3" stroke="#78716c" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 3"/><rect x="6" y="40" width="52" height="10" rx="2" fill="#d6d3d1" stroke="#57534e" stroke-width="2"/><path d="M8 45c6-3 10 3 16 0s10-3 16 0 10 2 16-1" stroke="#a8a29e" stroke-width="2" fill="none"/><path d="M2 54h60" stroke="#57534e" stroke-width="3" stroke-linecap="round"/><circle cx="12" cy="57" r="3" fill="#57534e"/><circle cx="32" cy="57" r="3" fill="#57534e"/><circle cx="52" cy="57" r="3" fill="#57534e"/><circle cx="52" cy="19" r="2.5" fill="#22c55e"/></svg></span>
+                    <span class="tile-txt"><b>Producción</b><small>Resumen y consumos de tinta</small></span>
+                    <span class="tile-go" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="tile plan" onclick="openPlanning()">
+                    <span class="tile-ico"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="5" y="10" width="54" height="48" rx="7" fill="#dbeafe" stroke="#2563eb" stroke-width="2.5"/><path d="M5 22h54" stroke="#2563eb" stroke-width="2.5"/><path d="M18 5v10M46 5v10" stroke="#1e3a8a" stroke-width="4" stroke-linecap="round"/><rect x="11" y="27" width="20" height="6" rx="3" fill="#57534e"/><rect x="23" y="36" width="22" height="6" rx="3" fill="#7c3aed"/><rect x="35" y="45" width="18" height="6" rx="3" fill="#16a34a"/><path d="M49 47.5l2 2 3.5-4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></span>
+                    <span class="tile-txt"><b>Planning semanal</b><small id="planningSummary">Producción y diseño de la semana</small></span>
+                    <span class="tile-go" aria-hidden="true">›</span>
+                </button>
+            </nav>
 
             <section class="home-section area" data-area="diseno">
+                <button type="button" class="nav-back" onclick="setArea('')">← Inicio</button>
+                <h1 class="view-title area-title"><span class="tile-ico sm"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="10" width="40" height="44" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="2.5"/><path d="M6 40c8-6 14 2 22-3s12-10 18-8v19a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6z" fill="#c4b5fd"/><circle cx="16" cy="21" r="4" fill="#f59e0b"/><circle cx="27" cy="19" r="4" fill="#0ea5e9"/><circle cx="36" cy="25" r="4" fill="#9f1d1d"/><path d="M58 8 38 36" stroke="#4c1d95" stroke-width="5" stroke-linecap="round"/><path d="M38.5 35.5c-3 1-6 3.5-6.5 7.5 3.5.5 7-1 8.5-4z" fill="#7c3aed"/></svg></span> Diseño</h1>
                 <p class="section-help">Pulsa tu nombre para apuntar tus pruebas de tono.</p>
                 <div class="home-cards" style="margin-top:10px">
                 <button type="button" class="card-selector" onclick="selectDecorator('Decorador 1')">
@@ -652,10 +684,8 @@
             </section>
 
             <section class="home-section area" data-area="produccion">
-                <button type="button" class="planning-btn" onclick="openPlanning()">
-                    <span>📅 Planning semanal<small id="planningSummary">Faena programada de la semana</small></span>
-                    <span aria-hidden="true">›</span>
-                </button>
+                <button type="button" class="nav-back" onclick="setArea('')">← Inicio</button>
+                <h1 class="view-title area-title"><span class="tile-ico sm"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="12" width="56" height="14" rx="4" fill="#44403c"/><rect x="10" y="26" width="6" height="5" rx="1" fill="#0ea5e9"/><rect x="20" y="26" width="6" height="5" rx="1" fill="#db2777"/><rect x="30" y="26" width="6" height="5" rx="1" fill="#facc15"/><rect x="40" y="26" width="6" height="5" rx="1" fill="#1f2937"/><path d="M13 33v4M23 33v3M33 33v5M43 33v3" stroke="#78716c" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 3"/><rect x="6" y="40" width="52" height="10" rx="2" fill="#d6d3d1" stroke="#57534e" stroke-width="2"/><path d="M8 45c6-3 10 3 16 0s10-3 16 0 10 2 16-1" stroke="#a8a29e" stroke-width="2" fill="none"/><path d="M2 54h60" stroke="#57534e" stroke-width="3" stroke-linecap="round"/><circle cx="12" cy="57" r="3" fill="#57534e"/><circle cx="32" cy="57" r="3" fill="#57534e"/><circle cx="52" cy="57" r="3" fill="#57534e"/><circle cx="52" cy="19" r="2.5" fill="#22c55e"/></svg></span> Producción</h1>
                 <button type="button" class="planning-btn" onclick="openSummary()">
                     <span>📊 Resumen de producción<small>Planchas, m² y tinta por código SAP</small></span>
                     <span aria-hidden="true">›</span>
@@ -1411,6 +1441,8 @@
         }
         const encSort = (a, b) => (a.due || '9999').localeCompare(b.due || '9999');
         function renderEncargos() {
+            const pendN = readEnc().items.filter(x => !x.done).length;
+            if ($('tileDis')) $('tileDis').textContent = pendN ? `${pendN} ${pendN === 1 ? 'encargo pendiente' : 'encargos pendientes'} · pruebas de tono` : 'Pruebas de tono y encargos';
             const box = $('encList'); if (!box) return;
             const items = readEnc().items, pend = items.filter(x => !x.done).sort(encSort), done = items.filter(x => x.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
             box.innerHTML = (pend.length ? pend.map(x => encCard(x)).join('') : '<p class="pl-hint" style="margin:0">No hay encargos pendientes.</p>') +
@@ -1779,6 +1811,7 @@
             window.scrollTo(0, 0);
         }
         function closePlanning() {
+            setArea('');
             $('planningView').style.display = 'none';
             document.body.classList.remove('planning-open');
             $('homeView').style.display = 'block';
@@ -2054,7 +2087,9 @@
             const p = readPlanning(), t = todayLocal();
             const todayRows = p.rows.filter(r => Number((r.qty || {})[t]) > 0);
             const total = todayRows.reduce((a, r) => a + Number(r.qty[t]), 0);
-            el.textContent = todayRows.length ? `Hoy: ${todayRows.length} decoraciones · ${total} planchas` : 'Hoy no hay faena programada';
+            const encHoy = readEnc().items.filter(x => !x.done && x.due === t).length;
+            const bits = [todayRows.length && `${total} planchas en producción`, encHoy && `${encHoy} ${encHoy === 1 ? 'encargo' : 'encargos'} de diseño`].filter(Boolean);
+            el.textContent = bits.length ? 'Hoy: ' + bits.join(' · ') : 'Producción y diseño de la semana';
         }
 
         // ---------- Utilidades ----------
@@ -2199,7 +2234,7 @@
                 try { readPlanning().rows.filter(r => needsTono(r) && techsOf(r).length).forEach(syncEncargoFromPlanning); localStorage.setItem('enc_migrated', '1'); } catch (e) {}
             }
             renderEncargos();
-            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); initEncargoEditor(); let a = 'diseno'; try { a = localStorage.getItem('ui_area') || 'diseno'; } catch (e) {} setArea(a); }
+            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); initEncargoEditor(); setArea(''); }
             updateKeraSummary();
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
@@ -2257,10 +2292,14 @@
         }
 
         function setArea(area) {
-            try { localStorage.setItem('ui_area', area); } catch (e) {}
-            document.querySelectorAll('.area-tab').forEach(b => b.classList.toggle('active', b.dataset.area === area));
-            document.querySelectorAll('.home-section.area').forEach(sec => { sec.hidden = sec.dataset.area !== area; });
+            homeArea = area || '';
+            $('mainTiles').hidden = !!homeArea;
+            document.querySelector('#homeView .home-header').hidden = !!homeArea;
+            document.querySelectorAll('.home-section.area').forEach(sec => { sec.hidden = sec.dataset.area !== homeArea; });
+            if (homeArea === 'diseno') renderEncargos();
+            window.scrollTo(0, 0);
         }
+        let homeArea = '';
 
         function goHome() {
             if ((counts.ok > 0 || counts.nok > 0) &&
