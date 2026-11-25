@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script>try { document.documentElement.dataset.theme = localStorage.getItem('ui_theme') || 'salmon'; } catch (e) { document.documentElement.dataset.theme = 'salmon'; }</script>
     <style>
         :root {
             /* Tema salmón (estilo papel de prensa económica) */
@@ -30,20 +31,33 @@
             --muted: #7a5b48;
             --border-color: #e0c1aa;
         }
-        @media (prefers-color-scheme: dark) and (max-width: 0px) {
-            :root {
-                --bg-color: #0f172a;
-                --card-bg: #1e293b;
-                --soft-bg: #273449;
-                --soft-bg-2: #334155;
-                --text-color: #e2e8f0;
-                --muted: #94a3b8;
-                --border-color: #475569;
-                --primary-color: #e7e5e4;
-                --primary-hover: #d6d3d1;
-                --warn-bg: #422006;
-                --warn-text: #fcd34d;
-            }
+        /* Temas de color (se eligen en el inicio; salmón por defecto) */
+        html[data-theme="claro"] {
+            --primary-color: #1c1917; --primary-hover: #44403c;
+            --bg-color: #f8fafc; --card-bg: #ffffff; --soft-bg: #f1f5f9; --soft-bg-2: #e2e8f0;
+            --text-color: #1e293b; --muted: #64748b; --border-color: #cbd5e1;
+        }
+        html[data-theme="medio"] {
+            --primary-color: #1f2937; --primary-hover: #374151;
+            --bg-color: #9ca3af; --card-bg: #d1d5db; --soft-bg: #c3c8cf; --soft-bg-2: #b4bac3;
+            --text-color: #111827; --muted: #374151; --border-color: #9ca3af;
+        }
+        html[data-theme="oscuro"] {
+            --primary-color: #e7e5e4; --primary-hover: #d6d3d1;
+            --bg-color: #0f172a; --card-bg: #1e293b; --soft-bg: #273449; --soft-bg-2: #334155;
+            --text-color: #e2e8f0; --muted: #94a3b8; --border-color: #475569;
+            --warn-bg: #422006; --warn-text: #fcd34d;
+        }
+        html[data-theme="oscuro"] .tile-ico { background: #e2e8f0 !important; }
+        html[data-theme="oscuro"] .brand img { filter: invert(1); }
+        html[data-theme="oscuro"] .pl-table td.filled { background: #f59e0b; }
+        html[data-theme="oscuro"] td.filled .pl-cell, html[data-theme="oscuro"] td.filled .pl-cell:hover { color: #111; }
+        html[data-theme="oscuro"] .pl-table th.today { background: #b45309; color: #fff; }
+        html[data-theme="oscuro"] .pl-group.prod td { color: var(--text-color); }
+        .theme-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 18px; color: var(--muted); font-size: 0.85rem; }
+        .theme-sw { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); border-radius: 999px; padding: 5px 10px 5px 6px; font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+        .theme-sw i { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(0,0,0,.25); background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%); }
+        .theme-sw.active { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-color) inset; }
         }
 
         * { box-sizing: border-box; }
@@ -125,7 +139,6 @@
         .main-tiles { display: grid; gap: 14px; margin-top: 22px; }
         .main-tiles[hidden] { display: none; }
         @media (min-width: 760px) { .main-tiles { grid-template-columns: repeat(3, 1fr); } .tile { flex-direction: column; text-align: center; padding: 26px 16px 20px; } .tile .tile-go { display: none; } .tile .tile-ico { width: 96px; height: 96px; } .tile .tile-txt { justify-items: center; text-align: center; } }
-        @media (prefers-color-scheme: dark) and (max-width: 0px) { .tile-ico { background: #e2e8f0 !important; } }
         .tile { display: flex; align-items: center; gap: 16px; width: 100%; padding: 16px 18px; border-radius: 18px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.06); transition: transform .12s, box-shadow .12s, border-color .12s; position: relative; overflow: hidden; }
         .tile::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--tile); }
         @media (min-width: 760px) { .tile::before { inset: 0 0 auto 0; width: auto; height: 6px; } }
@@ -303,7 +316,6 @@
         .brand { display: flex; justify-content: center; margin: 4px 0 6px; }
         .brand img { height: 34px; width: auto; }
         .brand-text { font-weight: 800; letter-spacing: 0; font-size: 1.3rem; display: none; }
-        @media (prefers-color-scheme: dark) and (max-width: 0px) { .brand img { filter: invert(1); } }
         .brand-small img { height: 22px; }
         .archive-section { border-top: 2px solid var(--soft-bg); margin-top: 24px; padding-top: 18px; }
         .archive-item { border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
@@ -483,7 +495,7 @@
         .planning-btn small { display: block; font-weight: 400; opacity: 0.8; font-size: 0.82rem; margin-top: 2px; }
         .pl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 12px; flex-wrap: wrap; }
         .pl-week { display: flex; align-items: center; gap: 6px; font-weight: 700; }
-        .pl-week button { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); font: inherit; font-size: 1.2rem; cursor: pointer; }
+        .pl-week button { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); font: inherit; font-size: 1.2rem; cursor: pointer; color: var(--text-color); }
         .pl-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
         .pl-meta select, .pl-meta input { padding: 6px 8px; font-size: 0.85rem; width: auto; }
         .pl-scroll { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
@@ -544,13 +556,6 @@
         .pl-name { border: 0; background: transparent; font: inherit; text-align: left; padding: 7px 6px; cursor: pointer; width: 100%; min-width: 300px; }
         .pl-m { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 800; background: #e0e7ff; color: #3730a3; vertical-align: 1px; }
         .pl-name small { display: block; color: var(--muted); font-size: 0.72rem; }
-        @media (prefers-color-scheme: dark) and (max-width: 0px) {
-            .pl-table td.filled { background: #f59e0b; }
-            td.filled .pl-cell, td.filled .pl-cell:hover { color: #111; }
-            td.filled .pl-cell:hover { background: #fbbf24; }
-
-            .pl-table th.today { background: #b45309; color: #fff; }
-        }
         .pl-name:hover { background: var(--soft-bg); }
         tr.pl-idle .pl-name { opacity: 0.55; }
         .pl-sep td { background: var(--soft-bg); font-size: 0.72rem; color: var(--muted); text-align: left !important; padding: 4px 8px; font-weight: 700; }
@@ -709,6 +714,12 @@
                 <span aria-hidden="true">›</span>
             </button>
 
+            <div class="theme-row" id="themeRow">Colores:
+                <button type="button" class="theme-sw" data-theme="salmon" onclick="setTheme('salmon')"><i style="--a:#f2dfcf;--b:#33261d"></i>Salmón</button>
+                <button type="button" class="theme-sw" data-theme="claro" onclick="setTheme('claro')"><i style="--a:#ffffff;--b:#1c1917"></i>Claro</button>
+                <button type="button" class="theme-sw" data-theme="medio" onclick="setTheme('medio')"><i style="--a:#9ca3af;--b:#1f2937"></i>Medio</button>
+                <button type="button" class="theme-sw" data-theme="oscuro" onclick="setTheme('oscuro')"><i style="--a:#1e293b;--b:#e7e5e4"></i>Oscuro</button>
+            </div>
             <details class="more-opts">
                 <summary>⚙️ Más opciones</summary>
                 <div class="home-tools">
@@ -2321,7 +2332,7 @@
                 try { readPlanning().rows.filter(r => needsTono(r) && techsOf(r).length).forEach(syncEncargoFromPlanning); localStorage.setItem('enc_migrated', '1'); } catch (e) {}
             }
             renderEncargos();
-            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); initEncargoEditor(); setArea(''); }
+            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); initEncargoEditor(); setArea(''); setTheme(document.documentElement.dataset.theme); }
             updateKeraSummary();
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
@@ -2376,6 +2387,15 @@
             $('saveBtn').innerText = '💾 GUARDAR REGISTRO DE HOY';
             $('commentsBox').open = false; toggleDateField(false); syncSessionUI();
             updateHoursPreview();
+        }
+
+        const THEME_BG = { salmon: '#f2dfcf', claro: '#f8fafc', medio: '#9ca3af', oscuro: '#0f172a' };
+        function setTheme(t) {
+            if (!THEME_BG[t]) t = 'salmon';
+            document.documentElement.dataset.theme = t;
+            try { localStorage.setItem('ui_theme', t); } catch (e) {}
+            document.querySelectorAll('.theme-sw').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+            const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = THEME_BG[t];
         }
 
         function setArea(area) {
