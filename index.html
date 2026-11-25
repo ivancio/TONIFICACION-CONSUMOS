@@ -1108,7 +1108,6 @@
             <p class="pl-hint" id="closeIntro" style="margin-top:0"></p>
             <p style="margin:6px 0 8px;font-weight:700">Confirma antes de cerrar:</p>
             <div class="chk-list" id="chkList">
-                <label class="chk"><input type="checkbox" data-chk="tono"><span><b>Tono</b> confirmado</span></label>
                 <label class="chk"><input type="checkbox" data-chk="tonificado"><span><b>Tonificado</b></span></label>
                 <label class="chk"><input type="checkbox" data-chk="caras"><span><b>Todas las caras</b> revisadas</span></label>
                 <label class="chk"><input type="checkbox" data-chk="pegatina"><span><b>Pegatina de patrón</b> con el cuño de dirección técnica</span></label>
@@ -1445,7 +1444,7 @@
 
 
         // ---------- Cierre de pedido con comprobaciones obligatorias ----------
-        const CHECKS = [['tono', 'Tono'], ['tonificado', 'Tonificado'], ['caras', 'Todas las caras'], ['pegatina', 'Pegatina con cuño']];
+        const CHECKS = [['tonificado', 'Tonificado'], ['caras', 'Todas las caras'], ['pegatina', 'Pegatina con cuño']];
         let afterClose = null;
         function openChecklist(intro, then) {
             afterClose = then || null;
@@ -1470,7 +1469,7 @@
             toast('📦 Pedido cerrado con todo confirmado');
             if (then) then();
         }
-        const checksLine = c => c && c.tono ? `<span class="chk-done">✓ Tono · ✓ Tonificado · ✓ Todas las caras · ✓ Pegatina con cuño</span>` : '';
+        const checksLine = c => c && c.tonificado ? `<span class="chk-done">${c.tono ? '✓ Tono · ' : ''}✓ Tonificado · ✓ Todas las caras · ✓ Pegatina con cuño</span>` : '';
 
         // ---------- Encargos de diseño (separados de la producción) ----------
         const ENC_KEY = 'encargos';
@@ -2674,7 +2673,7 @@
             const name = displayDecorator(currentDecorator);
             const rows = orders.map(o => { const h = o.history || []; const ok = sum(h, 'ok'), nok = sum(h, 'nok');
                 return `<tr><td>${e(o.order || 'Sin OF')}</td><td>${o.open ? 'Abierto' : 'Cerrado ' + new Date(o.closedAt).toLocaleDateString('es-ES')}</td><td>${e(o.substrate || '-')}</td><td>${e(o.material || '-')}</td><td>${e(o.graphic || '-')}</td><td>${h.length}</td><td>${sum(h, 'hours').toFixed(2)}</td><td>${ok}</td><td>${nok}</td><td>${pct(ok, nok)}</td></tr>`; }).join('');
-            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin OF')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>${o.checks && o.checks.tono ? '<p style="margin:0 0 4px;font-size:.8rem">Cierre confirmado: ✓ Tono · ✓ Tonificado · ✓ Todas las caras · ✓ Pegatina de patrón con cuño de dirección técnica</p>' : ''}
+            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin OF')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>${o.checks && o.checks.tonificado ? '<p style="margin:0 0 4px;font-size:.8rem">Cierre confirmado: ✓ Tonificado · ✓ Todas las caras · ✓ Pegatina de patrón con cuño de dirección técnica</p>' : ''}
                 <table class="fr-table"><thead><tr><th>Fecha</th><th>Desde</th><th>Hasta</th><th>Horas</th><th>Estatus</th><th>OK</th><th>No OK</th><th>Comentarios</th></tr></thead><tbody>
                 ${(o.history || []).map(x => `<tr><td>${e(formatDate(x.date))}</td><td>${e(x.timeFrom)}</td><td>${e(x.timeTo)}</td><td>${(x.hours || 0).toFixed(2)}</td><td>${e(x.status || '')}</td><td>${x.ok || 0}</td><td>${x.nok || 0}</td><td>${e(x.comment || '')}</td></tr>`).join('')}
                 </tbody></table></div>`).join('');
