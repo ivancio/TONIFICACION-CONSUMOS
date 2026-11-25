@@ -464,6 +464,7 @@
         .pl-reton { border: 0; background: transparent; font: inherit; font-weight: 700; padding: 7px 6px; cursor: pointer; width: 100%; }
         .pl-table td.pdone { background: #15803d !important; }
         .pl-table td.pdone .pl-cell { color: #fff !important; }
+        .pl-of { color: var(--muted); font-size: 0.72rem; font-weight: 700; }
         .pl-fin { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; background: #dcfce7; color: #166534; }
         .done-tg { margin-top: 6px; width: 100%; border: 1px dashed var(--border-color); background: transparent; color: var(--muted); border-radius: 8px; padding: 5px 4px; font: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
         .done-tg.on { background: #15803d; border: 1px solid #15803d; color: #fff; }
@@ -669,7 +670,7 @@
             <!-- Cabecera solo para el PDF -->
             <div class="print-only print-header">
                 <table>
-                    <tr><td>Orden</td><td id="pOrder"></td></tr>
+                    <tr><td>OF</td><td id="pOrder"></td></tr>
                     <tr><td>Técnico</td><td id="pTech"></td></tr>
                     <tr><td>Sustrato</td><td id="pSubstrate"></td></tr>
                     <tr><td>Material</td><td id="pMaterial"></td></tr>
@@ -685,7 +686,7 @@
                 <div class="order-edit" id="orderEdit">
                 <div class="form-row order-fields">
                     <div class="form-group">
-                        <label for="orderNumber">Número de Orden</label>
+                        <label for="orderNumber">OF · orden de fabricación <small style="color:var(--muted);font-weight:400">(opcional)</small></label>
                         <input type="text" id="orderNumber" placeholder="Ej. ORD-2026-001">
                     </div>
                     <div class="form-group">
@@ -952,6 +953,7 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label for="plEdSap">SAP</label><input type="text" id="plEdSap" inputmode="numeric"></div>
+                        <div class="form-group"><label for="plEdOf">OF <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="text" id="plEdOf" placeholder="Orden de fabricación"></div>
                         <div class="form-group"><label>Retonificado</label>
                             <div class="shift-picker" style="margin:0"><button type="button" class="shift-btn" id="plEdNo" onclick="setEdReton(false)">NO</button><button type="button" class="shift-btn" id="plEdSi" onclick="setEdReton(true)">SÍ</button></div>
                         </div>
@@ -1265,7 +1267,7 @@
             const m = parseModel(g || CODE_BY_SAP.get(sap) || '');
             const sub = $('substrate').selectedIndex > 0 ? $('substrate').selectedOptions[0].textContent : '';
             const mat = $('material').value ? $('material').selectedOptions[0].textContent : '';
-            const bits = [sap && 'SAP ' + sap, sub, mat, $('orderNumber').value.trim() && 'Orden ' + $('orderNumber').value.trim()].filter(Boolean).map(e).join(' · ');
+            const bits = [sap && 'SAP ' + sap, sub, mat, $('orderNumber').value.trim() && 'OF ' + $('orderNumber').value.trim()].filter(Boolean).map(e).join(' · ');
             $('orderSummary').innerHTML = editing ? '' : `<span><b>${e(m.model || g || sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<small>${bits || 'Faltan datos'}</small></span>
                 <button type="button" class="btn btn-secondary btn-small" onclick="setOrderEditing(true)">✏️ Cambiar</button>`;
         }
@@ -1328,7 +1330,7 @@
             $('sapField').value = r.sap || '';
             $('graphicName').value = r.deco ? shortName(r.deco) : '';
             $('graphicName').dispatchEvent(new Event('change'));
-            if (!$('orderNumber').value.trim() && r.sap) $('orderNumber').value = r.sap;
+            if (r.of) $('orderNumber').value = r.of;
             orderEditing = false; saveHeaderDraft(); renderTodayJobs();
             toast('Listo para retonificar: ' + parseModel(r.deco).model);
             $('countOk').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1646,7 +1648,7 @@
             const doneTot = keys.map(k => p.rows.reduce((a, r) => a + (isDone(r, k) ? Number(r.qty[k]) : 0), 0));
             const rowFinished = r => { const ks = Object.keys(r.qty || {}).filter(k => Number(r.qty[k]) > 0); return ks.length > 0 && ks.every(k => (r.done || {})[k]); };
             const testBadge = r => { const t = tests.get(r.sap); return t ? ` <span class="pl-test" title="Retonificado por ${escapeHtml([...t.who].join(', '))} · última prueba ${formatDate(t.last)}">🎨 ${t.ok + t.nok} pl. prueba</span>` : ''; };
-            let html = `<thead><tr><th>Retonif.</th><th>Técnico</th><th>SAP</th><th>Programación decoración</th>${days.map((d, i) =>
+            let html = `<thead><tr><th>Retonif.</th><th>Técnico</th><th>SAP · OF</th><th>Programación decoración</th>${days.map((d, i) =>
                 `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}${doneTot[i] ? ` · <span style="color:#15803d">✓ ${doneTot[i]}</span>` : ''}</small></th>`).join('')}</tr></thead><tbody>`;
             // Orden tipo Gantt: primero lo que tiene faena esta semana, por el primer día
             const firstDay = r => { const j = keys.findIndex(k => Number((r.qty || {})[k]) > 0); return j < 0 ? 99 : j; };
@@ -1661,7 +1663,7 @@
                 html += `<tr class="${f === 99 ? 'pl-idle' : ''}">
                     <td class="reton-cell ${r.reton ? 'reton-si' : 'reton-no'}"><button type="button" class="pl-reton" title="Tocar para cambiar" onclick="togglePlanningReton(${i})">${r.reton ? '✓ SÍ' : '✗ NO'}</button></td>
                     <td><button type="button" class="pl-reton" title="Asignar técnico" onclick="openPlanningEditor(${i})">${techChip(r.tech)}</button></td>
-                    <td>${e(r.sap || '—')}</td>
+                    <td>${e(r.sap || '—')}${r.of ? `<br><small class="pl-of">OF ${e(r.of)}</small>` : ''}</td>
                     <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return (r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre') + testBadge(r) + (rowFinished(r) ? ' <span class="pl-fin">✅ Finalizada</span>' : ''); })()}</button></td>
                     ${keys.map(k => `<td class="${cellClass(r, k)}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${cellText(r, k)}</button></td>`).join('')}
                 </tr>`;
@@ -1712,7 +1714,7 @@
                 $('codesSearch').innerHTML = UNDORA_CODES.map(([c, n]) => [c, shortName(n)]).sort((a, b) => a[1].localeCompare(b[1]))
                     .map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
             $('plEdTitle').textContent = i >= 0 ? 'Editar producción' : 'Añadir producción';
-            $('plEdSearch').value = ''; $('plEdSap').value = r.sap || ''; $('plEdDeco').value = r.deco ? shortName(r.deco) : '';
+            $('plEdSearch').value = ''; $('plEdSap').value = r.sap || ''; $('plEdOf').value = r.of || ''; $('plEdDeco').value = r.deco ? shortName(r.deco) : '';
             setEdReton(!!r.reton); setEdTech(r.tech || '');
             $('plEdDelete').style.visibility = i >= 0 ? 'visible' : 'hidden';
             const days = weekDays(), keys = days.map(isoDate), today = todayLocal();
@@ -1745,7 +1747,7 @@
             const p = readPlanning();
             let r = edIndex >= 0 ? p.rows[edIndex] : null;
             if (!r) { r = { id: 'r' + Date.now().toString(36), qty: {} }; p.rows.push(r); }
-            r.sap = sap; r.deco = deco; r.reton = edReton; r.tech = edTech; r.qty = r.qty || {};
+            r.sap = sap; r.deco = deco; r.reton = edReton; r.tech = edTech; r.of = $('plEdOf').value.trim(); r.qty = r.qty || {};
             r.done = {};
             document.querySelectorAll('#plEdDays .done-tg.on').forEach(b => {
                 const v = parseInt(document.querySelector(`#plEdDays input[data-k="${b.dataset.k}"]`).value, 10);
@@ -2313,15 +2315,15 @@
             const T = { s: all.length, h: sum(all, 'hours'), ok: sum(all, 'ok'), nok: sum(all, 'nok') };
             const name = displayDecorator(currentDecorator);
             const rows = orders.map(o => { const h = o.history || []; const ok = sum(h, 'ok'), nok = sum(h, 'nok');
-                return `<tr><td>${e(o.order || 'Sin orden')}</td><td>${o.open ? 'Abierto' : 'Cerrado ' + new Date(o.closedAt).toLocaleDateString('es-ES')}</td><td>${e(o.substrate || '-')}</td><td>${e(o.material || '-')}</td><td>${e(o.graphic || '-')}</td><td>${h.length}</td><td>${sum(h, 'hours').toFixed(2)}</td><td>${ok}</td><td>${nok}</td><td>${pct(ok, nok)}</td></tr>`; }).join('');
-            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin orden')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>
+                return `<tr><td>${e(o.order || 'Sin OF')}</td><td>${o.open ? 'Abierto' : 'Cerrado ' + new Date(o.closedAt).toLocaleDateString('es-ES')}</td><td>${e(o.substrate || '-')}</td><td>${e(o.material || '-')}</td><td>${e(o.graphic || '-')}</td><td>${h.length}</td><td>${sum(h, 'hours').toFixed(2)}</td><td>${ok}</td><td>${nok}</td><td>${pct(ok, nok)}</td></tr>`; }).join('');
+            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin OF')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>
                 <table class="fr-table"><thead><tr><th>Fecha</th><th>Desde</th><th>Hasta</th><th>Horas</th><th>Estatus</th><th>OK</th><th>No OK</th><th>Comentarios</th></tr></thead><tbody>
                 ${(o.history || []).map(x => `<tr><td>${e(formatDate(x.date))}</td><td>${e(x.timeFrom)}</td><td>${e(x.timeTo)}</td><td>${(x.hours || 0).toFixed(2)}</td><td>${e(x.status || '')}</td><td>${x.ok || 0}</td><td>${x.nok || 0}</td><td>${e(x.comment || '')}</td></tr>`).join('')}
                 </tbody></table></div>`).join('');
             $('fullReport').innerHTML = `<h2 class="fr-title">${only === undefined ? 'Informe de todos los pedidos' : 'Informe del pedido'} · ${e(name)}</h2>
                 <div class="fr-meta">Undora · Tonificación Consumos · generado el ${new Date().toLocaleString('es-ES')} · ${orders.length} pedidos</div>
                 <div class="fr-totals"><div><b>${orders.length}</b>Pedidos</div><div><b>${T.s}</b>Sesiones</div><div><b>${T.h.toFixed(1)} h</b>Horas</div><div><b>${T.ok} / ${T.nok}</b>OK / No OK</div><div><b>${pct(T.ok, T.nok)}</b>Merma</div></div>
-                <table class="fr-table"><thead><tr><th>Orden</th><th>Estado</th><th>Sustrato</th><th>Material</th><th>Gráfica</th><th>Sesiones</th><th>Horas</th><th>OK</th><th>No OK</th><th>Merma</th></tr></thead><tbody>${rows}</tbody></table>
+                <table class="fr-table"><thead><tr><th>OF</th><th>Estado</th><th>Sustrato</th><th>Material</th><th>Gráfica</th><th>Sesiones</th><th>Horas</th><th>OK</th><th>No OK</th><th>Merma</th></tr></thead><tbody>${rows}</tbody></table>
                 <h3>Detalle por pedido</h3>${detail}`;
             const prevTitle = document.title;
             document.title = `Informe_completo_${name}`;
@@ -2336,7 +2338,7 @@
             const sub = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '';
             const material = $('material').value ? $('material').selectedOptions[0].textContent : '';
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const head = ['Orden', 'Técnico', 'Sustrato', 'Material', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
+            const head = ['OF', 'Técnico', 'Sustrato', 'Material', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
             const lines = historyData.map(x => [
                 $('orderNumber').value, $('technician').value, sub, material, $('graphicName').value,
                 formatDate(x.date), x.timeFrom, x.timeTo, (x.hours || 0).toFixed(2).replace('.', ','), x.status, x.ok, x.nok, x.comment || ''
@@ -2364,7 +2366,7 @@
             if (!rows.length) { toast('Todavía no hay registros', true); return; }
             rows.sort((a, b) => String(a.x.sap || a.h.sap).localeCompare(String(b.x.sap || b.h.sap)) || (a.x.date + (a.x.timeFrom || '')).localeCompare(b.x.date + (b.x.timeFrom || '')) || a.who.localeCompare(b.who));
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, num = n => String(Number(n) || 0).replace('.', ',');
-            const header = ['Código SAP', 'Descripción', 'Cara M', 'Fecha', 'Técnico', 'Nº de orden', 'Sustrato', 'Material', 'Hora inicio', 'Hora fin', 'Horas',
+            const header = ['Código SAP', 'Descripción', 'Cara M', 'Fecha', 'Técnico', 'OF', 'Sustrato', 'Material', 'Hora inicio', 'Hora fin', 'Horas',
                 'Planchas OK', 'Planchas No OK', 'Total planchas', 'Estatus', 'Comentarios', 'Estado del pedido', 'Fecha de cierre'];
             const lines = rows.map(({ x, who, h, state, closed }) => {
                 const sap = x.sap || h.sap, name = x.graphic || h.graphic || CODE_BY_SAP.get(sap) || '', m = parseModel(name);
@@ -2381,14 +2383,14 @@
             readPlanning().rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
                 q = Number(q) || 0; if (!q || k < from || k > to) return;
                 const it = findKeraFor(r), t = it ? keraTotals(it) : null, m = parseModel(r.deco || CODE_BY_SAP.get(r.sap) || '');
-                rows.push([r.sap || '', m.model, m.caraM ? 'Sí' : '', formatDate(k), isoWeek(new Date(k + 'T12:00:00')).week, r.tech ? displayDecorator(r.tech) : '', r.reton ? 'Sí' : 'No', (r.done || {})[k] ? 'Sí' : 'No',
+                rows.push([r.sap || '', r.of || '', m.model, m.caraM ? 'Sí' : '', formatDate(k), isoWeek(new Date(k + 'T12:00:00')).week, r.tech ? displayDecorator(r.tech) : '', r.reton ? 'Sí' : 'No', (r.done || {})[k] ? 'Sí' : 'No',
                     q, (q * (t ? t.m2 : DEFAULT_M2)).toFixed(2).replace('.', ','), t ? (t.gPlate * q / 1000).toFixed(2).replace('.', ',') : '', t ? (t.cPlate * q).toFixed(2).replace('.', ',') : '', k]);
             }));
             if (!rows.length) { toast('No hay producción programada en ese periodo', true); return; }
-            rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || a[12].localeCompare(b[12]));
+            rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || a[13].localeCompare(b[13]));
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const header = ['Código SAP', 'Descripción', 'Cara M', 'Fecha', 'Semana', 'Técnico', 'Retonificado', 'Finalizada', 'Planchas', 'm²', 'Tinta kg', 'Tinta €'];
-            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + rows.map(r => r.slice(0, 12).map(q).join(';')).join('\n');
+            const header = ['Código SAP', 'OF', 'Descripción', 'Cara M', 'Fecha', 'Semana', 'Técnico', 'Retonificado', 'Finalizada', 'Planchas', 'm²', 'Tinta kg', 'Tinta €'];
+            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + rows.map(r => r.slice(0, 13).map(q).join(';')).join('\n');
             downloadFile(`Produccion_planning_${from === '0000-00-00' ? 'todo' : from + '_' + to}.csv`, csv, 'text/csv;charset=utf-8');
             toast(`Excel de producción descargado: ${rows.length} filas`);
         }
@@ -2511,7 +2513,7 @@
                     <summary><b>${e(m.model || a.graphic || a.order || 'Sin nombre')}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</b><span class="n">${ok + nok} pl.</span>
                         <small>${a.sap ? 'SAP ' + e(a.sap) + ' · ' : ''}cerrado el ${new Date(a.closedAt).toLocaleDateString('es-ES')}</small><small style="text-align:right">${nf(hours, 1)} h</small></summary>
                     <div class="arch-body">
-                        <p class="hist-total">✅ ${ok} OK · ❌ ${nok} No OK · ${h.length} ${h.length === 1 ? 'sesión' : 'sesiones'}${a.order ? ' · Orden ' + e(a.order) : ''}</p>
+                        <p class="hist-total">✅ ${ok} OK · ❌ ${nok} No OK · ${h.length} ${h.length === 1 ? 'sesión' : 'sesiones'}${a.order ? ' · OF ' + e(a.order) : ''}</p>
                         <div class="sess-list">${h.map((x, j) => sessionCard(x, j, false)).join('')}</div>
                         <div class="arch-acts">
                             <button type="button" class="btn btn-secondary btn-small" onclick="generateFullReport(${i})">📄 PDF</button>
@@ -2527,7 +2529,7 @@
             const a = readArchive(DECORATORS[currentDecorator])[i];
             if (!a) return;
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const head = ['Orden', 'Técnico', 'Sustrato', 'Material', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
+            const head = ['OF', 'Técnico', 'Sustrato', 'Material', 'Gráfica', 'Fecha', 'Desde', 'Hasta', 'Horas', 'Estatus', 'OK', 'No OK', 'Comentarios'];
             const lines = (a.history || []).map(x => [a.order, displayDecorator(a.tech), a.substrate, a.material || '', a.graphic, formatDate(x.date), x.timeFrom, x.timeTo,
                 (x.hours || 0).toFixed(2).replace('.', ','), x.status, x.ok, x.nok, x.comment || ''].map(q).join(';'));
             downloadFile(`Consumos_${(a.order || 'orden').replace(/[^\w-]+/g, '_')}.csv`, '\uFEFF' + head.map(q).join(';') + '\n' + lines.join('\n'), 'text/csv;charset=utf-8');
