@@ -1076,6 +1076,8 @@
             updateKeraSummary(); updateUndoButtons();
         }
         function undoKera() {
+            if (!undoCount(KERA_KEY)) { toast('No hay nada que deshacer'); return; }
+            if (!confirm('⚠️ ¿Deshacer el último cambio de las fichas de tinta?\n\nLas fichas volverán a como estaban antes de ese cambio, también para los demás compañeros.')) return;
             const prev = popUndo(KERA_KEY);
             if (!prev) { toast('No hay nada que deshacer'); return; }
             writeKera(prev, { undo: false }); renderKera(); toast('Cambio deshecho ↶');
@@ -1532,6 +1534,8 @@
             updatePlanningSummary(); updateUndoButtons();
         }
         function undoPlanning() {
+            if (!undoCount(PLANNING_KEY)) { toast('No hay nada que deshacer'); return; }
+            if (!confirm('⚠️ ¿Deshacer el último cambio del planning?\n\nEl planning volverá a como estaba antes de ese cambio, también para los demás compañeros.')) return;
             const prev = popUndo(PLANNING_KEY);
             if (!prev) { toast('No hay nada que deshacer'); return; }
             writePlanning(prev, { undo: false }); renderPlanning(); toast('Cambio deshecho ↶');
