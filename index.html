@@ -88,6 +88,18 @@
         .home-kicker { color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
         .home-cards { display: grid; gap: 10px; margin-top: 22px; }
         .home-section { margin-top: 22px; }
+        .view-title { text-align: left !important; margin: 6px 0 12px !important; font-size: 1.6rem; }
+        .step-title { font-size: 1.05rem; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-color); }
+        .step-title:first-of-type { margin-top: 6px; }
+        .times-box { margin: 10px 0 4px; }
+        .times-box > summary { cursor: pointer; color: var(--text-color); font-weight: 600; list-style: none; }
+        .times-box > summary::-webkit-details-marker { display: none; }
+        details.fold > summary { cursor: pointer; list-style: none; padding: 6px 0; }
+        details.fold > summary::-webkit-details-marker { display: none; }
+        details.fold > summary::before { content: '▸ '; color: var(--muted); }
+        details.fold[open] > summary::before { content: '▾ '; }
+        details.fold > summary small { color: var(--muted); font-weight: 600; }
+        @media print { details.fold > summary::before { content: ''; } }
         .area-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 20px; padding: 5px; border-radius: 14px; background: var(--soft-bg); }
         .area-tab { border: 0; border-radius: 10px; padding: 14px 8px; font: inherit; font-size: 1.05rem; font-weight: 800; background: transparent; color: var(--muted); cursor: pointer; }
         .area-tab.active { background: var(--card-bg); color: var(--text-color); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
@@ -369,6 +381,7 @@
         .order-summary b { font-size: 1.02rem; }
         .order-summary small { display: block; color: var(--muted); font-size: 0.82rem; margin-top: 2px; }
         .order-summary:empty { display: none; }
+        .order-summary.bare { border: 0; padding: 0; }
         .order-edit { border: 1px dashed var(--border-color); border-radius: 12px; padding: 10px 12px 12px; margin-bottom: 14px; }
         .order-edit[hidden] { display: none; }
         .date-line { margin: 4px 0 12px; color: var(--text-color); }
@@ -390,7 +403,7 @@
         .pl-load-bar { display: block; height: 4px; border-radius: 2px; margin-top: 2px; background: var(--tc); }
         .tj-mine { background: #2563eb; color: #fff; border-radius: 999px; padding: 1px 7px; font-size: 0.7rem; font-weight: 800; margin-left: 6px; }
         .pl-test { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 800; background: #fef3c7; color: #92400e; vertical-align: 1px; }
-        .today-jobs { border: 2px dashed var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+        .today-jobs { margin-bottom: 10px; }
         .today-jobs h3 { margin: 0 0 8px; font-size: 0.95rem; }
         .tj-list { display: grid; gap: 6px; }
         .tj { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; text-align: left; border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 10px; background: var(--card-bg); color: var(--text-color); font: inherit; cursor: pointer; }
@@ -468,6 +481,12 @@
         .pl-quick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
         .pl-quick button { border: 1px solid var(--border-color); background: var(--card-bg); border-radius: 999px; padding: 6px 12px; font: inherit; font-weight: 700; cursor: pointer; }
         .pl-sheet-actions { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-top: 8px; }
+        .pl-more { position: relative; }
+        .pl-more > summary { list-style: none; font-weight: 800; letter-spacing: 1px; }
+        .pl-more > summary::-webkit-details-marker { display: none; }
+        .pl-more-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; display: grid; gap: 10px; min-width: 240px; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); box-shadow: 0 10px 30px rgba(0,0,0,.2); font-size: 0.88rem; }
+        .pl-more-menu label { display: grid; gap: 4px; }
+        .pl-more-menu label:has(input[type=checkbox]) { display: flex; align-items: center; gap: 6px; }
         .pl-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
         .pl-totals td { font-weight: 700; padding: 6px 4px; background: var(--soft-bg); }
         @media print {
@@ -611,8 +630,7 @@
         <!-- VISTA DEL DECORADOR -->
         <div id="decoratorView">
             <button type="button" class="nav-back" onclick="goHome()">← Volver</button>
-            <div class="brand brand-small"><img src="https://www.undora.com/assets/images/logo-black.svg" alt="Undora" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="brand-text">UNDORA</span></div>
-            <h1 id="decoratorTitle">Tonificación Consumos</h1>
+            <h1 id="decoratorTitle" class="view-title">Tonificación Consumos</h1>
 
             <!-- Cabecera solo para el PDF -->
             <div class="print-only print-header">
@@ -627,6 +645,7 @@
             </div>
 
             <div class="no-print">
+                <h2 class="step-title"><span class="step-n">1</span> Modelo</h2>
                 <div class="today-jobs" id="todayJobs"></div>
                 <div class="order-summary" id="orderSummary"></div>
                 <div class="order-edit" id="orderEdit">
@@ -689,18 +708,20 @@
                     <button type="button" class="btn btn-secondary btn-small" onclick="cancelEdit()">Cancelar</button>
                 </div>
 
+                <h2 class="step-title"><span class="step-n">2</span> Turno</h2>
                 <div class="date-line">📅 <b id="dateLabel">Hoy</b> <button type="button" class="link-btn" id="dateToggle" onclick="toggleDateField(true)">cambiar fecha</button></div>
                 <div class="form-group" id="dateGroup" hidden>
                     <label for="dateField">Fecha de Sesión</label>
                     <input type="date" id="dateField">
                 </div>
 
-                <label>Turno</label>
                 <div class="shift-picker">
                     <button type="button" class="shift-btn" data-from="06:00" data-to="14:00" onclick="setShift(this)">☀️ Mañana<small>06:00 – 14:00</small></button>
                     <button type="button" class="shift-btn" data-from="14:00" data-to="22:00" onclick="setShift(this)">🌇 Tarde<small>14:00 – 22:00</small></button>
                 </div>
-                <div class="form-row">
+                <details class="times-box" id="timesBox">
+                <summary><span id="timesSummary">⏱ Ajustar horas</span> <span class="link-btn">ajustar</span></summary>
+                <div class="form-row" style="margin-top:8px">
                     <div class="form-group">
                         <label for="timeFrom">Empieza</label>
                         <input type="time" id="timeFrom">
@@ -713,18 +734,9 @@
                     </div>
                 </div>
                 <div class="hours-preview" id="hoursPreview"></div>
+                </details>
 
-                <div class="form-group">
-                    <label>Estatus</label>
-                    <div class="shift-picker" style="margin:0">
-                        <button type="button" class="shift-btn status-btn" data-status="Pendiente" onclick="setStatus('Pendiente')">⏳ Pendiente<small>sigue en curso</small></button>
-                        <button type="button" class="shift-btn status-btn" data-status="Fin" onclick="setStatus('Fin')">✅ Fin<small>terminado</small></button>
-                    </div>
-                    <select id="statusField" hidden>
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="Fin">Fin</option>
-                    </select>
-                </div>
+                <h2 class="step-title"><span class="step-n">3</span> Planchas</h2>
 
                 <div id="kerajetAlert" class="alert-kerajet">
                     ⚠️ Se han alcanzado o superado las 16 horas de trabajo acumuladas y el estatus sigue en pendiente: <strong>Solicitar ayuda a Kerajet</strong>
@@ -748,6 +760,18 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label>Estatus</label>
+                    <div class="shift-picker" style="margin:0">
+                        <button type="button" class="shift-btn status-btn" data-status="Pendiente" onclick="setStatus('Pendiente')">⏳ Pendiente<small>sigue en curso</small></button>
+                        <button type="button" class="shift-btn status-btn" data-status="Fin" onclick="setStatus('Fin')">✅ Fin<small>terminado</small></button>
+                    </div>
+                    <select id="statusField" hidden>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Fin">Fin</option>
+                    </select>
+                </div>
+
                 <details class="form-group comments-box" id="commentsBox">
                     <summary>💬 Añadir comentario</summary>
                     <textarea id="comments" maxlength="500" placeholder="Incidencias, observaciones del turno..." style="margin-top:8px"></textarea>
@@ -759,8 +783,8 @@
             </div>
 
             <!-- Historial -->
-            <div class="history-section">
-                <h3>Historial de Consumos y Tiempos</h3>
+            <details class="history-section fold" id="historyFold">
+                <summary><h3 style="display:inline">📋 Historial de este pedido</h3> <small id="historySummary"></small></summary>
                 <div id="statsContainer"></div>
                 <div id="historyContainer">
                     <p style="font-size: 0.9rem; color: var(--muted);">No hay registros guardados todavía.</p>
@@ -777,19 +801,19 @@
                     </details>
                     <button type="button" class="btn btn-danger" onclick="clearHistory()">📦 Cerrar pedido / Empezar uno nuevo</button>
                 </div>
-            </div>
+            </details>
 
             <div id="fullReport"></div>
 
-            <div class="archive-section no-print">
-                <h3>Pedidos anteriores</h3>
+            <details class="archive-section fold no-print">
+                <summary><h3 style="display:inline">🗂 Pedidos anteriores</h3></summary>
                 <div id="archiveContainer"></div>
-            </div>
+            </details>
         </div>
 
         <div id="summaryView">
             <button type="button" class="nav-back no-print" onclick="closeSummary()">← Volver</button>
-            <h1 style="margin-bottom:4px">Resumen de producción</h1>
+            <h1 class="view-title">Resumen de producción</h1>
             <div class="pl-meta" style="margin-top:8px">
                 <label>Periodo <select id="sumPeriod" onchange="renderSummary()">
                     <option value="week">Esta semana</option><option value="lastweek">Semana anterior</option>
@@ -828,11 +852,11 @@
 
         <div id="keraView">
             <button type="button" class="nav-back no-print" onclick="closeKera()">← Volver</button>
-            <h1 style="margin-bottom:4px">Consumos de tinta</h1>
-            <p class="pl-hint" style="margin-top:0">Copia aquí los datos de la pestaña <b>Costes</b> de KERAjet (Cálculo de consumos) para cada modelo. Con ellos la app calcula la tinta y el coste por plancha y la previsión del planning.</p>
+            <h1 class="view-title">Consumos de tinta</h1>
+            <p class="pl-hint" style="margin-top:0">Una ficha por modelo con los datos de la pestaña <b>Costes</b> de KERAjet.</p>
             <div class="pl-actions no-print" style="margin:10px 0 0">
                 <button type="button" class="btn btn-primary" onclick="openKeraEditor(-1)">＋ Nueva ficha de consumo</button>
-                <button type="button" class="btn btn-secondary" id="kcUndo" onclick="undoKera()">↶ Deshacer</button>
+                <button type="button" class="btn btn-secondary btn-small" id="kcUndo" onclick="undoKera()">↶ Deshacer</button>
             </div>
             <input type="text" id="kcFilter" placeholder="🔍 Buscar modelo o SAP..." oninput="renderKera()" style="margin-top:12px">
             <div class="kc-list" id="kcList"></div>
@@ -868,29 +892,32 @@
 
         <div id="planningView">
             <button type="button" class="nav-back no-print" onclick="closePlanning()">← Volver</button>
-            <h1 style="margin-bottom:4px">Planning semanal</h1>
+            <h1 class="view-title">Planning semanal</h1>
             <div class="pl-toolbar">
                 <div class="pl-week">
                     <button type="button" class="no-print" data-weekdrop="-1" onclick="movePlanningWeek(-1)" aria-label="Semana anterior">‹</button>
                     <span id="plWeekLabel"></span>
                     <button type="button" class="no-print" data-weekdrop="1" onclick="movePlanningWeek(1)" aria-label="Semana siguiente">›</button>
                 </div>
-                <span style="display:flex;gap:6px">
-                    <button type="button" class="btn btn-secondary btn-small no-print" id="plUndo" onclick="undoPlanning()">↶ Deshacer</button>
+                <span style="display:flex;gap:6px;align-items:center">
                     <button type="button" class="btn btn-secondary btn-small no-print" onclick="planningToday()">Hoy</button>
+                    <details class="pl-more no-print">
+                        <summary class="btn btn-secondary btn-small" aria-label="Más opciones">⋯</summary>
+                        <div class="pl-more-menu">
+                            <label>Turno <select id="plShift" onchange="setPlanningWeekField('shift', this.value)"><option value="">—</option><option>Mañana</option><option>Tarde</option></select></label>
+                            <label>F. actualización <input type="date" id="plUpdated" onchange="setPlanningWeekField('updated', this.value)"></label>
+                            <label><input type="checkbox" id="plOnlyWeek" onchange="renderPlanning()"> Solo filas con faena esta semana</label>
+                            <button type="button" class="btn btn-secondary btn-small" id="plUndo" onclick="undoPlanning()">↶ Deshacer</button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="printPlanning()">🖨 Imprimir / PDF</button>
+                        </div>
+                    </details>
                 </span>
             </div>
-            <div class="pl-meta">
-                <label>Turno <select id="plShift" onchange="setPlanningWeekField('shift', this.value)"><option value="">—</option><option>Mañana</option><option>Tarde</option></select></label>
-                <label>F. actualización <input type="date" id="plUpdated" onchange="setPlanningWeekField('updated', this.value)"></label>
-                <label class="no-print"><input type="checkbox" id="plOnlyWeek" onchange="renderPlanning()"> Solo filas con faena esta semana</label>
-            </div>
-            <div class="pl-actions no-print" style="margin:0 0 10px">
-                <button type="button" class="btn btn-primary" onclick="openPlanningEditor(-1)">＋ Añadir producción</button>
-            </div>
+            <p class="print-only" id="plPrintMeta"></p>
+            <button type="button" class="btn btn-primary no-print" style="width:100%;margin-bottom:10px" onclick="openPlanningEditor(-1)">＋ Añadir trabajo</button>
             <div class="pl-scroll"><table class="pl-table" id="plTable"></table></div>
-            <div class="pl-forecast" id="plForecast"></div>
-            <p class="pl-hint no-print">Toca una casilla o el nombre para poner o cambiar planchas. Para cambiar una faena de día, <b>arrástrala</b> a otra casilla de la misma fila; para pasarla a otra semana, suéltala sobre las flechas ‹ › (en el móvil, mantén el dedo y desliza).</p>
+            <p class="pl-hint no-print">Toca una casilla para cambiarla · arrástrala para moverla de día (o a las flechas ‹ › para otra semana).</p>
+            <details class="pl-forecast fold" id="plForecastBox"><summary id="plForecastHead"></summary><div id="plForecast"></div></details>
             <div class="pl-modal" id="plModal" onclick="if (event.target === this) closePlanningEditor()">
                 <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="plEdTitle">
                     <h2 id="plEdTitle">Producción</h2>
@@ -919,10 +946,7 @@
                     </div>
                 </div>
             </div>
-            <div class="pl-actions no-print">
-                <button type="button" class="btn btn-primary btn-small" onclick="openPlanningEditor(-1)">＋ Añadir producción</button>
-                <button type="button" class="btn btn-secondary btn-small" onclick="printPlanning()">🖨 Imprimir / PDF</button>
-            </div>
+            
         </div>
     </div>
 
@@ -1197,8 +1221,8 @@
                 const t = keraTotals(it); g += t.gPlate * n; c += t.cPlate * n; perDay[j] += t.cPlate * n;
             }));
             const e = escapeHtml;
-            $('plForecast').innerHTML = `🎨 <b>Tinta prevista esta semana: ${nf(g / 1000, 1)} kg · ${nf(c)} €</b>` +
-                (c ? `<br><small>${keys.map((k, j) => perDay[j] ? `${DAY_NAMES[j]}: ${nf(perDay[j], 0)} €` : '').filter(Boolean).join(' · ')}</small>` : '') +
+            $('plForecastHead').innerHTML = `🎨 Tinta prevista: <b>${nf(c, 0)} €</b> · ${nf(g / 1000, 1)} kg${missing.size ? ` <small style="color:#b45309">· faltan ${missing.size} fichas</small>` : ''}`;
+            $('plForecast').innerHTML = (c ? `<small>${keys.map((k, j) => perDay[j] ? `${DAY_NAMES[j]}: ${nf(perDay[j], 0)} €` : '').filter(Boolean).join(' · ')}</small>` : '') +
                 (missing.size ? `<br><small style="color:#b45309">Sin ficha de consumo: ${[...missing].map(e).join(', ')}. Añádelas en «Consumos de tinta».</small>` : '');
         }
 
@@ -1210,10 +1234,10 @@
         function renderOrderSummary() {
             const g = $('graphicName').value.trim(), sap = $('sapField').value.trim(), e = escapeHtml;
             const has = !!(g || sap || $('orderNumber').value.trim());
-            const editing = orderEditing || !has;
+            const editing = orderEditing;
+            $('orderSummary').classList.toggle('bare', !has);
             $('orderEdit').hidden = !editing;
-            $('orderDone').hidden = !has;
-            if (!has) { $('orderSummary').innerHTML = ''; return; }
+            if (!has) { $('orderSummary').innerHTML = editing ? '' : '<button type="button" class="link-btn" style="padding:0" onclick="setOrderEditing(true)">✏️ ¿Otro modelo? Escríbelo a mano</button>'; return; }
             const m = parseModel(g || CODE_BY_SAP.get(sap) || '');
             const sub = $('substrate').selectedIndex > 0 ? $('substrate').selectedOptions[0].textContent : '';
             const mat = $('material').value ? $('material').selectedOptions[0].textContent : '';
@@ -1263,14 +1287,11 @@
             const card = j => { const m = parseModel(j.r.deco), t = tests.get(j.r.sap);
                 const when = j.day === today ? 'hoy' : formatDate(j.day).slice(0, 5);
                 return `<button type="button" class="tj ${j.r.sap && j.r.sap === cur ? 'current' : ''}" onclick="pickPlanningJob('${escapeHtml(j.r.id)}')">
-                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}${j.r.tech === currentDecorator ? '<span class="tj-mine">Asignado a ti</span>' : j.r.tech ? ' <small>· ' + escapeHtml(displayDecorator(j.r.tech)) + '</small>' : ''}<br><small>SAP ${escapeHtml(j.r.sap || '—')} · producción ${when}: ${j.q} pl.${j.r.reton ? ' · retonificado' : ''}</small></span>
+                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}${j.r.tech === currentDecorator ? '' : j.r.tech ? ' <small>· ' + escapeHtml(displayDecorator(j.r.tech)) + '</small>' : ''}<br><small>SAP ${escapeHtml(j.r.sap || '—')} · producción ${when}: ${j.q} pl.${j.r.reton ? ' · retonificado' : ''}</small></span>
                     <span class="tj-q">${t ? `🎨 ${t.ok + t.nok}<br><small>pl. de prueba</small>` : '<small>sin pruebas</small>'}</span></button>`; };
-            jobs.sort((a, b) => (b.r.tech === currentDecorator) - (a.r.tech === currentDecorator) || a.day.localeCompare(b.day));
-            const todays = jobs.filter(j => j.day === today), later = jobs.filter(j => j.day !== today);
-            box.innerHTML = `<h3>📅 Modelos del planning</h3>` +
-                (todays.length ? `<div class="tj-list">${todays.map(card).join('')}</div>` : '<p class="pl-hint" style="margin:0">Hoy producción no tiene nada programado.</p>') +
-                (later.length ? `<details class="tj-more"><summary>Próximos días (${later.length})</summary><div class="tj-list" style="margin-top:6px">${later.map(card).join('')}</div></details>` : '') +
-                `<p class="pl-hint" style="margin:6px 0 0">Toca un modelo para retonificarlo: se rellenan gráfica, SAP y sustrato. Tus planchas de prueba no cuentan como producción.</p>`;
+            const mine = jobs.filter(j => j.r.tech === currentDecorator), others = jobs.filter(j => j.r.tech !== currentDecorator);
+            box.innerHTML = (mine.length ? `<div class="tj-list">${mine.map(card).join('')}</div>` : '<p class="pl-hint" style="margin:0 0 6px">No tienes modelos asignados en el planning.</p>') +
+                (others.length ? `<details class="tj-more"><summary>Otros modelos del planning (${others.length})</summary><div class="tj-list" style="margin-top:6px">${others.map(card).join('')}</div></details>` : '');
         }
         function pickPlanningJob(id) {
             const r = readPlanning().rows.find(x => x.id === id); if (!r) return;
@@ -1589,6 +1610,7 @@
             const fmt = d => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
             $('plWeekLabel').textContent = `Semana ${w.week} · ${fmt(days[0])} – ${fmt(days[5])}`;
             $('plShift').value = wk.shift || '';
+            $('plPrintMeta').textContent = [wk.shift && 'Turno ' + wk.shift, wk.updated && 'F. actualización ' + formatDate(wk.updated)].filter(Boolean).join(' · ');
             $('plUpdated').value = wk.updated || '';
             const only = $('plOnlyWeek').checked;
             const e = escapeHtml;
@@ -1623,10 +1645,10 @@
             const maxLoad = Math.max(1, ...load.flat());
             const unassigned = keys.map(k => p.rows.reduce((a, r) => a + (!r.tech ? Number((r.qty || {})[k]) || 0 : 0), 0));
             html += `</tbody><tfoot><tr class="pl-totals"><td colspan="4" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr>
-                <tr class="pl-sep"><td colspan="${4 + keys.length}">Carga por técnico</td></tr>
-                ${TECHS.map(([d], ti) => `<tr class="pl-load"><td colspan="4" style="text-align:right">${techChip(d)} <small>${load[ti].reduce((a, b) => a + b, 0)} pl.</small></td>${load[ti].map(v =>
+                <tr class="pl-sep pl-load-toggle" onclick="plShowLoad = !plShowLoad; renderPlanning()" style="cursor:pointer"><td colspan="${4 + keys.length}">${plShowLoad ? '▾' : '▸'} Carga por técnico</td></tr>
+                ${!plShowLoad ? '' : TECHS.map(([d], ti) => `<tr class="pl-load"><td colspan="4" style="text-align:right">${techChip(d)} <small>${load[ti].reduce((a, b) => a + b, 0)} pl.</small></td>${load[ti].map(v =>
                     `<td class="${v ? 'has' : ''}">${v || ''}${v ? `<span class="pl-load-bar" style="--tc:${techColor(d)};width:${Math.max(12, v / maxLoad * 100)}%"></span>` : ''}</td>`).join('')}</tr>`).join('')}
-                ${unassigned.some(Boolean) ? `<tr class="pl-load"><td colspan="4" style="text-align:right"><span class="tech-none">Sin asignar</span></td>${unassigned.map(v => `<td style="color:#b45309">${v || ''}</td>`).join('')}</tr>` : ''}
+                ${plShowLoad && unassigned.some(Boolean) ? `<tr class="pl-load"><td colspan="4" style="text-align:right"><span class="tech-none">Sin asignar</span></td>${unassigned.map(v => `<td style="color:#b45309">${v || ''}</td>`).join('')}</tr>` : ''}
             </tfoot>`;
             $('plTable').innerHTML = html;
             renderPlanningForecast(p, keys);
@@ -1637,7 +1659,7 @@
         const TECHS = [['Decorador 1', '#0f766e'], ['Decorador 2', '#2563eb'], ['Decorador 3', '#b45309']];
         const techColor = dec => (TECHS.find(t => t[0] === dec) || [])[1] || '#64748b';
         const techChip = dec => dec ? `<span class="tech-chip" style="--tc:${techColor(dec)}">${escapeHtml(displayDecorator(dec))}</span>` : '<span class="tech-none">—</span>';
-        let edTech = '';
+        let edTech = '', plShowLoad = false;
         function setEdTech(dec) {
             edTech = dec;
             $('plEdTech').innerHTML = [['', 'Sin asignar'], ...TECHS.map(([d]) => [d, displayDecorator(d)])].map(([d, n]) =>
@@ -1764,6 +1786,10 @@
             writePlanning(p); renderPlanning();
             toast(`Movido: ${n} pl. del ${formatDate(fromK).slice(0, 5)} al ${formatDate(toK).slice(0, 5)}`);
         }
+
+        document.addEventListener('click', ev => {
+            document.querySelectorAll('details.pl-more[open]').forEach(d => { if (!d.contains(ev.target) || ev.target.closest('.pl-more-menu button')) d.open = false; });
+        });
 
         function initPlanningEditor() {
             initPlanningDrag();
@@ -2061,6 +2087,7 @@
             const h = calculateHours(f, t);
             const overnight = t < f ? ' (pasa de medianoche)' : '';
             el.innerHTML = `Duración de la sesión: <b>${h.toFixed(2)} h</b>${overnight}`;
+            if ($('timesSummary')) $('timesSummary').textContent = `⏱ ${f} – ${t} · ${nf(h, 1)} h`;
         }
 
         function totalHoursExcluding(idx) {
@@ -2194,6 +2221,8 @@
         function renderHistory() {
             const container = $('historyContainer');
             const stats = $('statsContainer');
+            const nPl = historyData.reduce((a, x) => a + (Number(x.ok) || 0) + (Number(x.nok) || 0), 0);
+            $('historySummary').textContent = historyData.length ? `· ${historyData.length} ${historyData.length === 1 ? 'sesión' : 'sesiones'} · ${nPl} planchas` : '· vacío';
             if (historyData.length === 0) {
                 stats.innerHTML = '';
                 container.innerHTML = '<p style="font-size: 0.9rem; color: var(--muted);">No hay registros guardados todavía.</p>';
@@ -2247,6 +2276,7 @@
         // ---------- Informe / exportación ----------
         function generatePDF() {
             if (historyData.length === 0) { toast('No hay registros para el informe', true); return; }
+            $('historyFold').open = true;
             const sel = $('substrate');
             $('pOrder').textContent = $('orderNumber').value || '-';
             $('pTech').textContent = $('technician').value || displayDecorator(currentDecorator);
