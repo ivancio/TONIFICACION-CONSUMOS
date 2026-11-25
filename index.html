@@ -89,6 +89,27 @@
         .home-cards { display: grid; gap: 10px; margin-top: 22px; }
         .home-section { margin-top: 22px; }
         .view-title { text-align: left !important; margin: 6px 0 12px !important; font-size: 1.6rem; }
+        .hist-block { border-top: 2px solid var(--soft-bg); margin-top: 26px; padding-top: 4px; }
+        .hist-block .step-title small { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+        .hist-total { font-size: 0.92rem; color: var(--text-color); margin: 0 0 10px; }
+        .hist-total b { font-size: 1.05rem; }
+        .sess-list { display: grid; gap: 6px; }
+        .sess { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 10px; color: var(--text-color); }
+        .sess.editing { border-color: var(--primary-color); background: var(--soft-bg); }
+        .sess b { font-size: 0.95rem; }
+        .sess small { color: var(--muted); font-size: 0.8rem; }
+        .sess .nums { font-weight: 700; font-size: 0.9rem; }
+        .sess .acts { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 4px; }
+        .sess .acts button { border: 1px solid var(--border-color); background: var(--card-bg); border-radius: 8px; padding: 6px 9px; cursor: pointer; font-size: 0.95rem; }
+        .sess .cm { grid-column: 1 / -1; font-size: 0.8rem; color: var(--muted); }
+        .hist-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .arch { border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 6px; color: var(--text-color); }
+        .arch > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+        .arch > summary::-webkit-details-marker { display: none; }
+        .arch > summary small { color: var(--muted); font-size: 0.8rem; }
+        .arch > summary .n { font-weight: 800; text-align: right; }
+        .arch-body { padding: 0 12px 12px; }
+        .arch-acts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
         .step-title { font-size: 1.05rem; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; color: var(--text-color); }
         .step-title:first-of-type { margin-top: 6px; }
         .times-box { margin: 10px 0 4px; }
@@ -783,32 +804,22 @@
             </div>
 
             <!-- Historial -->
-            <details class="history-section fold" id="historyFold">
-                <summary><h3 style="display:inline">📋 Historial de este pedido</h3> <small id="historySummary"></small></summary>
+            <section class="hist-block no-print" id="historyFold">
+                <h2 class="step-title">📋 Pedido actual <small id="historySummary"></small></h2>
                 <div id="statsContainer"></div>
-                <div id="historyContainer">
-                    <p style="font-size: 0.9rem; color: var(--muted);">No hay registros guardados todavía.</p>
+                <div id="historyContainer"></div>
+                <div class="hist-actions" id="histActions">
+                    <button type="button" class="btn btn-secondary" onclick="generateFullReport('open')">📄 PDF del pedido</button>
+                    <button type="button" class="btn btn-danger" onclick="clearHistory()">📦 Cerrar pedido</button>
                 </div>
-
-                <div class="actions-grid no-print">
-                    <details class="reports-menu">
-                        <summary class="btn btn-primary">📄 Informes</summary>
-                        <div class="reports-list">
-                            <button type="button" class="btn btn-secondary" onclick="generatePDF()">📄 PDF de este pedido<small>Sesiones y totales del pedido abierto</small></button>
-                            <button type="button" class="btn btn-secondary" onclick="generateFullReport()">📚 PDF de todos mis pedidos<small>Abierto y cerrados, en un solo informe</small></button>
-                            <button type="button" class="btn btn-secondary" onclick="exportCSV()">📊 Excel (CSV)<small>Las sesiones para abrir en Excel</small></button>
-                        </div>
-                    </details>
-                    <button type="button" class="btn btn-danger" onclick="clearHistory()">📦 Cerrar pedido / Empezar uno nuevo</button>
-                </div>
-            </details>
+            </section>
 
             <div id="fullReport"></div>
 
-            <details class="archive-section fold no-print">
-                <summary><h3 style="display:inline">🗂 Pedidos anteriores</h3></summary>
+            <section class="hist-block no-print">
+                <h2 class="step-title">🗂 Pedidos anteriores <small id="archiveCount"></small></h2>
                 <div id="archiveContainer"></div>
-            </details>
+            </section>
         </div>
 
         <div id="summaryView">
@@ -2218,59 +2229,27 @@
             return t;
         }
 
+        function sessionCard(x, i, editable) {
+            const e = escapeHtml, d = new Date(x.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit' });
+            return `<div class="sess ${editable && i === editingIndex ? 'editing' : ''}">
+                <b>${e(d)} · ${e(x.timeFrom || '')}–${e(x.timeTo || '')} <small>(${nf(x.hours || 0, 1)} h)</small></b>
+                ${editable ? `<span class="acts"><button type="button" title="Editar" onclick="editEntry(${i})">✏️</button><button type="button" title="Borrar" onclick="deleteEntry(${i})">🗑</button></span>` : '<span></span>'}
+                <span class="nums">✅ ${x.ok || 0} OK · ❌ ${x.nok || 0} No OK <small>· ${e(x.status || '')}</small></span>
+                ${x.comment ? `<span class="cm">💬 ${e(x.comment)}</span>` : ''}
+            </div>`;
+        }
+
         function renderHistory() {
-            const container = $('historyContainer');
-            const stats = $('statsContainer');
-            const nPl = historyData.reduce((a, x) => a + (Number(x.ok) || 0) + (Number(x.nok) || 0), 0);
-            $('historySummary').textContent = historyData.length ? `· ${historyData.length} ${historyData.length === 1 ? 'sesión' : 'sesiones'} · ${nPl} planchas` : '· vacío';
-            if (historyData.length === 0) {
-                stats.innerHTML = '';
-                container.innerHTML = '<p style="font-size: 0.9rem; color: var(--muted);">No hay registros guardados todavía.</p>';
+            const t = computeTotals();
+            $('historySummary').textContent = '';
+            $('histActions').hidden = !historyData.length;
+            if (!historyData.length) {
+                $('statsContainer').innerHTML = '';
+                $('historyContainer').innerHTML = '<p class="pl-hint">Aún no hay sesiones en este pedido. Guarda la primera arriba.</p>';
                 return;
             }
-
-            const t = computeTotals();
-            stats.innerHTML = `
-                <div class="stats">
-                    <div class="stat"><div class="stat-value">${t.hours.toFixed(1)}h</div><div class="stat-label">Horas totales</div></div>
-                    <div class="stat"><div class="stat-value">${t.total}</div><div class="stat-label">Planchas totales</div></div>
-                    <div class="stat ${t.merma >= 10 ? 'bad' : ''}"><div class="stat-value">${t.merma.toFixed(1)}%</div><div class="stat-label">Merma (No OK)</div></div>
-                    <div class="stat"><div class="stat-value">${t.perHour.toFixed(1)}</div><div class="stat-label">Planchas / hora</div></div>
-                </div>`;
-
-            let rows = historyData.map((x, i) => `
-                <tr class="${i === editingIndex ? 'editing' : ''}">
-                    <td>${formatDate(x.date)}</td>
-                    <td>${escapeHtml(x.timeFrom)}-${escapeHtml(x.timeTo)}</td>
-                    <td>${(x.hours || 0).toFixed(1)}h</td>
-                    <td><b>${escapeHtml(x.status)}</b></td>
-                    <td>${x.ok}</td>
-                    <td>${x.nok}</td>
-                    <td class="row-actions col-actions">
-                        <button type="button" title="Editar" onclick="editEntry(${i})">✏️</button>
-                        <button type="button" title="Borrar" onclick="deleteEntry(${i})">🗑</button>
-                    </td>
-                </tr>${x.comment ? `<tr class="comment-row"><td colspan="7">💬 ${escapeHtml(x.comment)}</td></tr>` : ''}`).join('');
-
-            container.innerHTML = `
-                <div class="table-wrap">
-                <table class="history-table">
-                    <thead>
-                        <tr><th>Fecha</th><th>Horario</th><th>Horas</th><th>Estatus</th><th>OK</th><th>NO OK</th><th class="col-actions"></th></tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="2">TOTALES</td>
-                            <td>${t.hours.toFixed(1)}h</td>
-                            <td>-</td>
-                            <td>${t.ok}</td>
-                            <td>${t.nok}</td>
-                            <td class="col-actions"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-                </div>`;
+            $('statsContainer').innerHTML = `<p class="hist-total"><b>${t.total} planchas</b> (✅ ${t.ok} OK · ❌ ${t.nok} No OK) · ${nf(t.hours, 1)} h · ${historyData.length} ${historyData.length === 1 ? 'sesión' : 'sesiones'}</p>`;
+            $('historyContainer').innerHTML = `<div class="sess-list">${historyData.map((x, i) => sessionCard(x, i, true)).join('')}</div>`;
         }
 
         // ---------- Informe / exportación ----------
@@ -2290,14 +2269,16 @@
             setTimeout(() => document.title = prevTitle, 1000);
         }
 
-        function generateFullReport() {
+        function generateFullReport(only) {
             const sel = $('substrate');
-            const orders = [];
+            let orders = [];
             if (historyData.length) orders.push({
                 open: true, order: $('orderNumber').value.trim(), substrate: sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '',
                 material: $('material').value ? $('material').selectedOptions[0].textContent : '', graphic: $('graphicName').value.trim(), history: historyData
             });
-            readArchive(DECORATORS[currentDecorator]).forEach(a => orders.push({ ...a, open: false }));
+            readArchive(DECORATORS[currentDecorator]).forEach((a, i) => orders.push({ ...a, open: false, idx: i }));
+            if (only === 'open') orders = orders.filter(o => o.open);
+            else if (typeof only === 'number') orders = orders.filter(o => o.idx === only);
             if (!orders.length) { toast('No hay pedidos para el informe', true); return; }
             const sum = (h, k) => h.reduce((a, x) => a + (x[k] || 0), 0);
             const pct = (ok, nok) => ok + nok ? (nok / (ok + nok) * 100).toFixed(1) + '%' : '-';
@@ -2311,7 +2292,7 @@
                 <table class="fr-table"><thead><tr><th>Fecha</th><th>Desde</th><th>Hasta</th><th>Horas</th><th>Estatus</th><th>OK</th><th>No OK</th><th>Comentarios</th></tr></thead><tbody>
                 ${(o.history || []).map(x => `<tr><td>${e(formatDate(x.date))}</td><td>${e(x.timeFrom)}</td><td>${e(x.timeTo)}</td><td>${(x.hours || 0).toFixed(2)}</td><td>${e(x.status || '')}</td><td>${x.ok || 0}</td><td>${x.nok || 0}</td><td>${e(x.comment || '')}</td></tr>`).join('')}
                 </tbody></table></div>`).join('');
-            $('fullReport').innerHTML = `<h2 class="fr-title">Informe completo · ${e(name)}</h2>
+            $('fullReport').innerHTML = `<h2 class="fr-title">${only === undefined ? 'Informe de todos los pedidos' : 'Informe del pedido'} · ${e(name)}</h2>
                 <div class="fr-meta">Undora · Tonificación Consumos · generado el ${new Date().toLocaleString('es-ES')} · ${orders.length} pedidos</div>
                 <div class="fr-totals"><div><b>${orders.length}</b>Pedidos</div><div><b>${T.s}</b>Sesiones</div><div><b>${T.h.toFixed(1)} h</b>Horas</div><div><b>${T.ok} / ${T.nok}</b>OK / No OK</div><div><b>${pct(T.ok, T.nok)}</b>Merma</div></div>
                 <table class="fr-table"><thead><tr><th>Orden</th><th>Estado</th><th>Sustrato</th><th>Material</th><th>Gráfica</th><th>Sesiones</th><th>Horas</th><th>OK</th><th>No OK</th><th>Merma</th></tr></thead><tbody>${rows}</tbody></table>
@@ -2494,30 +2475,26 @@
 
         function renderArchive() {
             const box = $('archiveContainer');
-            const archive = readArchive(DECORATORS[currentDecorator]);
-            if (!archive.length) {
-                box.innerHTML = '<p style="font-size: 0.9rem; color: var(--muted);">Aún no hay pedidos cerrados.</p>';
-                return;
-            }
+            const archive = readArchive(DECORATORS[currentDecorator]), e = escapeHtml;
+            $('archiveCount').textContent = archive.length ? `(${archive.length})` : '';
+            if (!archive.length) { box.innerHTML = '<p class="pl-hint">Aún no hay pedidos cerrados.</p>'; return; }
             box.innerHTML = archive.map((a, i) => {
-                const h = a.history || [];
-                const hours = h.reduce((x, e) => x + (e.hours || 0), 0);
-                const ok = h.reduce((x, e) => x + (e.ok || 0), 0);
-                const nok = h.reduce((x, e) => x + (e.nok || 0), 0);
-                const merma = ok + nok ? (nok / (ok + nok) * 100) : 0;
-                return `<details class="archive-item">
-                    <summary>${escapeHtml(a.order || 'Sin orden')} · ${escapeHtml(a.substrate || '-')} ${a.material ? '· ' + escapeHtml(a.material) : ''}</summary>
-                    <div class="archive-meta">
-                        ${escapeHtml(a.graphic || '')} — cerrado el ${new Date(a.closedAt).toLocaleDateString('es-ES')}<br>
-                        ${h.length} sesiones · ${hours.toFixed(1)} h · ${ok} OK · ${nok} No OK · merma ${merma.toFixed(1)}%
-                    </div>
-                    <div class="archive-actions">
-                        <button type="button" class="btn btn-secondary btn-small" onclick="exportArchivedCSV(${i})">📊 CSV</button>
-                        <button type="button" class="btn btn-secondary btn-small" onclick="reopenArchived(${i})">↩️ Reabrir</button>
-                        <button type="button" class="btn btn-danger btn-small" onclick="deleteArchived(${i})">🗑 Eliminar</button>
+                const h = a.history || [], ok = h.reduce((x, y) => x + (y.ok || 0), 0), nok = h.reduce((x, y) => x + (y.nok || 0), 0);
+                const hours = h.reduce((x, y) => x + (y.hours || 0), 0), m = parseModel(a.graphic || CODE_BY_SAP.get(a.sap) || '');
+                return `<details class="arch">
+                    <summary><b>${e(m.model || a.graphic || a.order || 'Sin nombre')}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</b><span class="n">${ok + nok} pl.</span>
+                        <small>${a.sap ? 'SAP ' + e(a.sap) + ' · ' : ''}cerrado el ${new Date(a.closedAt).toLocaleDateString('es-ES')}</small><small style="text-align:right">${nf(hours, 1)} h</small></summary>
+                    <div class="arch-body">
+                        <p class="hist-total">✅ ${ok} OK · ❌ ${nok} No OK · ${h.length} ${h.length === 1 ? 'sesión' : 'sesiones'}${a.order ? ' · Orden ' + e(a.order) : ''}</p>
+                        <div class="sess-list">${h.map((x, j) => sessionCard(x, j, false)).join('')}</div>
+                        <div class="arch-acts">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="generateFullReport(${i})">📄 PDF</button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="reopenArchived(${i})">↩️ Reabrir</button>
+                            <button type="button" class="link-btn" style="margin-left:auto;color:var(--danger-color)" onclick="deleteArchived(${i})">Eliminar</button>
+                        </div>
                     </div>
                 </details>`;
-            }).join('');
+            }).join('') + `<button type="button" class="link-btn" style="margin-top:6px;padding:0" onclick="generateFullReport()">📄 PDF con todos mis pedidos</button>`;
         }
 
         function exportArchivedCSV(i) {
