@@ -54,7 +54,7 @@
         html[data-theme="oscuro"] td.filled .pl-cell, html[data-theme="oscuro"] td.filled .pl-cell:hover { color: #111; }
         html[data-theme="oscuro"] .pl-table th.today { background: #b45309; color: #fff; }
         html[data-theme="oscuro"] .pl-group.prod td { color: var(--text-color); }
-        .theme-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 18px; color: var(--muted); font-size: 0.85rem; }
+        .theme-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0; color: var(--muted); font-size: 0.85rem; }
         .theme-sw { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); border-radius: 999px; padding: 5px 10px 5px 6px; font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
         .theme-sw i { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(0,0,0,.25); background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%); }
         .theme-sw.active { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-color) inset; }
@@ -714,14 +714,14 @@
                 <span aria-hidden="true">›</span>
             </button>
 
-            <div class="theme-row" id="themeRow">Colores:
+            <details class="more-opts">
+                <summary>⚙️ Más opciones</summary>
+                <div class="theme-row" id="themeRow">Colores:
                 <button type="button" class="theme-sw" data-theme="salmon" onclick="setTheme('salmon')"><i style="--a:#f2dfcf;--b:#33261d"></i>Salmón</button>
                 <button type="button" class="theme-sw" data-theme="claro" onclick="setTheme('claro')"><i style="--a:#ffffff;--b:#1c1917"></i>Claro</button>
                 <button type="button" class="theme-sw" data-theme="medio" onclick="setTheme('medio')"><i style="--a:#9ca3af;--b:#1f2937"></i>Medio</button>
                 <button type="button" class="theme-sw" data-theme="oscuro" onclick="setTheme('oscuro')"><i style="--a:#1e293b;--b:#e7e5e4"></i>Oscuro</button>
             </div>
-            <details class="more-opts">
-                <summary>⚙️ Más opciones</summary>
                 <div class="home-tools">
                     <button type="button" class="btn btn-secondary btn-small" onclick="exportBackup()" title="Descargar copia de seguridad">↓ Copia</button>
                     <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('importFile').click()" title="Restaurar una copia de seguridad">↑ Restaurar</button>
