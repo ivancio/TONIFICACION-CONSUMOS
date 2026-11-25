@@ -436,6 +436,12 @@
         .choose-btn { border: 2px solid var(--border-color); border-radius: 14px; background: var(--card-bg); color: var(--text-color); padding: 18px 10px; font: inherit; font-size: 1.8rem; cursor: pointer; display: grid; gap: 4px; justify-items: center; }
         .choose-btn b { font-size: 1.1rem; } .choose-btn small { font-size: 0.8rem; color: var(--muted); }
         .choose-btn.prod:hover { border-color: #57534e; } .choose-btn.dis:hover { border-color: #7c3aed; }
+        .chk-list { display: grid; gap: 8px; }
+        .chk { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 2px solid var(--border-color); border-radius: 12px; cursor: pointer; color: var(--text-color); }
+        .chk input { width: 26px; height: 26px; accent-color: #16a34a; flex: none; }
+        .chk:has(input:checked) { border-color: #16a34a; background: #dcfce7; color: #14532d; }
+        #chkConfirm:disabled { opacity: .45; cursor: not-allowed; }
+        .chk-done { font-size: 0.78rem; color: #15803d; font-weight: 700; }
         .enc-home { margin-top: 22px; border-top: 2px solid var(--soft-bg); padding-top: 14px; }
         .enc-home-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
         .enc { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; width: 100%; text-align: left; border: 1px solid var(--border-color); border-left: 5px solid #7c3aed; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; background: var(--card-bg); color: var(--text-color); font: inherit; cursor: pointer; }
@@ -1085,6 +1091,28 @@
         </div>
     </div>
 
+    <div class="pl-modal" id="closeModal" onclick="if (event.target === this) closeChecklist()">
+        <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="closeTitle">
+            <h2 id="closeTitle">📦 Cerrar pedido</h2>
+            <p class="pl-hint" id="closeIntro" style="margin-top:0"></p>
+            <p style="margin:6px 0 8px;font-weight:700">Confirma antes de cerrar:</p>
+            <div class="chk-list" id="chkList">
+                <label class="chk"><input type="checkbox" data-chk="tono"><span><b>Tono</b> confirmado</span></label>
+                <label class="chk"><input type="checkbox" data-chk="tonificado"><span><b>Tonificado</b></span></label>
+                <label class="chk"><input type="checkbox" data-chk="caras"><span><b>Todas las caras</b> revisadas</span></label>
+                <label class="chk"><input type="checkbox" data-chk="pegatina"><span><b>Pegatina de patrón</b> con el cuño de dirección técnica</span></label>
+            </div>
+            <p class="pl-hint" id="chkMissing" style="color:#b91c1c"></p>
+            <div class="pl-sheet-actions">
+                <span></span>
+                <span style="display:flex;gap:8px">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="closeChecklist()">Cancelar</button>
+                    <button type="button" class="btn btn-danger btn-small" id="chkConfirm" onclick="confirmChecklist()" disabled>📦 Cerrar pedido</button>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script>
@@ -1404,6 +1432,35 @@
         const subText = v => { const o = [...$('substrate').options].find(o => o.value === v); return o && o.value ? o.text : ''; };
         const matText = v => v === 'criscal' ? 'Criscal' : v === 'pigmentado' ? 'Pigmentado' : '';
 
+
+        // ---------- Cierre de pedido con comprobaciones obligatorias ----------
+        const CHECKS = [['tono', 'Tono'], ['tonificado', 'Tonificado'], ['caras', 'Todas las caras'], ['pegatina', 'Pegatina con cuño']];
+        let afterClose = null;
+        function openChecklist(intro, then) {
+            afterClose = then || null;
+            $('closeIntro').textContent = intro || `Pedido de ${parseModel($('graphicName').value || CODE_BY_SAP.get($('sapField').value) || '').model || $('graphicName').value || 'este modelo'}. Se guardará en «Pedidos anteriores».`;
+            document.querySelectorAll('#chkList input').forEach(i => { i.checked = false; });
+            updateChecklist();
+            $('closeModal').classList.add('open');
+        }
+        function closeChecklist() { $('closeModal').classList.remove('open'); afterClose = null; }
+        function updateChecklist() {
+            const miss = [...document.querySelectorAll('#chkList input')].filter(i => !i.checked).map(i => CHECKS.find(c => c[0] === i.dataset.chk)[1]);
+            $('chkConfirm').disabled = miss.length > 0;
+            $('chkMissing').textContent = miss.length ? `Falta: ${miss.join(', ')}. Solo se puede cerrar con todo en SÍ.` : '';
+        }
+        function confirmChecklist() {
+            const checks = {}; let ok = true;
+            document.querySelectorAll('#chkList input').forEach(i => { checks[i.dataset.chk] = i.checked; if (!i.checked) ok = false; });
+            if (!ok) { updateChecklist(); return; }
+            checks.at = new Date().toISOString(); checks.by = currentDecorator;
+            const then = afterClose; $('closeModal').classList.remove('open'); afterClose = null;
+            clearHistory(true, checks);
+            toast('📦 Pedido cerrado con todo confirmado');
+            if (then) then();
+        }
+        const checksLine = c => c && c.tono ? `<span class="chk-done">✓ Tono · ✓ Tonificado · ✓ Todas las caras · ✓ Pegatina con cuño</span>` : '';
+
         // ---------- Encargos de diseño (separados de la producción) ----------
         const ENC_KEY = 'encargos';
         function readEnc() { try { const t = JSON.parse(localStorage.getItem(ENC_KEY)); if (t && Array.isArray(t.items)) return t; } catch (e) {} return { items: [] }; }
@@ -1476,8 +1533,8 @@
             const curSap = $('sapField').value.trim(), curGraphic = $('graphicName').value.trim();
             const same = (x.sap && x.sap === curSap) || (!curSap && !curGraphic);
             if (!same && historyData.length) {
-                if (!confirm(`Tienes abierto el pedido de «${curGraphic || curSap}».\n\n¿Cerrarlo (se guarda en Pedidos anteriores) y empezar con «${parseModel(x.deco || CODE_BY_SAP.get(x.sap) || '').model}»?`)) return;
-                clearHistory(true);
+                openChecklist(`Para empezar con «${parseModel(x.deco || CODE_BY_SAP.get(x.sap) || '').model}» primero hay que cerrar el pedido de «${curGraphic || curSap}».`, () => pickEncargo(id));
+                return;
             }
             $('sapField').value = x.sap || '';
             $('graphicName').value = x.deco ? shortName(x.deco) : (CODE_BY_SAP.has(x.sap) ? shortName(CODE_BY_SAP.get(x.sap)) : '');
@@ -1544,8 +1601,8 @@
             const curSap = $('sapField').value.trim(), curGraphic = $('graphicName').value.trim();
             const same = (r.sap && r.sap === curSap) || (!curSap && !curGraphic);
             if (!same && historyData.length) {
-                if (!confirm(`Tienes abierto el pedido de «${curGraphic || curSap}».\n\n¿Cerrarlo (se guarda en Pedidos anteriores) y empezar con «${parseModel(r.deco).model}»?`)) return;
-                clearHistory(true);
+                openChecklist(`Para empezar con «${parseModel(r.deco).model}» primero hay que cerrar el pedido de «${curGraphic || curSap}».`, () => pickPlanningJob(id));
+                return;
             }
             $('sapField').value = r.sap || '';
             $('graphicName').value = r.deco ? shortName(r.deco) : '';
@@ -2082,6 +2139,8 @@
             toast(`Movido: ${n} pl. del ${formatDate(fromK).slice(0, 5)} al ${formatDate(toK).slice(0, 5)}`);
         }
 
+        document.addEventListener('change', ev => { if (ev.target.closest && ev.target.closest('#chkList')) updateChecklist(); });
+
         function initEncargoEditor() {
             const fill = sap => { if (!CODE_BY_SAP.has(sap)) return false; $('encSap').value = sap; $('encDeco').value = shortName(CODE_BY_SAP.get(sap)); $('encSearch').value = ''; const sb = substrateFromName($('encDeco').value); if (sb) $('encSub').value = sb; return true; };
             $('encSearch').addEventListener('change', () => { const v = $('encSearch').value.trim(); if (!fill(v.split(' · ')[0].trim())) { const c = CODE_BY_NAME.get(v.toUpperCase()); if (c) fill(c); } });
@@ -2595,7 +2654,7 @@
             const name = displayDecorator(currentDecorator);
             const rows = orders.map(o => { const h = o.history || []; const ok = sum(h, 'ok'), nok = sum(h, 'nok');
                 return `<tr><td>${e(o.order || 'Sin OF')}</td><td>${o.open ? 'Abierto' : 'Cerrado ' + new Date(o.closedAt).toLocaleDateString('es-ES')}</td><td>${e(o.substrate || '-')}</td><td>${e(o.material || '-')}</td><td>${e(o.graphic || '-')}</td><td>${h.length}</td><td>${sum(h, 'hours').toFixed(2)}</td><td>${ok}</td><td>${nok}</td><td>${pct(ok, nok)}</td></tr>`; }).join('');
-            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin OF')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>
+            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin OF')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>${o.checks && o.checks.tono ? '<p style="margin:0 0 4px;font-size:.8rem">Cierre confirmado: ✓ Tono · ✓ Tonificado · ✓ Todas las caras · ✓ Pegatina de patrón con cuño de dirección técnica</p>' : ''}
                 <table class="fr-table"><thead><tr><th>Fecha</th><th>Desde</th><th>Hasta</th><th>Horas</th><th>Estatus</th><th>OK</th><th>No OK</th><th>Comentarios</th></tr></thead><tbody>
                 ${(o.history || []).map(x => `<tr><td>${e(formatDate(x.date))}</td><td>${e(x.timeFrom)}</td><td>${e(x.timeTo)}</td><td>${(x.hours || 0).toFixed(2)}</td><td>${e(x.status || '')}</td><td>${x.ok || 0}</td><td>${x.nok || 0}</td><td>${e(x.comment || '')}</td></tr>`).join('')}
                 </tbody></table></div>`).join('');
@@ -2740,9 +2799,11 @@
             catch (e) { return []; }
         }
 
-        function clearHistory(skipConfirm) {
+        function clearHistory(skipConfirm, checks) {
             if (!historyData.length && !$('orderNumber').value.trim()) { if (!skipConfirm) toast('No hay ningún pedido abierto'); return; }
-            if (!skipConfirm && !confirm(`¿Cerrar el pedido actual de ${displayDecorator(currentDecorator)} y empezar uno nuevo?\n\nEl pedido se guardará en "Pedidos anteriores".`)) return;
+            // Con sesiones guardadas solo se cierra pasando las comprobaciones
+            if (historyData.length && !checks) { openChecklist(); return; }
+            if (!historyData.length && !skipConfirm && !confirm('¿Vaciar los datos del pedido sin sesiones?')) return;
 
             const sel = $('substrate');
             if (historyData.length) {
@@ -2758,6 +2819,7 @@
                     material: $('material').value ? $('material').selectedOptions[0].textContent : '',
                     graphic: $('graphicName').value.trim(),
                     sap: $('sapField').value.trim(),
+                    checks: checks || null,
                     history: historyData
                 });
                 localStorage.setItem(getStorageKey('archive'), JSON.stringify(archive));
@@ -2793,7 +2855,7 @@
                     <summary><b>${e(m.model || a.graphic || a.order || 'Sin nombre')}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</b><span class="n">${ok + nok} pl.</span>
                         <small>${a.sap ? 'SAP ' + e(a.sap) + ' · ' : ''}cerrado el ${new Date(a.closedAt).toLocaleDateString('es-ES')}</small><small style="text-align:right">${nf(hours, 1)} h</small></summary>
                     <div class="arch-body">
-                        <p class="hist-total">✅ ${ok} OK · ❌ ${nok} No OK · ${h.length} ${h.length === 1 ? 'sesión' : 'sesiones'}${a.order ? ' · OF ' + e(a.order) : ''}</p>
+                        <p class="hist-total">✅ ${ok} OK · ❌ ${nok} No OK · ${h.length} ${h.length === 1 ? 'sesión' : 'sesiones'}${a.order ? ' · OF ' + e(a.order) : ''}<br>${checksLine(a.checks)}</p>
                         <div class="sess-list">${h.map((x, j) => sessionCard(x, j, false)).join('')}</div>
                         <div class="arch-acts">
                             <button type="button" class="btn btn-secondary btn-small" onclick="generateFullReport(${i})">📄 PDF</button>
