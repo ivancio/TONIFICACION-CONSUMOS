@@ -414,6 +414,18 @@
         .reports-list { display: grid; gap: 6px; margin-top: 6px; }
         .reports-list .btn { text-align: left; }
         .reports-list small { display: block; font-weight: 400; opacity: 0.75; font-size: 0.8rem; }
+        .choose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .choose-btn { border: 2px solid var(--border-color); border-radius: 14px; background: var(--card-bg); color: var(--text-color); padding: 18px 10px; font: inherit; font-size: 1.8rem; cursor: pointer; display: grid; gap: 4px; justify-items: center; }
+        .choose-btn b { font-size: 1.1rem; } .choose-btn small { font-size: 0.8rem; color: var(--muted); }
+        .choose-btn.prod:hover { border-color: #57534e; } .choose-btn.dis:hover { border-color: #7c3aed; }
+        .enc-home { margin-top: 22px; border-top: 2px solid var(--soft-bg); padding-top: 14px; }
+        .enc-home-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+        .enc { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center; width: 100%; text-align: left; border: 1px solid var(--border-color); border-left: 5px solid #7c3aed; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; background: var(--card-bg); color: var(--text-color); font: inherit; cursor: pointer; }
+        .enc.late { border-left-color: #dc2626; }
+        .enc.done { border-left-color: #16a34a; opacity: .7; }
+        .enc b { font-size: 0.95rem; } .enc small { color: var(--muted); font-size: 0.8rem; }
+        .enc .who { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+        .enc .note { grid-column: 1 / -1; font-size: 0.8rem; color: var(--muted); }
         .tech-pick { display: flex; gap: 6px; flex-wrap: wrap; }
         .tech-pick button { border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); border-radius: 999px; padding: 7px 14px; font: inherit; font-weight: 700; cursor: pointer; }
         .tech-pick button.active { border-color: var(--tc, var(--primary-color)); background: var(--tc, var(--primary-color)); color: #fff; }
@@ -466,10 +478,22 @@
         .pl-table td.pdone .pl-cell { color: #fff !important; }
         .pl-of { color: var(--muted); font-size: 0.72rem; font-weight: 700; }
         .pl-fin { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; background: #dcfce7; color: #166534; }
+        .pl-day .nok-in { margin-top: 4px; font-size: 0.85rem; padding: 4px; color: #b91c1c; border-color: #fecaca; }
+        .pl-day .nok-in::placeholder { color: #f87171; font-weight: 400; }
+        .pl-cell .nk { display: block; font-size: 0.68rem; font-weight: 800; color: #fecaca; }
         .done-tg { margin-top: 6px; width: 100%; border: 1px dashed var(--border-color); background: transparent; color: var(--muted); border-radius: 8px; padding: 5px 4px; font: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
         .done-tg.on { background: #15803d; border: 1px solid #15803d; color: #fff; }
         @media print { .pl-table td.pdone { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         .pl-table td.reton-cell { padding: 0; }
+        .pl-table td.reton-cell .pl-reton { font-size: 0.74rem; white-space: nowrap; }
+        .pl-group td { text-align: left !important; padding: 7px 10px !important; font-weight: 800; font-size: 0.85rem; }
+        .pl-group.prod td { background: #e7e5e4; color: #1c1917; }
+        .pl-group.dis td { background: #ede9fe; color: #4c1d95; }
+        .pl-table td.enc-state { font-size: 0.74rem; font-weight: 800; color: #6d28d9; white-space: nowrap; }
+        .pl-table td.enc-state.ok { color: #15803d; } .pl-table td.enc-state.late { color: #dc2626; }
+        .pl-table td.enc-day { background: #7c3aed; } .pl-table td.enc-day.ok { background: #16a34a; }
+        .pl-table td.enc-day .pl-cell { color: #fff; }
+        .pl-name small { display: block; }
         .pl-table td.reton-na { background: var(--soft-bg); color: var(--muted); font-weight: 700; }
         .tech-prod { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; background: var(--soft-bg); color: var(--muted); border: 1px solid var(--border-color); white-space: nowrap; }
         #plEdTonoSi.active { border-color: #7c3aed; background: #ede9fe; color: #4c1d95; }
@@ -618,6 +642,11 @@
                     </div>
                     <span class="card-arrow" aria-hidden="true">›</span>
                 </button>
+                </div>
+                <div class="enc-home">
+                    <div class="enc-home-head"><h2 class="step-title" style="margin:0">📌 Encargos de diseño</h2>
+                        <button type="button" class="btn btn-primary btn-small" onclick="openEncargoEditor('')">＋ Nuevo encargo</button></div>
+                    <div id="encList"></div>
                 </div>
                 <button type="button" class="link-btn" style="margin-top:10px" onclick="exportAllHistory()">📥 Descargar todas las pruebas en Excel</button>
             </section>
@@ -943,7 +972,17 @@
                 </span>
             </div>
             <p class="print-only" id="plPrintMeta"></p>
-            <button type="button" class="btn btn-primary no-print" style="width:100%;margin-bottom:10px" onclick="openPlanningEditor(-1)">＋ Añadir trabajo</button>
+            <button type="button" class="btn btn-primary no-print" style="width:100%;margin-bottom:10px" onclick="$('plChoose').classList.add('open')">＋ Añadir trabajo</button>
+            <div class="pl-modal" id="plChoose" onclick="if (event.target === this) this.classList.remove('open')">
+                <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="plChooseT">
+                    <h2 id="plChooseT">¿A quién va este trabajo?</h2>
+                    <div class="choose-grid">
+                        <button type="button" class="choose-btn prod" onclick="$('plChoose').classList.remove('open'); openPlanningEditor(-1)">🏭<b>Producción</b><small>Planchas por día y merma</small></button>
+                        <button type="button" class="choose-btn dis" onclick="$('plChoose').classList.remove('open'); openEncargoEditor('', planningMonday)">🎨<b>Diseño</b><small>Encargo para tonificar · sin planchas</small></button>
+                    </div>
+                    <div class="pl-sheet-actions"><span></span><button type="button" class="btn btn-secondary btn-small" onclick="$('plChoose').classList.remove('open')">Cancelar</button></div>
+                </div>
+            </div>
             <div class="pl-scroll"><table class="pl-table" id="plTable"></table></div>
             <p class="pl-hint no-print">Toca una casilla para cambiarla · arrástrala para moverla de día (o a las flechas ‹ › para otra semana).</p>
             <details class="pl-forecast fold" id="plForecastBox"><summary id="plForecastHead"></summary><div id="plForecast"></div></details>
@@ -963,11 +1002,7 @@
                         </div>
                     </div>
                     <div class="form-group"><label for="plEdDeco">Nombre</label><input type="text" id="plEdDeco"></div>
-                    <div class="form-group"><label>¿Hay que tonificarlo?</label>
-                        <div class="shift-picker" style="margin:0"><button type="button" class="shift-btn" id="plEdTonoSi" onclick="setEdTono(true)">🎨 Sí, para diseño<small>alguien lo tonifica antes</small></button><button type="button" class="shift-btn" id="plEdTonoNo" onclick="setEdTono(false)">🏭 No, solo producción<small>se produce tal cual</small></button></div>
-                    </div>
-                    <div class="form-group" id="plEdTechBox"><label>Técnicos que lo tonifican <small style="color:var(--muted);font-weight:400">(puedes elegir varios)</small></label><div class="tech-pick" id="plEdTech"></div></div>
-                    <label>Planchas por día · <span id="plEdWeek"></span></label>
+                    <label>Planchas por día · <span id="plEdWeek"></span> <small style="color:var(--muted);font-weight:400">(y No OK al terminar)</small></label>
                     <div class="pl-days" id="plEdDays"></div>
                     <div class="pl-quick" id="plEdQuick"></div>
                     <div class="pl-sheet-actions">
@@ -985,6 +1020,31 @@
 
     <datalist id="codesSap"></datalist>
     <datalist id="codesName"></datalist>
+    <div class="pl-modal" id="encModal" onclick="if (event.target === this) closeEncargoEditor()">
+        <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="encTitle">
+            <h2 id="encTitle">Nuevo encargo de diseño</h2>
+            <div class="form-group"><label for="encSearch">Modelo (busca por SAP o nombre)</label>
+                <input type="text" id="encSearch" list="codesSearch" placeholder="Ej.: ALABAS LINEAL o 100382628" autocomplete="off"></div>
+            <div class="form-row">
+                <div class="form-group"><label for="encSap">SAP</label><input type="text" id="encSap" inputmode="numeric"></div>
+                <div class="form-group"><label for="encOf">OF <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="text" id="encOf"></div>
+                <div class="form-group"><label for="encDue">Para cuándo <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="date" id="encDue"></div>
+            </div>
+            <div class="form-group"><label for="encDeco">Nombre</label><input type="text" id="encDeco"></div>
+            <div class="form-group"><label>¿Quién lo tonifica? <small style="color:var(--muted);font-weight:400">(puedes elegir varios)</small></label><div class="tech-pick" id="encTech"></div></div>
+            <div class="form-group"><label for="encNotes">Notas <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="text" id="encNotes" placeholder="Ej.: más cálido que la última vez"></div>
+            <p class="pl-hint" id="encFromPlan" hidden>Creado desde el planning: el modelo y la fecha se cambian allí.</p>
+            <div class="pl-sheet-actions">
+                <button type="button" class="btn btn-secondary btn-small" id="encDelete" onclick="deleteEncargo()">🗑 Borrar</button>
+                <span style="display:flex;gap:8px">
+                    <button type="button" class="btn btn-secondary btn-small" id="encDoneBtn" onclick="toggleEncargoDone()">✅ Marcar hecho</button>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="closeEncargoEditor()">Cancelar</button>
+                    <button type="button" class="btn btn-primary btn-small" onclick="saveEncargo()">Guardar</button>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script>
@@ -1291,6 +1351,111 @@
             if ($('comments').value.trim()) $('commentsBox').open = true;
         }
 
+
+        // ---------- Encargos de diseño (separados de la producción) ----------
+        const ENC_KEY = 'encargos';
+        function readEnc() { try { const t = JSON.parse(localStorage.getItem(ENC_KEY)); if (t && Array.isArray(t.items)) return t; } catch (e) {} return { items: [] }; }
+        function writeEnc(t) {
+            const raw = localStorage.getItem(ENC_KEY), prev = raw ? JSON.parse(raw) : { items: [] };
+            localStorage.setItem(ENC_KEY, JSON.stringify(stampCollection(prev, t, 'items')));
+        }
+        let encEditId = '', encTechs = [];
+        function renderEncTechs() {
+            $('encTech').innerHTML = TECHS.map(([d]) => `<button type="button" class="${encTechs.includes(d) ? 'active' : ''}" style="--tc:${techColor(d)}" onclick="encTechs = encTechs.includes('${d}') ? encTechs.filter(x => x !== '${d}') : [...encTechs, '${d}']; renderEncTechs()">${encTechs.includes(d) ? '✓ ' : ''}${escapeHtml(displayDecorator(d))}</button>`).join('');
+        }
+        function openEncargoEditor(id, weekMonday) {
+            const x = readEnc().items.find(i => i.id === id) || { sap: '', deco: '', of: '', due: '', techs: [], notes: '' };
+            encEditId = id;
+            if (!$('codesSearch').options.length)
+                $('codesSearch').innerHTML = UNDORA_CODES.map(([c, n]) => [c, shortName(n)]).sort((a, b) => a[1].localeCompare(b[1])).map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
+            $('encTitle').textContent = id ? 'Encargo de diseño' : 'Nuevo encargo de diseño';
+            $('encSearch').value = ''; $('encSap').value = x.sap || ''; $('encOf').value = x.of || '';
+            $('encDue').value = x.due || (weekMonday ? (() => { const t = todayLocal(), d = new Date(weekMonday); const k = isoDate(d); return t >= k ? t : k; })() : '');
+            $('encDeco').value = x.deco ? shortName(x.deco) : ''; $('encNotes').value = x.notes || '';
+            encTechs = [...(x.techs || [])]; renderEncTechs();
+            $('encDelete').style.visibility = id ? 'visible' : 'hidden';
+            $('encDoneBtn').hidden = !id; $('encDoneBtn').textContent = x.done ? '↩ Volver a pendiente' : '✅ Marcar hecho';
+            $('encFromPlan').hidden = true;
+            $('encModal').classList.add('open');
+            setTimeout(() => (id ? $('encNotes') : $('encSearch')).focus(), 50);
+        }
+        function closeEncargoEditor() { $('encModal').classList.remove('open'); }
+        function saveEncargo() {
+            const sap = $('encSap').value.trim(), deco = $('encDeco').value.trim();
+            if (!sap && !deco) { toast('Pon el modelo (SAP o nombre)', true); $('encSearch').focus(); return; }
+            if (!encTechs.length) { toast('Elige quién lo tonifica', true); return; }
+            const t = readEnc(); let x = t.items.find(i => i.id === encEditId);
+            if (!x) { x = { id: 'e' + Date.now().toString(36), createdAt: new Date().toISOString(), done: false }; t.items.unshift(x); }
+            Object.assign(x, { sap, deco, of: $('encOf').value.trim(), due: $('encDue').value, techs: encTechs, notes: $('encNotes').value.trim() });
+            writeEnc(t); closeEncargoEditor(); renderEncargos(); renderTodayJobs(); if ($('planningView').style.display === 'block') renderPlanning(); toast('Encargo guardado');
+        }
+        function toggleEncargoDone() {
+            const t = readEnc(), x = t.items.find(i => i.id === encEditId); if (!x) return;
+            x.done = !x.done; x.doneAt = x.done ? new Date().toISOString() : '';
+            writeEnc(t); closeEncargoEditor(); renderEncargos(); renderTodayJobs(); if ($('planningView').style.display === 'block') renderPlanning();
+        }
+        function deleteEncargo() {
+            if (!confirm('¿Borrar este encargo?')) return;
+            const t = readEnc(); t.items = t.items.filter(i => i.id !== encEditId); writeEnc(t); closeEncargoEditor(); renderEncargos(); renderTodayJobs(); if ($('planningView').style.display === 'block') renderPlanning();
+        }
+        function encCard(x, opts = {}) {
+            const e = escapeHtml, m = parseModel(x.deco || CODE_BY_SAP.get(x.sap) || ''), today = todayLocal();
+            const late = !x.done && x.due && x.due < today, t = opts.tests ? opts.tests.get(x.sap) : null;
+            const due = x.due ? (x.due === today ? 'para hoy' : (late ? '⚠️ era para el ' : 'para el ') + formatDate(x.due).slice(0, 5)) : 'sin fecha';
+            const click = opts.pick ? `pickEncargo('${e(x.id)}')` : `openEncargoEditor('${e(x.id)}')`;
+            return `<button type="button" class="enc ${x.done ? 'done' : late ? 'late' : ''} ${opts.current ? 'current' : ''}" onclick="${click}">
+                <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.of ? ' · OF ' + e(x.of) : ''} · ${due}</small></span>
+                <span class="who">${opts.pick ? (t ? `<small>🎨 ${t.ok + t.nok} pl. de prueba</small>` : '<small>sin pruebas</small>') : (x.techs || []).map(techChip).join('')}</span>
+                ${x.notes || (opts.pick && (x.techs || []).length > 1) ? `<span class="note">${x.notes ? '📝 ' + e(x.notes) : ''}${opts.pick && x.techs.length > 1 ? (x.notes ? ' · ' : '') + 'con ' + e(x.techs.filter(d => d !== currentDecorator).map(displayDecorator).join(', ')) : ''}</span>` : ''}
+            </button>`;
+        }
+        const encSort = (a, b) => (a.due || '9999').localeCompare(b.due || '9999');
+        function renderEncargos() {
+            const box = $('encList'); if (!box) return;
+            const items = readEnc().items, pend = items.filter(x => !x.done).sort(encSort), done = items.filter(x => x.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
+            box.innerHTML = (pend.length ? pend.map(x => encCard(x)).join('') : '<p class="pl-hint" style="margin:0">No hay encargos pendientes.</p>') +
+                (done.length ? `<details class="tj-more"><summary>Hechos (${done.length})</summary><div style="margin-top:6px">${done.slice(0, 30).map(x => encCard(x)).join('')}</div></details>` : '');
+        }
+        function pickEncargo(id) {
+            const x = readEnc().items.find(i => i.id === id); if (!x) return;
+            const curSap = $('sapField').value.trim(), curGraphic = $('graphicName').value.trim();
+            const same = (x.sap && x.sap === curSap) || (!curSap && !curGraphic);
+            if (!same && historyData.length) {
+                if (!confirm(`Tienes abierto el pedido de «${curGraphic || curSap}».\n\n¿Cerrarlo (se guarda en Pedidos anteriores) y empezar con «${parseModel(x.deco || CODE_BY_SAP.get(x.sap) || '').model}»?`)) return;
+                clearHistory(true);
+            }
+            $('sapField').value = x.sap || '';
+            $('graphicName').value = x.deco ? shortName(x.deco) : (CODE_BY_SAP.has(x.sap) ? shortName(CODE_BY_SAP.get(x.sap)) : '');
+            $('graphicName').dispatchEvent(new Event('change'));
+            if (x.of) $('orderNumber').value = x.of;
+            orderEditing = false; saveHeaderDraft(); renderTodayJobs();
+            toast('Listo para tonificar: ' + (parseModel($('graphicName').value).model || x.sap));
+            $('countOk').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // Un trabajo del planning marcado «para diseño» con técnicos crea (o actualiza) su encargo
+        function syncEncargoFromPlanning(r) {
+            const t = readEnc(), id = 'pl-' + r.id; let x = t.items.find(i => i.id === id);
+            const wants = needsTono(r) && techsOf(r).length;
+            if (!wants) { if (x && !x.done) { t.items = t.items.filter(i => i.id !== id); writeEnc(t); } return; }
+            const today = todayLocal(), days = Object.keys(r.qty || {}).filter(k => Number(r.qty[k]) > 0).sort();
+            const due = days.find(k => k >= today) || days[0] || '';
+            if (!x) { x = { id, planningId: r.id, createdAt: new Date().toISOString(), done: false, notes: '' }; t.items.unshift(x); }
+            Object.assign(x, { sap: r.sap || '', deco: r.deco || '', of: r.of || '', due, techs: techsOf(r) });
+            if (r.reton && !x.done) { x.done = true; x.doneAt = new Date().toISOString(); }
+            writeEnc(t);
+        }
+        // Al guardar una prueba con estatus «Fin», el encargo queda hecho y el planning en Retonificado SÍ
+        function completeEncargosFor(sap) {
+            if (!sap) return;
+            const t = readEnc(); let n = 0;
+            t.items.forEach(x => { if (!x.done && x.sap === sap && (x.techs || []).includes(currentDecorator)) { x.done = true; x.doneAt = new Date().toISOString(); x.doneBy = currentDecorator; n++; } });
+            if (n) writeEnc(t);
+            const p = readPlanning(); let m = 0;
+            p.rows.forEach(r => { if (r.sap === sap && needsTono(r) && !r.reton) { r.reton = true; m++; } });
+            if (m) writePlanning(p, { undo: false });
+            if (n || m) toast('✅ Tonificación terminada: encargo hecho y planning en Retonificado SÍ');
+        }
+
         // ---------- Planning ↔ registros: lo producido de cada faena ----------
         // Planchas de prueba de diseño por SAP (retonificación). No cuentan como producción.
         function testsMap() {
@@ -1309,22 +1474,12 @@
             return map;
         }
         function renderTodayJobs() {
-            const box = $('todayJobs'); if (!box) return;
-            const p = readPlanning(), today = todayLocal(), tests = testsMap(), cur = $('sapField').value.trim();
-            // Lo que producción tiene programado desde hoy hasta el final de la semana que viene
-            const end = mondayOf(new Date()); end.setDate(end.getDate() + 13); const endK = isoDate(end);
-            const jobs = p.rows.filter(needsTono).map(r => {
-                const days = Object.entries(r.qty || {}).filter(([k, q]) => Number(q) > 0 && k >= today && k <= endK).sort();
-                return days.length ? { r, day: days[0][0], q: days.reduce((a, [, q]) => a + Number(q), 0) } : null;
-            }).filter(Boolean).sort((a, b) => a.day.localeCompare(b.day));
-            const card = j => { const m = parseModel(j.r.deco), t = tests.get(j.r.sap);
-                const when = j.day === today ? 'hoy' : formatDate(j.day).slice(0, 5);
-                return `<button type="button" class="tj ${j.r.sap && j.r.sap === cur ? 'current' : ''}" onclick="pickPlanningJob('${escapeHtml(j.r.id)}')">
-                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}${(() => { const o = techsOf(j.r).filter(d => d !== currentDecorator); return o.length ? ' <small>· ' + (techsOf(j.r).includes(currentDecorator) ? 'con ' : '') + escapeHtml(o.map(displayDecorator).join(', ')) + '</small>' : ''; })()}<br><small>SAP ${escapeHtml(j.r.sap || '—')} · producción ${when}: ${j.q} pl.${j.r.reton ? ' · retonificado' : ''}</small></span>
-                    <span class="tj-q">${t ? `🎨 ${t.ok + t.nok}<br><small>pl. de prueba</small>` : '<small>sin pruebas</small>'}</span></button>`; };
-            const mine = jobs.filter(j => techsOf(j.r).includes(currentDecorator)), others = jobs.filter(j => !techsOf(j.r).includes(currentDecorator));
-            box.innerHTML = (mine.length ? `<div class="tj-list">${mine.map(card).join('')}</div>` : '<p class="pl-hint" style="margin:0 0 6px">No tienes modelos asignados en el planning.</p>') +
-                (others.length ? `<details class="tj-more"><summary>Otros modelos del planning (${others.length})</summary><div class="tj-list" style="margin-top:6px">${others.map(card).join('')}</div></details>` : '');
+            const box = $('todayJobs'); if (!box || !currentDecorator) return;
+            const tests = testsMap(), cur = $('sapField').value.trim();
+            const pend = readEnc().items.filter(x => !x.done).sort(encSort);
+            const mine = pend.filter(x => (x.techs || []).includes(currentDecorator)), others = pend.filter(x => !(x.techs || []).includes(currentDecorator));
+            box.innerHTML = (mine.length ? mine.map(x => encCard(x, { pick: true, tests, current: x.sap && x.sap === cur })).join('') : '<p class="pl-hint" style="margin:0 0 6px">No tienes encargos pendientes.</p>') +
+                (others.length ? `<details class="tj-more"><summary>Encargos de los compañeros (${others.length})</summary><div style="margin-top:6px">${others.map(x => encCard(x, { pick: true, tests })).join('')}</div></details>` : '');
         }
         function pickPlanningJob(id) {
             const r = readPlanning().rows.find(x => x.id === id); if (!r) return;
@@ -1378,7 +1533,7 @@
             plan.rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
                 if (k < from || k > to) return; q = Number(q) || 0; if (!q) return;
                 const it = findKeraFor(r), t = it ? keraTotals(it) : null, m2 = q * (t ? t.m2 : DEFAULT_M2);
-                F.plates += q; F.m2 += m2;
+                F.plates += q; F.m2 += m2; F.nok = (F.nok || 0) + (Number((r.nok || {})[k]) || 0);
                 if (t) { F.g += t.gPlate * q; F.c += t.cPlate * q; } else F.missing.add((r.deco ? shortName(r.deco) : '') || r.sap);
                 const key = r.sap || r.deco, m = modelOf(r.sap, r.deco);
                 const v = prodBySap.get(key) || { sap: r.sap, name: m.model, caraM: m.caraM, plates: 0, m2: 0, c: 0, hasInk: !!t, days: new Set() };
@@ -1399,6 +1554,7 @@
             let html = `<div class="sum-section"><h3>🏭 Producción programada</h3><div class="sum-kpis" style="margin-top:6px">
                 <div class="sum-kpi"><b>${F.plates}</b><small>Planchas</small></div>
                 <div class="sum-kpi"><b>${nf(F.m2, 0)} m²</b><small>Producción</small></div>
+                <div class="sum-kpi ${F.plates && (F.nok || 0) / F.plates >= 0.1 ? 'bad' : ''}"><b>${F.plates ? nf((F.nok || 0) / F.plates * 100, 1) : '0'}%</b><small>Merma<br>${F.nok || 0} planchas No OK</small></div>
                 <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta<br>${nf(F.g / 1000, 1)} kg</small></div>
             </div>`;
             if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309;margin-top:0">Sin ficha de consumo (no entran en la tinta): ${[...F.missing].map(e).join(', ')}.</p>`;
@@ -1650,41 +1806,54 @@
             const totals = keys.map(k => p.rows.reduce((a, r) => a + (Number((r.qty || {})[k]) || 0), 0));
             const tests = testsMap();
             const isDone = (r, k) => Number((r.qty || {})[k]) > 0 && !!(r.done || {})[k];
+            const nokOf = (r, k) => Number((r.nok || {})[k]) || 0;
             const cellClass = (r, k) => Number((r.qty || {})[k]) > 0 ? (isDone(r, k) ? 'filled pdone' : 'filled') : '';
-            const cellText = (r, k) => Number((r.qty || {})[k]) > 0 ? (isDone(r, k) ? '✓ ' + r.qty[k] : String(r.qty[k])) : '＋';
+            const cellText = (r, k) => Number((r.qty || {})[k]) > 0 ? (isDone(r, k) ? '✓ ' + r.qty[k] : String(r.qty[k])) + (nokOf(r, k) ? `<span class="nk">✗ ${nokOf(r, k)} No OK</span>` : '') : '＋';
             const doneTot = keys.map(k => p.rows.reduce((a, r) => a + (isDone(r, k) ? Number(r.qty[k]) : 0), 0));
+            const nokTot = keys.map(k => p.rows.reduce((a, r) => a + nokOf(r, k), 0));
             const rowFinished = r => { const ks = Object.keys(r.qty || {}).filter(k => Number(r.qty[k]) > 0); return ks.length > 0 && ks.every(k => (r.done || {})[k]); };
-            const testBadge = r => { const t = tests.get(r.sap); return t ? ` <span class="pl-test" title="Retonificado por ${escapeHtml([...t.who].join(', '))} · última prueba ${formatDate(t.last)}">🎨 ${t.ok + t.nok} pl. prueba</span>` : ''; };
-            let html = `<thead><tr><th>Retonif.</th><th>Técnico</th><th>SAP · OF</th><th>Programación decoración</th>${days.map((d, i) =>
-                `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}${doneTot[i] ? ` · <span style="color:#15803d">✓ ${doneTot[i]}</span>` : ''}</small></th>`).join('')}</tr></thead><tbody>`;
-            // Orden tipo Gantt: primero lo que tiene faena esta semana, por el primer día
+            const testBadge = r => { const t = tests.get(r.sap); return t ? ` <span class="pl-test" title="Pruebas de ${escapeHtml([...t.who].join(', '))} · última ${formatDate(t.last)}">🎨 ${t.ok + t.nok} pl. prueba</span>` : ''; };
+            const C = 3 + keys.length;
+            let html = `<thead><tr><th>Estado</th><th>SAP · OF</th><th>Decoración</th>${days.map((d, i) =>
+                `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}${doneTot[i] ? ` · <span style="color:#15803d">✓ ${doneTot[i]}</span>` : ''}${nokTot[i] ? ` · <span style="color:#dc2626">✗ ${nokTot[i]}</span>` : ''}</small></th>`).join('')}</tr></thead><tbody>
+                <tr class="pl-group prod"><td colspan="${C}">🏭 Producción</td></tr>`;
             const firstDay = r => { const j = keys.findIndex(k => Number((r.qty || {})[k]) > 0); return j < 0 ? 99 : j; };
             const order = p.rows.map((r, i) => ({ r, i, f: firstDay(r) })).sort((a, b) => a.f - b.f || a.i - b.i);
             let sepDone = false;
             order.forEach(({ r, i, f }) => {
                 if (f === 99) {
                     if (only) return;
-                    if (!sepDone) { html += `<tr class="pl-sep"><td colspan="${4 + keys.length}">Sin faena esta semana</td></tr>`; sepDone = true; }
+                    if (!sepDone) { html += `<tr class="pl-sep"><td colspan="${C}">Sin producción esta semana</td></tr>`; sepDone = true; }
                 }
-                const q = r.qty || {};
                 html += `<tr class="${f === 99 ? 'pl-idle' : ''}">
-                    ${needsTono(r) ? `<td class="reton-cell ${r.reton ? 'reton-si' : 'reton-no'}"><button type="button" class="pl-reton" title="Tocar para cambiar" onclick="togglePlanningReton(${i})">${r.reton ? '✓ SÍ' : '✗ NO'}</button></td>` : '<td class="reton-cell reton-na" title="Solo producción: no se tonifica">—</td>'}
-                    <td><button type="button" class="pl-reton" title="Asignar técnicos" onclick="openPlanningEditor(${i})">${needsTono(r) ? (techsOf(r).length ? techsOf(r).map(techChip).join(' ') : techChip('')) : '<span class="tech-prod">🏭 Producción</span>'}</button></td>
+                    <td class="reton-cell ${r.reton ? 'reton-si' : 'reton-no'}"><button type="button" class="pl-reton" title="Retonificado · tocar para cambiar" onclick="togglePlanningReton(${i})">${r.reton ? '✓ Retonif.' : '✗ Sin retonif.'}</button></td>
                     <td>${e(r.sap || '—')}${r.of ? `<br><small class="pl-of">OF ${e(r.of)}</small>` : ''}</td>
                     <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return (r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre') + testBadge(r) + (rowFinished(r) ? ' <span class="pl-fin">✅ Finalizada</span>' : ''); })()}</button></td>
                     ${keys.map(k => `<td class="${cellClass(r, k)}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${cellText(r, k)}</button></td>`).join('')}
                 </tr>`;
             });
-            if (!p.rows.length) html += `<tr><td colspan="${4 + keys.length}" style="padding:16px">Todavía no hay producción. Pulsa «＋ Añadir producción».</td></tr>`;
-            // Carga de trabajo por técnico (planchas asignadas cada día)
-            const load = TECHS.map(([d]) => keys.map(k => p.rows.reduce((a, r) => a + (needsTono(r) && techsOf(r).includes(d) ? Number((r.qty || {})[k]) || 0 : 0), 0)));
-            const maxLoad = Math.max(1, ...load.flat());
-            const unassigned = keys.map(k => p.rows.reduce((a, r) => a + (needsTono(r) && !techsOf(r).length ? Number((r.qty || {})[k]) || 0 : 0), 0));
-            html += `</tbody><tfoot><tr class="pl-totals"><td colspan="4" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr>
-                <tr class="pl-sep pl-load-toggle" onclick="plShowLoad = !plShowLoad; renderPlanning()" style="cursor:pointer"><td colspan="${4 + keys.length}">${plShowLoad ? '▾' : '▸'} Carga por técnico</td></tr>
-                ${!plShowLoad ? '' : TECHS.map(([d], ti) => `<tr class="pl-load"><td colspan="4" style="text-align:right">${techChip(d)} <small>${load[ti].reduce((a, b) => a + b, 0)} pl.</small></td>${load[ti].map(v =>
-                    `<td class="${v ? 'has' : ''}">${v || ''}${v ? `<span class="pl-load-bar" style="--tc:${techColor(d)};width:${Math.max(12, v / maxLoad * 100)}%"></span>` : ''}</td>`).join('')}</tr>`).join('')}
-                ${plShowLoad && unassigned.some(Boolean) ? `<tr class="pl-load"><td colspan="4" style="text-align:right"><span class="tech-none">Para tonificar sin técnico</span></td>${unassigned.map(v => `<td style="color:#b45309">${v || ''}</td>`).join('')}</tr>` : ''}
+            if (!p.rows.length) html += `<tr><td colspan="${C}" style="padding:12px">Sin producción. Pulsa «＋ Añadir trabajo».</td></tr>`;
+            html += `<tr class="pl-totals"><td colspan="3" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr>`;
+            // Diseño: encargos de tonificación de esta semana (y los atrasados o sin fecha)
+            const enc = readEnc().items.filter(x => (x.due && keys.includes(x.due)) || (!x.done && (!x.due || x.due < keys[0]))).sort(encSort);
+            html += `<tr class="pl-group dis"><td colspan="${C}">🎨 Diseño · encargos de tonificación</td></tr>`;
+            enc.forEach(x => {
+                const m = parseModel(x.deco || CODE_BY_SAP.get(x.sap) || ''), late = !x.done && x.due && x.due < today;
+                const dayIdx = keys.indexOf(x.due);
+                html += `<tr>
+                    <td class="enc-state ${x.done ? 'ok' : late ? 'late' : ''}">${x.done ? '✓ Hecho' : late ? '⚠️ Atrasado' : '⏳ Pendiente'}</td>
+                    <td>${e(x.sap || '—')}${x.of ? `<br><small class="pl-of">OF ${e(x.of)}</small>` : ''}</td>
+                    <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${(x.techs || []).map(techChip).join(' ')}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
+                    ${keys.map((k, j) => `<td class="${j === dayIdx ? 'enc-day' + (x.done ? ' ok' : '') : ''}">${j === dayIdx ? `<button type="button" class="pl-cell" onclick="openEncargoEditor('${e(x.id)}')">${x.done ? '✓' : '🎨'}</button>` : (dayIdx < 0 && j === 0 && !x.due ? '<small class="pl-of">sin fecha</small>' : '')}</td>`).join('')}
+                </tr>`;
+            });
+            if (!enc.length) html += `<tr><td colspan="${C}" style="padding:10px;color:var(--muted)">Sin encargos de diseño esta semana.</td></tr>`;
+            // Carga por técnico = encargos de diseño por día
+            const load = TECHS.map(([d]) => keys.map(k => enc.filter(x => x.due === k && (x.techs || []).includes(d)).length));
+            html += `</tbody><tfoot>
+                <tr class="pl-sep pl-load-toggle" onclick="plShowLoad = !plShowLoad; renderPlanning()" style="cursor:pointer"><td colspan="${C}">${plShowLoad ? '▾' : '▸'} Carga de diseño por técnico</td></tr>
+                ${!plShowLoad ? '' : TECHS.map(([d], ti) => `<tr class="pl-load"><td colspan="3" style="text-align:right">${techChip(d)} <small>${enc.filter(x => !x.done && (x.techs || []).includes(d)).length} pendientes</small></td>${load[ti].map(v =>
+                    `<td class="${v ? 'has' : ''}">${v ? v + ' enc.' : ''}${v ? `<span class="pl-load-bar" style="--tc:${techColor(d)};width:${Math.min(100, v * 34)}%"></span>` : ''}</td>`).join('')}</tr>`).join('')}
             </tfoot>`;
             $('plTable').innerHTML = html;
             renderPlanningForecast(p, keys);
@@ -1735,21 +1904,22 @@
                     .map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
             $('plEdTitle').textContent = i >= 0 ? 'Editar producción' : 'Añadir producción';
             $('plEdSearch').value = ''; $('plEdSap').value = r.sap || ''; $('plEdOf').value = r.of || ''; $('plEdDeco').value = r.deco ? shortName(r.deco) : '';
-            setEdReton(!!r.reton); setEdTech(techsOf(r)); setEdTono(needsTono(r));
+            setEdReton(!!r.reton);
             $('plEdDelete').style.visibility = i >= 0 ? 'visible' : 'hidden';
             const days = weekDays(), keys = days.map(isoDate), today = todayLocal();
             $('plEdWeek').textContent = `semana ${isoWeek(planningMonday).week}`;
             $('plEdDays').innerHTML = keys.map((k, j) => `<label class="pl-day ${k === today ? 'today' : ''} ${Number(r.qty?.[k]) > 0 ? 'has' : ''}">
                 <span>${DAY_NAMES[j]} ${formatDate(k).slice(0, 5)}</span>
-                <input type="number" min="0" inputmode="numeric" data-k="${k}" value="${Number(r.qty?.[k]) > 0 ? r.qty[k] : ''}" placeholder="0"
+                <input type="number" min="0" inputmode="numeric" class="qty-in" data-k="${k}" value="${Number(r.qty?.[k]) > 0 ? r.qty[k] : ''}" placeholder="0"
                     onfocus="edLastDay = this" oninput="this.parentElement.classList.toggle('has', Number(this.value) > 0)">
+                <input type="number" min="0" inputmode="numeric" class="nok-in" data-k="${k}" value="${Number(r.nok?.[k]) > 0 ? r.nok[k] : ''}" placeholder="No OK" title="Planchas No OK (merma)">
                 <button type="button" class="done-tg ${r.done?.[k] && Number(r.qty?.[k]) > 0 ? 'on' : ''}" data-k="${k}" onclick="event.preventDefault(); this.classList.toggle('on')">${r.done?.[k] && Number(r.qty?.[k]) > 0 ? '✓ Terminada' : 'Marcar terminada'}</button></label>`).join('');
             document.querySelectorAll('#plEdDays .done-tg').forEach(b => b.addEventListener('click', () => { b.textContent = b.classList.contains('on') ? '✓ Terminada' : 'Marcar terminada'; }));
             $('plEdQuick').innerHTML = '<span style="font-size:.8rem;color:var(--muted);align-self:center">Rápido:</span>' +
                 [10, 12, 16, 50, 90, 100, 250, 300].map(n => `<button type="button" onclick="quickQty(${n})">${n}</button>`).join('') +
                 '<button type="button" onclick="quickQty(0)">Borrar</button>';
             $('plModal').classList.add('open');
-            const target = document.querySelector(`#plEdDays input[data-k="${focusKey || (keys.includes(today) ? today : keys[0])}"]`);
+            const target = document.querySelector(`#plEdDays .qty-in[data-k="${focusKey || (keys.includes(today) ? today : keys[0])}"]`);
             edLastDay = target;
             setTimeout(() => (i < 0 ? $('plEdSearch') : target).focus(), 50);
         }
@@ -1767,17 +1937,22 @@
             const p = readPlanning();
             let r = edIndex >= 0 ? p.rows[edIndex] : null;
             if (!r) { r = { id: 'r' + Date.now().toString(36), qty: {} }; p.rows.push(r); }
-            r.sap = sap; r.deco = deco; r.reton = edReton; r.techs = edTono ? edTechs : []; delete r.tech; r.tono = edTono; r.of = $('plEdOf').value.trim(); r.qty = r.qty || {};
+            r.sap = sap; r.deco = deco; r.reton = edReton; r.of = $('plEdOf').value.trim(); r.qty = r.qty || {};
             r.done = {};
             document.querySelectorAll('#plEdDays .done-tg.on').forEach(b => {
-                const v = parseInt(document.querySelector(`#plEdDays input[data-k="${b.dataset.k}"]`).value, 10);
+                const v = parseInt(document.querySelector(`#plEdDays .qty-in[data-k="${b.dataset.k}"]`).value, 10);
                 if (v > 0) r.done[b.dataset.k] = true;
             });
             // conserva lo terminado de otras semanas
-            Object.entries(readPlanning().rows[edIndex]?.done || {}).forEach(([k, v]) => { if (!document.querySelector(`#plEdDays input[data-k="${k}"]`)) r.done[k] = v; });
-            document.querySelectorAll('#plEdDays input').forEach(inp => {
+            Object.entries(readPlanning().rows[edIndex]?.done || {}).forEach(([k, v]) => { if (!document.querySelector(`#plEdDays .qty-in[data-k="${k}"]`)) r.done[k] = v; });
+            document.querySelectorAll('#plEdDays .qty-in').forEach(inp => {
                 const n = parseInt(inp.value, 10);
                 if (n > 0) r.qty[inp.dataset.k] = n; else delete r.qty[inp.dataset.k];
+            });
+            r.nok = r.nok || {};
+            document.querySelectorAll('#plEdDays .nok-in').forEach(inp => {
+                const n = parseInt(inp.value, 10);
+                if (n > 0) r.nok[inp.dataset.k] = n; else delete r.nok[inp.dataset.k];
             });
             writePlanning(p); closePlanningEditor(); renderPlanning();
             toast('Planning guardado');
@@ -1844,6 +2019,12 @@
             if (r.done) { delete r.done[fromK]; delete r.done[toK]; }
             writePlanning(p); renderPlanning();
             toast(`Movido: ${n} pl. del ${formatDate(fromK).slice(0, 5)} al ${formatDate(toK).slice(0, 5)}`);
+        }
+
+        function initEncargoEditor() {
+            const fill = sap => { if (!CODE_BY_SAP.has(sap)) return false; $('encSap').value = sap; $('encDeco').value = shortName(CODE_BY_SAP.get(sap)); $('encSearch').value = ''; return true; };
+            $('encSearch').addEventListener('change', () => { const v = $('encSearch').value.trim(); if (!fill(v.split(' · ')[0].trim())) { const c = CODE_BY_NAME.get(v.toUpperCase()); if (c) fill(c); } });
+            $('encSap').addEventListener('change', () => fill($('encSap').value.trim()));
         }
 
         document.addEventListener('click', ev => {
@@ -2014,7 +2195,11 @@
         });
 
         function updateHomeStatuses() {
-            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); let a = 'diseno'; try { a = localStorage.getItem('ui_area') || 'diseno'; } catch (e) {} setArea(a); }
+            if (!localStorage.getItem('enc_migrated')) {
+                try { readPlanning().rows.filter(r => needsTono(r) && techsOf(r).length).forEach(syncEncargoFromPlanning); localStorage.setItem('enc_migrated', '1'); } catch (e) {}
+            }
+            renderEncargos();
+            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); initEncargoEditor(); let a = 'diseno'; try { a = localStorage.getItem('ui_area') || 'diseno'; } catch (e) {} setArea(a); }
             updateKeraSummary();
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
@@ -2164,8 +2349,11 @@
 
         // ---------- Guardar / editar ----------
         function saveSession() {
+            // La OF es opcional; el técnico se pone solo con el nombre del perfil
+            if (!$('technician').value.trim()) $('technician').value = displayDecorator(currentDecorator);
+            $('orderNumber').classList.remove('invalid');
             const fields = {
-                order: $('orderNumber'), technician: $('technician'), substrate: $('substrate'),
+                technician: $('technician'), substrate: $('substrate'),
                 graphicName: $('graphicName'), date: $('dateField'), timeFrom: $('timeFrom'), timeTo: $('timeTo')
             };
             let missing = false;
@@ -2175,7 +2363,10 @@
                 if (empty) missing = true;
             });
             if (missing) {
-                toast('Rellena los campos marcados en rojo', true);
+                if (['technician', 'substrate', 'graphicName'].some(k => !String(fields[k].value).trim())) setOrderEditing(true);
+                if (!String(fields.date.value).trim()) toggleDateField(true);
+                if (!fields.timeFrom.value || !fields.timeTo.value) $('timesBox').open = true;
+                toast(!fields.substrate.value ? 'Falta el sustrato del modelo' : 'Rellena los campos marcados en rojo', true);
                 document.querySelector('.invalid')?.focus();
                 return;
             }
@@ -2212,6 +2403,7 @@
             else historyData.push(entry);
 
             persistHistory();
+            if (entry.status === 'Fin') completeEncargosFor(entry.sap);
             resetSessionFields();
             renderHistory();
             checkKerajetAlert();
@@ -2403,14 +2595,14 @@
             readPlanning().rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
                 q = Number(q) || 0; if (!q || k < from || k > to) return;
                 const it = findKeraFor(r), t = it ? keraTotals(it) : null, m = parseModel(r.deco || CODE_BY_SAP.get(r.sap) || '');
-                rows.push([r.sap || '', r.of || '', m.model, m.caraM ? 'Sí' : '', formatDate(k), isoWeek(new Date(k + 'T12:00:00')).week, needsTono(r) ? techsOf(r).map(displayDecorator).join(' + ') : 'Solo producción', needsTono(r) ? (r.reton ? 'Sí' : 'No') : '—', (r.done || {})[k] ? 'Sí' : 'No',
+                rows.push([r.sap || '', r.of || '', m.model, m.caraM ? 'Sí' : '', formatDate(k), isoWeek(new Date(k + 'T12:00:00')).week, needsTono(r) ? techsOf(r).map(displayDecorator).join(' + ') : 'Solo producción', needsTono(r) ? (r.reton ? 'Sí' : 'No') : '—', (r.done || {})[k] ? 'Sí' : 'No', Number((r.nok || {})[k]) || 0,
                     q, (q * (t ? t.m2 : DEFAULT_M2)).toFixed(2).replace('.', ','), t ? (t.gPlate * q / 1000).toFixed(2).replace('.', ',') : '', t ? (t.cPlate * q).toFixed(2).replace('.', ',') : '', k]);
             }));
             if (!rows.length) { toast('No hay producción programada en ese periodo', true); return; }
-            rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || a[13].localeCompare(b[13]));
+            rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || a[14].localeCompare(b[14]));
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const header = ['Código SAP', 'OF', 'Descripción', 'Cara M', 'Fecha', 'Semana', 'Técnico', 'Retonificado', 'Finalizada', 'Planchas', 'm²', 'Tinta kg', 'Tinta €'];
-            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + rows.map(r => r.slice(0, 13).map(q).join(';')).join('\n');
+            const header = ['Código SAP', 'OF', 'Descripción', 'Cara M', 'Fecha', 'Semana', 'Técnico', 'Retonificado', 'Finalizada', 'No OK', 'Planchas', 'm²', 'Tinta kg', 'Tinta €'];
+            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + rows.map(r => r.slice(0, 14).map(q).join(';')).join('\n');
             downloadFile(`Produccion_planning_${from === '0000-00-00' ? 'todo' : from + '_' + to}.csv`, csv, 'text/csv;charset=utf-8');
             toast(`Excel de producción descargado: ${rows.length} filas`);
         }
@@ -2422,6 +2614,7 @@
             if (localStorage.getItem(PLANNING_KEY)) data.planning = readPlanning();
             if (localStorage.getItem(KERA_KEY)) data.keracost = readKera();
             if (localStorage.getItem(TONO_KEY)) data.tono = readTono();
+            if (localStorage.getItem(ENC_KEY)) data.encargos = readEnc();
             Object.entries(DECORATORS).forEach(([dec, p]) => {
                 data.decorators[dec] = {
                     order: localStorage.getItem(p + 'order') || '',
@@ -2617,7 +2810,7 @@
             // Cualquier cambio en los datos marca la hora y programa una subida
             const origSet = Storage.prototype.setItem, origRemove = Storage.prototype.removeItem;
             const touch = key => {
-                if (applyingRemote || !(/^dec\d_/.test(key) || key === PLANNING_KEY || key === KERA_KEY || key === TONO_KEY)) return;
+                if (applyingRemote || !(/^dec\d_/.test(key) || key === PLANNING_KEY || key === KERA_KEY || key === TONO_KEY || key === ENC_KEY)) return;
                 origSet.call(localStorage, LOCAL_TS_KEY, new Date().toISOString());
                 schedulePush();
             };
@@ -2760,7 +2953,7 @@
                 });
                 localStorage.setItem('deleted_records', JSON.stringify(deleted));
                 localStorage.setItem('deleted_archives', JSON.stringify(deletedArchives));
-                [[PLANNING_KEY, 'planning', 'rows'], [KERA_KEY, 'keracost', 'items'], [TONO_KEY, 'tono', 'items']].forEach(([key, field, list]) => {
+                [[PLANNING_KEY, 'planning', 'rows'], [KERA_KEY, 'keracost', 'items'], [TONO_KEY, 'tono', 'items'], [ENC_KEY, 'encargos', 'items']].forEach(([key, field, list]) => {
                     const localRaw = localStorage.getItem(key);
                     const merged = mergeCollection(localRaw ? JSON.parse(localRaw) : null, remote[field], list);
                     if (!merged) return;
@@ -2772,6 +2965,7 @@
                 if ($('planningView').style.display === 'block' && !$('plModal').classList.contains('open')) renderPlanning();
                 if ($('keraView').style.display === 'block' && !$('kcModal').classList.contains('open')) renderKera();
                 if ($('tonoView').style.display === 'block') renderTonoHistory();
+                renderEncargos(); if (currentDecorator) renderTodayJobs();
                 updatePlanningSummary(); updateKeraSummary();
             } finally { applyingRemote = false; }
         }
