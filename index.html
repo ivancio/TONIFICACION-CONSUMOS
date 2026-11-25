@@ -519,6 +519,7 @@
         .pl-table td.reton-no { background: #dc2626; }
         .pl-table td.reton-cell .pl-reton { color: #fff !important; font-weight: 800; letter-spacing: .3px; }
         .pl-table td.reton-cell:hover { filter: brightness(1.1); }
+        .mat-pick .shift-btn.active { border-color: var(--primary-color); background: var(--soft-bg); }
         #plEdNo.active { background: #dc2626; border-color: #dc2626; color: #fff; }
         #plEdSi.active { background: #16a34a; border-color: #16a34a; color: #fff; }
         @media print { .pl-table td.reton-si, .pl-table td.reton-no { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
@@ -1032,6 +1033,10 @@
                         </div>
                     </div>
                     <div class="form-group"><label for="plEdDeco">Nombre</label><input type="text" id="plEdDeco"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="plEdSub">Sustrato</label><select id="plEdSub" class="sub-sel"></select></div>
+                        <div class="form-group"><label>Material</label><div class="shift-picker mat-pick" style="margin:0" data-target="plEd"><button type="button" class="shift-btn" data-mat="criscal" onclick="setMat('plEd','criscal')">Criscal</button><button type="button" class="shift-btn" data-mat="pigmentado" onclick="setMat('plEd','pigmentado')">Pigmentado</button></div></div>
+                    </div>
                     <label>Planchas por día · <span id="plEdWeek"></span> <small style="color:var(--muted);font-weight:400">(y No OK al terminar)</small></label>
                     <div class="pl-days" id="plEdDays"></div>
                     <div class="pl-quick" id="plEdQuick"></div>
@@ -1061,6 +1066,10 @@
                 <div class="form-group"><label for="encDue">Para cuándo <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="date" id="encDue"></div>
             </div>
             <div class="form-group"><label for="encDeco">Nombre</label><input type="text" id="encDeco"></div>
+            <div class="form-row">
+                        <div class="form-group"><label for="encSub">Sustrato</label><select id="encSub" class="sub-sel"></select></div>
+                        <div class="form-group"><label>Material</label><div class="shift-picker mat-pick" style="margin:0" data-target="enc"><button type="button" class="shift-btn" data-mat="criscal" onclick="setMat('enc','criscal')">Criscal</button><button type="button" class="shift-btn" data-mat="pigmentado" onclick="setMat('enc','pigmentado')">Pigmentado</button></div></div>
+                    </div>
             <div class="form-group"><label>¿Quién lo tonifica? <small style="color:var(--muted);font-weight:400">(puedes elegir varios)</small></label><div class="tech-pick" id="encTech"></div></div>
             <div class="form-group"><label for="encNotes">Notas <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="text" id="encNotes" placeholder="Ej.: más cálido que la última vez"></div>
             <p class="pl-hint" id="encFromPlan" hidden>Creado desde el planning: el modelo y la fecha se cambian allí.</p>
@@ -1382,6 +1391,18 @@
         }
 
 
+
+        // ---------- Sustrato y material desde el planning ----------
+        const matOf = {};
+        function setMat(pre, v) { matOf[pre] = matOf[pre] === v ? '' : v; document.querySelectorAll(`.mat-pick[data-target="${pre}"] button`).forEach(b => b.classList.toggle('active', b.dataset.mat === matOf[pre])); }
+        function fillSubSelect(id, value, name) {
+            const sel = $(id);
+            if (!sel.options.length) sel.innerHTML = '<option value="">—</option>' + [...$('substrate').options].filter(o => o.value).map(o => `<option value="${o.value}">${escapeHtml(o.text)}</option>`).join('');
+            sel.value = value || substrateFromName(name) || '';
+        }
+        const subText = v => { const o = [...$('substrate').options].find(o => o.value === v); return o && o.value ? o.text : ''; };
+        const matText = v => v === 'criscal' ? 'Criscal' : v === 'pigmentado' ? 'Pigmentado' : '';
+
         // ---------- Encargos de diseño (separados de la producción) ----------
         const ENC_KEY = 'encargos';
         function readEnc() { try { const t = JSON.parse(localStorage.getItem(ENC_KEY)); if (t && Array.isArray(t.items)) return t; } catch (e) {} return { items: [] }; }
@@ -1403,6 +1424,7 @@
             $('encDue').value = x.due || (weekMonday ? (() => { const t = todayLocal(), d = new Date(weekMonday); const k = isoDate(d); return t >= k ? t : k; })() : '');
             $('encDeco').value = x.deco ? shortName(x.deco) : ''; $('encNotes').value = x.notes || '';
             encTechs = [...(x.techs || [])]; renderEncTechs();
+            fillSubSelect('encSub', x.substrate, x.deco); matOf.enc = ''; setMat('enc', x.material || '');
             $('encDelete').style.visibility = id ? 'visible' : 'hidden';
             $('encDoneBtn').hidden = !id; $('encDoneBtn').textContent = x.done ? '↩ Volver a pendiente' : '✅ Marcar hecho';
             $('encFromPlan').hidden = true;
@@ -1416,7 +1438,7 @@
             if (!encTechs.length) { toast('Elige quién lo tonifica', true); return; }
             const t = readEnc(); let x = t.items.find(i => i.id === encEditId);
             if (!x) { x = { id: 'e' + Date.now().toString(36), createdAt: new Date().toISOString(), done: false }; t.items.unshift(x); }
-            Object.assign(x, { sap, deco, of: $('encOf').value.trim(), due: $('encDue').value, techs: encTechs, notes: $('encNotes').value.trim() });
+            Object.assign(x, { sap, deco, of: $('encOf').value.trim(), due: $('encDue').value, techs: encTechs, notes: $('encNotes').value.trim(), substrate: $('encSub').value, material: matOf.enc || '' });
             writeEnc(t); closeEncargoEditor(); renderEncargos(); renderTodayJobs(); if ($('planningView').style.display === 'block') renderPlanning(); toast('Encargo guardado');
         }
         function toggleEncargoDone() {
@@ -1434,7 +1456,7 @@
             const due = x.due ? (x.due === today ? 'para hoy' : (late ? '⚠️ era para el ' : 'para el ') + formatDate(x.due).slice(0, 5)) : 'sin fecha';
             const click = opts.pick ? `pickEncargo('${e(x.id)}')` : `openEncargoEditor('${e(x.id)}')`;
             return `<button type="button" class="enc ${x.done ? 'done' : late ? 'late' : ''} ${opts.current ? 'current' : ''}" onclick="${click}">
-                <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.of ? ' · OF ' + e(x.of) : ''} · ${due}</small></span>
+                <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.of ? ' · OF ' + e(x.of) : ''}${x.material ? ' · ' + matText(x.material) : ''} · ${due}</small></span>
                 <span class="who">${opts.pick ? (t ? `<small>🎨 ${t.ok + t.nok} pl. de prueba</small>` : '<small>sin pruebas</small>') : (x.techs || []).map(techChip).join('')}</span>
                 ${x.notes || (opts.pick && (x.techs || []).length > 1) ? `<span class="note">${x.notes ? '📝 ' + e(x.notes) : ''}${opts.pick && x.techs.length > 1 ? (x.notes ? ' · ' : '') + 'con ' + e(x.techs.filter(d => d !== currentDecorator).map(displayDecorator).join(', ')) : ''}</span>` : ''}
             </button>`;
@@ -1460,6 +1482,9 @@
             $('graphicName').value = x.deco ? shortName(x.deco) : (CODE_BY_SAP.has(x.sap) ? shortName(CODE_BY_SAP.get(x.sap)) : '');
             $('graphicName').dispatchEvent(new Event('change'));
             if (x.of) $('orderNumber').value = x.of;
+            if (x.substrate) $('substrate').value = x.substrate;
+            if (x.material) $('material').value = x.material;
+            if (!$('technician').value.trim()) $('technician').value = displayDecorator(currentDecorator);
             orderEditing = false; saveHeaderDraft(); renderTodayJobs();
             toast('Listo para tonificar: ' + (parseModel($('graphicName').value).model || x.sap));
             $('countOk').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1485,7 +1510,7 @@
             const p = readPlanning(); let m = 0;
             p.rows.forEach(r => { if (r.sap === sap && needsTono(r) && !r.reton) { r.reton = true; m++; } });
             if (m) writePlanning(p, { undo: false });
-            if (n || m) toast('✅ Tonificación terminada: encargo hecho y planning en Retonificado SÍ');
+            if (n || m) setTimeout(() => toast('✅ Tonificación terminada: encargo hecho y planning en Retonificado SÍ'), 1800);
         }
 
         // ---------- Planning ↔ registros: lo producido de cada faena ----------
@@ -1861,7 +1886,7 @@
                 html += `<tr class="${f === 99 ? 'pl-idle' : ''}">
                     <td class="reton-cell ${r.reton ? 'reton-si' : 'reton-no'}"><button type="button" class="pl-reton" title="Retonificado · tocar para cambiar" onclick="togglePlanningReton(${i})">${r.reton ? '✓ Retonif.' : '✗ Sin retonif.'}</button></td>
                     <td>${e(r.sap || '—')}${r.of ? `<br><small class="pl-of">OF ${e(r.of)}</small>` : ''}</td>
-                    <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return (r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre') + testBadge(r) + (rowFinished(r) ? ' <span class="pl-fin">✅ Finalizada</span>' : ''); })()}</button></td>
+                    <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return (r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre') + testBadge(r) + (rowFinished(r) ? ' <span class="pl-fin">✅ Finalizada</span>' : '') + ((r.substrate || r.material) ? `<small>${e([subText(r.substrate), matText(r.material)].filter(Boolean).join(' · '))}</small>` : ''); })()}</button></td>
                     ${keys.map(k => `<td class="${cellClass(r, k)}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${cellText(r, k)}</button></td>`).join('')}
                 </tr>`;
             });
@@ -1876,7 +1901,7 @@
                 html += `<tr>
                     <td class="enc-state ${x.done ? 'ok' : late ? 'late' : ''}">${x.done ? '✓ Hecho' : late ? '⚠️ Atrasado' : '⏳ Pendiente'}</td>
                     <td>${e(x.sap || '—')}${x.of ? `<br><small class="pl-of">OF ${e(x.of)}</small>` : ''}</td>
-                    <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${(x.techs || []).map(techChip).join(' ')}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
+                    <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${(x.techs || []).map(techChip).join(' ')}${(x.substrate || x.material) ? `<small>${e([subText(x.substrate), matText(x.material)].filter(Boolean).join(' · '))}</small>` : ''}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
                     ${keys.map((k, j) => `<td class="${j === dayIdx ? 'enc-day' + (x.done ? ' ok' : '') : ''}">${j === dayIdx ? `<button type="button" class="pl-cell" onclick="openEncargoEditor('${e(x.id)}')">${x.done ? '✓' : '🎨'}</button>` : (dayIdx < 0 && j === 0 && !x.due ? '<small class="pl-of">sin fecha</small>' : '')}</td>`).join('')}
                 </tr>`;
             });
@@ -1927,6 +1952,7 @@
             }
             if (!CODE_BY_SAP.has(sap)) return false;
             $('plEdSap').value = sap; $('plEdDeco').value = shortName(CODE_BY_SAP.get(sap)); $('plEdSearch').value = '';
+            { const sb = substrateFromName($('plEdDeco').value); if (sb) $('plEdSub').value = sb; }
             return true;
         }
         function openPlanningEditor(i, focusKey) {
@@ -1937,7 +1963,7 @@
                     .map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
             $('plEdTitle').textContent = i >= 0 ? 'Editar producción' : 'Añadir producción';
             $('plEdSearch').value = ''; $('plEdSap').value = r.sap || ''; $('plEdOf').value = r.of || ''; $('plEdDeco').value = r.deco ? shortName(r.deco) : '';
-            setEdReton(!!r.reton);
+            setEdReton(!!r.reton); fillSubSelect('plEdSub', r.substrate, r.deco); matOf.plEd = ''; setMat('plEd', r.material || '');
             $('plEdDelete').style.visibility = i >= 0 ? 'visible' : 'hidden';
             const days = weekDays(), keys = days.map(isoDate), today = todayLocal();
             $('plEdWeek').textContent = `semana ${isoWeek(planningMonday).week}`;
@@ -1970,6 +1996,7 @@
             const p = readPlanning();
             let r = edIndex >= 0 ? p.rows[edIndex] : null;
             if (!r) { r = { id: 'r' + Date.now().toString(36), qty: {} }; p.rows.push(r); }
+            r.substrate = $('plEdSub').value; r.material = matOf.plEd || '';
             r.sap = sap; r.deco = deco; r.reton = edReton; r.of = $('plEdOf').value.trim(); r.qty = r.qty || {};
             r.done = {};
             document.querySelectorAll('#plEdDays .done-tg.on').forEach(b => {
@@ -2055,7 +2082,7 @@
         }
 
         function initEncargoEditor() {
-            const fill = sap => { if (!CODE_BY_SAP.has(sap)) return false; $('encSap').value = sap; $('encDeco').value = shortName(CODE_BY_SAP.get(sap)); $('encSearch').value = ''; return true; };
+            const fill = sap => { if (!CODE_BY_SAP.has(sap)) return false; $('encSap').value = sap; $('encDeco').value = shortName(CODE_BY_SAP.get(sap)); $('encSearch').value = ''; const sb = substrateFromName($('encDeco').value); if (sb) $('encSub').value = sb; return true; };
             $('encSearch').addEventListener('change', () => { const v = $('encSearch').value.trim(); if (!fill(v.split(' · ')[0].trim())) { const c = CODE_BY_NAME.get(v.toUpperCase()); if (c) fill(c); } });
             $('encSap').addEventListener('change', () => fill($('encSap').value.trim()));
         }
@@ -2634,14 +2661,14 @@
             readPlanning().rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
                 q = Number(q) || 0; if (!q || k < from || k > to) return;
                 const it = findKeraFor(r), t = it ? keraTotals(it) : null, m = parseModel(r.deco || CODE_BY_SAP.get(r.sap) || '');
-                rows.push([r.sap || '', r.of || '', m.model, m.caraM ? 'Sí' : '', formatDate(k), isoWeek(new Date(k + 'T12:00:00')).week, needsTono(r) ? techsOf(r).map(displayDecorator).join(' + ') : 'Solo producción', needsTono(r) ? (r.reton ? 'Sí' : 'No') : '—', (r.done || {})[k] ? 'Sí' : 'No', Number((r.nok || {})[k]) || 0,
+                rows.push([r.sap || '', r.of || '', m.model, subText(r.substrate) || subText(substrateFromName(r.deco)), matText(r.material), m.caraM ? 'Sí' : '', formatDate(k), isoWeek(new Date(k + 'T12:00:00')).week, needsTono(r) ? techsOf(r).map(displayDecorator).join(' + ') : 'Solo producción', needsTono(r) ? (r.reton ? 'Sí' : 'No') : '—', (r.done || {})[k] ? 'Sí' : 'No', Number((r.nok || {})[k]) || 0,
                     q, (q * (t ? t.m2 : DEFAULT_M2)).toFixed(2).replace('.', ','), t ? (t.gPlate * q / 1000).toFixed(2).replace('.', ',') : '', t ? (t.cPlate * q).toFixed(2).replace('.', ',') : '', k]);
             }));
             if (!rows.length) { toast('No hay producción programada en ese periodo', true); return; }
-            rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || a[14].localeCompare(b[14]));
+            rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || a[16].localeCompare(b[16]));
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-            const header = ['Código SAP', 'OF', 'Descripción', 'Cara M', 'Fecha', 'Semana', 'Técnico', 'Retonificado', 'Finalizada', 'No OK', 'Planchas', 'm²', 'Tinta kg', 'Tinta €'];
-            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + rows.map(r => r.slice(0, 14).map(q).join(';')).join('\n');
+            const header = ['Código SAP', 'OF', 'Descripción', 'Sustrato', 'Material', 'Cara M', 'Fecha', 'Semana', 'Técnico', 'Retonificado', 'Finalizada', 'No OK', 'Planchas', 'm²', 'Tinta kg', 'Tinta €'];
+            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + rows.map(r => r.slice(0, 16).map(q).join(';')).join('\n');
             downloadFile(`Produccion_planning_${from === '0000-00-00' ? 'todo' : from + '_' + to}.csv`, csv, 'text/csv;charset=utf-8');
             toast(`Excel de producción descargado: ${rows.length} filas`);
         }
