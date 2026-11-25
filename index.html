@@ -331,7 +331,7 @@
         .sum-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .sum-table th, .sum-table td { border-bottom: 1px solid var(--border-color); padding: 6px; text-align: right; color: var(--text-color); }
         .sum-table th { font-size: 0.75rem; color: var(--muted); }
-        .sum-table th:first-child, .sum-table td:first-child { text-align: left; }
+        .sum-table th:first-child, .sum-table td:first-child, .sum-table th:nth-child(2), .sum-table td:nth-child(2) { text-align: left; }
         .sum-table td.bad { color: #dc2626; font-weight: 800; }
         .sum-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding: 6px 0; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
         .sum-col { flex: 1; min-width: 26px; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; height: 100%; position: relative; }
@@ -555,7 +555,7 @@
             <section class="home-section">
                 <h2><span class="step-n">2</span> Producción y costes</h2>
                 <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
-                    <span>📊 Resumen de producción<small>Producción programada, tinta prevista y gasto de pruebas de diseño</small></span>
+                    <span>📊 Resumen de producción<small>Producción por código SAP, tinta, pruebas de diseño y Excel</small></span>
                     <span aria-hidden="true">›</span>
                 </button>
                 <button type="button" class="planning-btn kera-btn" onclick="openKera()">
@@ -577,7 +577,6 @@
                 <span aria-hidden="true">›</span>
             </button>
 
-            <button type="button" class="btn btn-secondary" style="width:100%;margin-top:18px" onclick="exportAllHistory()">📥 Descargar histórico completo (Excel)<br><small style="font-weight:400;opacity:.75">Todas las sesiones de todos, ordenadas por fecha</small></button>
             <div class="home-tools">
                 <button type="button" class="btn btn-secondary btn-small" onclick="exportBackup()" title="Descargar copia de seguridad">↓ Copia</button>
                 <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('importFile').click()" title="Restaurar una copia de seguridad">↑ Restaurar</button>
@@ -790,6 +789,10 @@
                 <button type="button" class="btn btn-secondary btn-small no-print" onclick="printSummary()">🖨 Imprimir / PDF</button>
             </div>
             <div id="sumBody"></div>
+            <div class="pl-actions no-print" style="margin-top:16px">
+                <button type="button" class="btn btn-secondary" onclick="exportPlanningExcel()">📥 Excel de producción (planning)<br><small style="font-weight:400;opacity:.75">Por código SAP y fecha · periodo elegido</small></button>
+                <button type="button" class="btn btn-secondary" onclick="exportAllHistory()">📥 Excel de pruebas de diseño<br><small style="font-weight:400;opacity:.75">Todas las sesiones, por código SAP y fecha</small></button>
+            </div>
         </div>
 
         <div id="tonoView">
@@ -1306,48 +1309,47 @@
         function renderSummary() {
             const [from, to] = summaryRange($('sumPeriod').value), e = escapeHtml, DEFAULT_M2 = 2.704 * 1.204;
             $('sumRange').textContent = $('sumPeriod').value === 'all' ? '' : `${formatDate(from)} – ${formatDate(to)}`;
-            const merma = (ok, nok) => ok + nok ? nok / (ok + nok) * 100 : 0, pct = n => nf(n, 1) + '%';
-            // Producción programada (planning)
-            const plan = readPlanning(), F = { plates: 0, m2: 0, g: 0, c: 0, missing: new Set() }, plannedDay = new Map();
+            const modelOf = (sap, name) => parseModel(name || CODE_BY_SAP.get(sap) || '');
+            // Producción (planning)
+            const plan = readPlanning(), F = { plates: 0, m2: 0, g: 0, c: 0, missing: new Set() }, prodBySap = new Map();
             plan.rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
                 if (k < from || k > to) return; q = Number(q) || 0; if (!q) return;
-                const it = findKeraFor(r), t = it ? keraTotals(it) : null;
-                F.plates += q; F.m2 += q * (t ? t.m2 : DEFAULT_M2); plannedDay.set(k, (plannedDay.get(k) || 0) + q);
+                const it = findKeraFor(r), t = it ? keraTotals(it) : null, m2 = q * (t ? t.m2 : DEFAULT_M2);
+                F.plates += q; F.m2 += m2;
                 if (t) { F.g += t.gPlate * q; F.c += t.cPlate * q; } else F.missing.add((r.deco ? shortName(r.deco) : '') || r.sap);
+                const key = r.sap || r.deco, m = modelOf(r.sap, r.deco);
+                const v = prodBySap.get(key) || { sap: r.sap, name: m.model, caraM: m.caraM, plates: 0, m2: 0, c: 0, hasInk: !!t, days: new Set() };
+                v.plates += q; v.m2 += m2; if (t) v.c += t.cPlate * q; v.days.add(k); prodBySap.set(key, v);
             }));
-            // Diseño: planchas gastadas en pruebas de tono (merma de diseño)
-            const rows = allEntries().filter(x => x.date >= from && x.date <= to);
-            const D = { ok: 0, nok: 0, m2: 0, g: 0, c: 0 }, byModel = new Map();
-            rows.forEach(x => {
-                const ok = Number(x.ok) || 0, nok = Number(x.nok) || 0, it = findKeraFor({ sap: x.sap, deco: x.graphic }), t = it ? keraTotals(it) : null;
-                const m2 = (ok + nok) * (t ? t.m2 : DEFAULT_M2);
-                D.ok += ok; D.nok += nok; D.m2 += m2; if (t) { D.g += t.gPlate * (ok + nok); D.c += t.cPlate * (ok + nok); }
-                const key = x.sap || parseModel(x.graphic).model || '—', name = x.graphic || CODE_BY_SAP.get(x.sap) || '';
-                const m = byModel.get(key) || { name: parseModel(name).model || '—', caraM: parseModel(name).caraM, sap: x.sap, ok: 0, nok: 0, m2: 0, c: 0, hasInk: !!t };
-                m.ok += ok; m.nok += nok; m.m2 += m2; if (t) m.c += t.cPlate * (ok + nok); byModel.set(key, m);
+            // Diseño: planchas gastadas en pruebas de tono
+            const D = { plates: 0, m2: 0, g: 0, c: 0 }, testBySap = new Map();
+            allEntries().filter(x => x.date >= from && x.date <= to).forEach(x => {
+                const n = (Number(x.ok) || 0) + (Number(x.nok) || 0), it = findKeraFor({ sap: x.sap, deco: x.graphic }), t = it ? keraTotals(it) : null, m2 = n * (t ? t.m2 : DEFAULT_M2);
+                D.plates += n; D.m2 += m2; if (t) { D.g += t.gPlate * n; D.c += t.cPlate * n; }
+                const key = x.sap || x.graphic || '—', m = modelOf(x.sap, x.graphic);
+                const v = testBySap.get(key) || { sap: x.sap, name: m.model || '—', caraM: m.caraM, plates: 0, m2: 0, c: 0, hasInk: !!t, last: '' };
+                v.plates += n; v.m2 += m2; if (t) v.c += t.cPlate * n; if (x.date > v.last) v.last = x.date; testBySap.set(key, v);
             });
-            let html = `<div class="sum-section"><h3>🏭 Producción programada</h3><div class="sum-kpis" style="margin-top:6px">
-                <div class="sum-kpi"><b>${F.plates}</b><small>Planchas en el planning</small></div>
-                <div class="sum-kpi"><b>${nf(F.m2, 0)} m²</b><small>A producir</small></div>
-                <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta prevista<br>${nf(F.g / 1000, 1)} kg</small></div>
+            const bySap = map => [...map.values()].sort((a, b) => String(a.sap || '~').localeCompare(String(b.sap || '~')));
+            const name = v => `${e(v.name || '—')}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}`;
+            const ink = v => v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>';
+            let html = `<div class="sum-section"><h3>🏭 Producción (planning)</h3><div class="sum-kpis" style="margin-top:6px">
+                <div class="sum-kpi"><b>${F.plates}</b><small>Planchas</small></div>
+                <div class="sum-kpi"><b>${nf(F.m2, 0)} m²</b><small>Producción</small></div>
+                <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta<br>${nf(F.g / 1000, 1)} kg</small></div>
             </div>`;
-            if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309;margin-top:0">Sin ficha de consumo (no entran en la tinta prevista): ${[...F.missing].map(e).join(', ')}.</p>`;
-            const days = [...plannedDay.keys()].sort();
-            if (days.length && days.length <= 62) {
-                const max = Math.max(1, ...days.map(k => plannedDay.get(k)));
-                html += `<details><summary class="pl-hint" style="cursor:pointer">Planchas programadas por día</summary><div class="sum-chart">${days.map(k => `<div class="sum-col" title="${formatDate(k)}: ${plannedDay.get(k)} pl."><i class="ok" style="height:${plannedDay.get(k) / max * 100}%;background:#57534e"></i></div>`).join('')}</div>
-                    <div class="sum-days">${days.map(k => `<span>${formatDate(k).slice(0, 5)}</span>`).join('')}</div></details>`;
-            }
-            html += `</div><div class="sum-section"><h3>🎨 Diseño · pruebas de tono</h3>
-                <p class="pl-hint" style="margin-top:0">Planchas que gasta diseño retonificando modelos. Es un gasto aparte: no cuenta como producción.</p>
+            if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309;margin-top:0">Sin ficha de consumo (no entran en la tinta): ${[...F.missing].map(e).join(', ')}.</p>`;
+            html += `<details open><summary class="pl-hint" style="cursor:pointer">Por código SAP (${prodBySap.size})</summary><table class="sum-table"><thead><tr><th>SAP</th><th>Modelo</th><th>Días</th><th>Planchas</th><th>m²</th><th>Tinta</th></tr></thead><tbody>${
+                bySap(prodBySap).map(v => `<tr><td>${e(v.sap || '—')}</td><td>${name(v)}</td><td>${v.days.size}</td><td>${v.plates}</td><td>${nf(v.m2, 0)}</td><td>${ink(v)}</td></tr>`).join('') || '<tr><td colspan="6">Nada programado en este periodo.</td></tr>'}</tbody></table></details></div>`;
+            html += `<div class="sum-section"><h3>🎨 Diseño · pruebas de tono</h3>
+                <p class="pl-hint" style="margin-top:0">Planchas que gasta diseño retonificando modelos. Gasto aparte: no cuenta como producción.</p>
                 <div class="sum-kpis" style="margin-top:6px">
-                <div class="sum-kpi"><b>${D.ok + D.nok}</b><small>Planchas de prueba<br>${D.ok} OK · ${D.nok} No OK</small></div>
+                <div class="sum-kpi"><b>${D.plates}</b><small>Planchas de prueba</small></div>
                 <div class="sum-kpi"><b>${nf(D.m2, 0)} m²</b><small>Gastados en pruebas</small></div>
                 <div class="sum-kpi"><b>${nf(D.c, 0)} €</b><small>Tinta en pruebas<br>${nf(D.g / 1000, 1)} kg</small></div>
             </div>
-            <details><summary class="pl-hint" style="cursor:pointer">Por modelo (${byModel.size})</summary><table class="sum-table"><thead><tr><th>Modelo</th><th>SAP</th><th>Pruebas</th><th>OK</th><th>No OK</th><th>m²</th><th>Tinta €</th></tr></thead><tbody>${
-                [...byModel.values()].sort((a, b) => (b.ok + b.nok) - (a.ok + a.nok)).map(v =>
-                    `<tr><td>${e(v.name)}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}</td><td>${e(v.sap || '—')}</td><td>${v.ok + v.nok}</td><td>${v.ok}</td><td>${v.nok}</td><td>${nf(v.m2, 0)}</td><td>${v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>'}</td></tr>`).join('') || '<tr><td colspan="7">Sin pruebas en este periodo.</td></tr>'}</tbody></table></details></div>`;
+            <details><summary class="pl-hint" style="cursor:pointer">Por código SAP (${testBySap.size})</summary><table class="sum-table"><thead><tr><th>SAP</th><th>Modelo</th><th>Planchas de prueba</th><th>m²</th><th>Tinta</th><th>Última prueba</th></tr></thead><tbody>${
+                bySap(testBySap).map(v => `<tr><td>${e(v.sap || '—')}</td><td>${name(v)}</td><td>${v.plates}</td><td>${nf(v.m2, 0)}</td><td>${ink(v)}</td><td>${v.last ? formatDate(v.last) : ''}</td></tr>`).join('') || '<tr><td colspan="6">Sin pruebas en este periodo.</td></tr>'}</tbody></table></details></div>`;
             $('sumBody').innerHTML = html;
         }
         function printSummary() {
@@ -2317,18 +2319,35 @@
                     state: 'Cerrado', closed: a.closedAt ? formatDate(isoDate(new Date(a.closedAt))) : '' })));
             });
             if (!rows.length) { toast('Todavía no hay registros', true); return; }
-            rows.sort((a, b) => (a.x.date + (a.x.timeFrom || '')).localeCompare(b.x.date + (b.x.timeFrom || '')) || a.who.localeCompare(b.who));
+            rows.sort((a, b) => String(a.x.sap || a.h.sap).localeCompare(String(b.x.sap || b.h.sap)) || (a.x.date + (a.x.timeFrom || '')).localeCompare(b.x.date + (b.x.timeFrom || '')) || a.who.localeCompare(b.who));
             const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, num = n => String(Number(n) || 0).replace('.', ',');
-            const header = ['Fecha', 'Técnico', 'Nº de orden', 'Código SAP', 'Descripción', 'Cara M', 'Sustrato', 'Material', 'Hora inicio', 'Hora fin', 'Horas',
+            const header = ['Código SAP', 'Descripción', 'Cara M', 'Fecha', 'Técnico', 'Nº de orden', 'Sustrato', 'Material', 'Hora inicio', 'Hora fin', 'Horas',
                 'Planchas OK', 'Planchas No OK', 'Total planchas', 'Estatus', 'Comentarios', 'Estado del pedido', 'Fecha de cierre'];
             const lines = rows.map(({ x, who, h, state, closed }) => {
                 const sap = x.sap || h.sap, name = x.graphic || h.graphic || CODE_BY_SAP.get(sap) || '', m = parseModel(name);
-                return [formatDate(x.date), who, h.order, sap, m.model || name, m.caraM ? 'Sí' : '', h.substrate, h.material, x.timeFrom, x.timeTo,
+                return [sap, m.model || name, m.caraM ? 'Sí' : '', formatDate(x.date), who, h.order, h.substrate, h.material, x.timeFrom, x.timeTo,
                     (Number(x.hours) || 0).toFixed(2).replace('.', ','), num(x.ok), num(x.nok), num((Number(x.ok) || 0) + (Number(x.nok) || 0)), x.status, x.comment || '', state, closed].map(q).join(';');
             });
             const csv = '\uFEFF' + header.map(q).join(';') + '\n' + lines.join('\n');
-            downloadFile(`Historico_completo_${todayLocal()}.csv`, csv, 'text/csv;charset=utf-8');
+            downloadFile(`Pruebas_diseno_${todayLocal()}.csv`, csv, 'text/csv;charset=utf-8');
             toast(`Histórico descargado: ${rows.length} registros`);
+        }
+
+        function exportPlanningExcel() {
+            const [from, to] = summaryRange($('sumPeriod').value), DEFAULT_M2 = 2.704 * 1.204, rows = [];
+            readPlanning().rows.forEach(r => Object.entries(r.qty || {}).forEach(([k, q]) => {
+                q = Number(q) || 0; if (!q || k < from || k > to) return;
+                const it = findKeraFor(r), t = it ? keraTotals(it) : null, m = parseModel(r.deco || CODE_BY_SAP.get(r.sap) || '');
+                rows.push([r.sap || '', m.model, m.caraM ? 'Sí' : '', formatDate(k), isoWeek(new Date(k + 'T12:00:00')).week, r.tech ? displayDecorator(r.tech) : '', r.reton ? 'Sí' : 'No',
+                    q, (q * (t ? t.m2 : DEFAULT_M2)).toFixed(2).replace('.', ','), t ? (t.gPlate * q / 1000).toFixed(2).replace('.', ',') : '', t ? (t.cPlate * q).toFixed(2).replace('.', ',') : '', k]);
+            }));
+            if (!rows.length) { toast('No hay producción programada en ese periodo', true); return; }
+            rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || a[11].localeCompare(b[11]));
+            const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const header = ['Código SAP', 'Descripción', 'Cara M', 'Fecha', 'Semana', 'Técnico', 'Retonificado', 'Planchas', 'm²', 'Tinta kg', 'Tinta €'];
+            const csv = '\uFEFF' + header.map(q).join(';') + '\n' + rows.map(r => r.slice(0, 11).map(q).join(';')).join('\n');
+            downloadFile(`Produccion_planning_${from === '0000-00-00' ? 'todo' : from + '_' + to}.csv`, csv, 'text/csv;charset=utf-8');
+            toast(`Excel de producción descargado: ${rows.length} filas`);
         }
 
         function buildBackup() {
