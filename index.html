@@ -373,6 +373,15 @@
         .reports-list { display: grid; gap: 6px; margin-top: 6px; }
         .reports-list .btn { text-align: left; }
         .reports-list small { display: block; font-weight: 400; opacity: 0.75; font-size: 0.8rem; }
+        .tech-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+        .tech-pick button { border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-color); border-radius: 999px; padding: 7px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+        .tech-pick button.active { border-color: var(--tc, var(--primary-color)); background: var(--tc, var(--primary-color)); color: #fff; }
+        .tech-chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; color: #fff; background: var(--tc); white-space: nowrap; }
+        .tech-none { color: var(--muted); font-size: 0.75rem; }
+        .pl-load td { padding: 5px 4px !important; font-size: 0.78rem; }
+        .pl-load td.has { font-weight: 800; }
+        .pl-load-bar { display: block; height: 4px; border-radius: 2px; margin-top: 2px; background: var(--tc); }
+        .tj-mine { background: #2563eb; color: #fff; border-radius: 999px; padding: 1px 7px; font-size: 0.7rem; font-weight: 800; margin-left: 6px; }
         .pl-test { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 800; background: #fef3c7; color: #92400e; vertical-align: 1px; }
         .today-jobs { border: 2px dashed var(--border-color); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
         .today-jobs h3 { margin: 0 0 8px; font-size: 0.95rem; }
@@ -884,6 +893,7 @@
                         </div>
                     </div>
                     <div class="form-group"><label for="plEdDeco">Nombre</label><input type="text" id="plEdDeco"></div>
+                    <div class="form-group"><label>Técnico asignado</label><div class="tech-pick" id="plEdTech"></div></div>
                     <label>Planchas por día · <span id="plEdWeek"></span></label>
                     <div class="pl-days" id="plEdDays"></div>
                     <div class="pl-quick" id="plEdQuick"></div>
@@ -1238,8 +1248,9 @@
             const card = j => { const m = parseModel(j.r.deco), t = tests.get(j.r.sap);
                 const when = j.day === today ? 'hoy' : formatDate(j.day).slice(0, 5);
                 return `<button type="button" class="tj ${j.r.sap && j.r.sap === cur ? 'current' : ''}" onclick="pickPlanningJob('${escapeHtml(j.r.id)}')">
-                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>SAP ${escapeHtml(j.r.sap || '—')} · producción ${when}: ${j.q} pl.${j.r.reton ? ' · retonificado' : ''}</small></span>
+                    <span><b>${escapeHtml(m.model || j.r.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}${j.r.tech === currentDecorator ? '<span class="tj-mine">Asignado a ti</span>' : j.r.tech ? ' <small>· ' + escapeHtml(displayDecorator(j.r.tech)) + '</small>' : ''}<br><small>SAP ${escapeHtml(j.r.sap || '—')} · producción ${when}: ${j.q} pl.${j.r.reton ? ' · retonificado' : ''}</small></span>
                     <span class="tj-q">${t ? `🎨 ${t.ok + t.nok}<br><small>pl. de prueba</small>` : '<small>sin pruebas</small>'}</span></button>`; };
+            jobs.sort((a, b) => (b.r.tech === currentDecorator) - (a.r.tech === currentDecorator) || a.day.localeCompare(b.day));
             const todays = jobs.filter(j => j.day === today), later = jobs.filter(j => j.day !== today);
             box.innerHTML = `<h3>📅 Modelos del planning</h3>` +
                 (todays.length ? `<div class="tj-list">${todays.map(card).join('')}</div>` : '<p class="pl-hint" style="margin:0">Hoy producción no tiene nada programado.</p>') +
@@ -1579,7 +1590,7 @@
             const cellClass = (r, k) => Number((r.qty || {})[k]) > 0 ? 'filled' : '';
             const cellText = (r, k) => Number((r.qty || {})[k]) > 0 ? String(r.qty[k]) : '＋';
             const testBadge = r => { const t = tests.get(r.sap); return t ? ` <span class="pl-test" title="Retonificado por ${escapeHtml([...t.who].join(', '))} · última prueba ${formatDate(t.last)}">🎨 ${t.ok + t.nok} pl. prueba</span>` : ''; };
-            let html = `<thead><tr><th>Retonif.</th><th>SAP</th><th>Programación decoración</th>${days.map((d, i) =>
+            let html = `<thead><tr><th>Retonif.</th><th>Técnico</th><th>SAP</th><th>Programación decoración</th>${days.map((d, i) =>
                 `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}</small></th>`).join('')}</tr></thead><tbody>`;
             // Orden tipo Gantt: primero lo que tiene faena esta semana, por el primer día
             const firstDay = r => { const j = keys.findIndex(k => Number((r.qty || {})[k]) > 0); return j < 0 ? 99 : j; };
@@ -1588,22 +1599,43 @@
             order.forEach(({ r, i, f }) => {
                 if (f === 99) {
                     if (only) return;
-                    if (!sepDone) { html += `<tr class="pl-sep"><td colspan="${3 + keys.length}">Sin faena esta semana</td></tr>`; sepDone = true; }
+                    if (!sepDone) { html += `<tr class="pl-sep"><td colspan="${4 + keys.length}">Sin faena esta semana</td></tr>`; sepDone = true; }
                 }
                 const q = r.qty || {};
                 html += `<tr class="${f === 99 ? 'pl-idle' : ''}">
                     <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
+                    <td><button type="button" class="pl-reton" title="Asignar técnico" onclick="openPlanningEditor(${i})">${techChip(r.tech)}</button></td>
                     <td>${e(r.sap || '—')}</td>
                     <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return (r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre') + testBadge(r); })()}</button></td>
                     ${keys.map(k => `<td class="${cellClass(r, k)}" data-row="${i}" data-k="${k}"><button type="button" class="pl-cell" onclick="if (!plJustDragged) openPlanningEditor(${i}, '${k}')">${cellText(r, k)}</button></td>`).join('')}
                 </tr>`;
             });
-            if (!p.rows.length) html += `<tr><td colspan="${3 + keys.length}" style="padding:16px">Todavía no hay producción. Pulsa «＋ Añadir producción».</td></tr>`;
-            html += `</tbody><tfoot><tr class="pl-totals"><td colspan="3" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr></tfoot>`;
+            if (!p.rows.length) html += `<tr><td colspan="${4 + keys.length}" style="padding:16px">Todavía no hay producción. Pulsa «＋ Añadir producción».</td></tr>`;
+            // Carga de trabajo por técnico (planchas asignadas cada día)
+            const load = TECHS.map(([d]) => keys.map(k => p.rows.reduce((a, r) => a + (r.tech === d ? Number((r.qty || {})[k]) || 0 : 0), 0)));
+            const maxLoad = Math.max(1, ...load.flat());
+            const unassigned = keys.map(k => p.rows.reduce((a, r) => a + (!r.tech ? Number((r.qty || {})[k]) || 0 : 0), 0));
+            html += `</tbody><tfoot><tr class="pl-totals"><td colspan="4" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr>
+                <tr class="pl-sep"><td colspan="${4 + keys.length}">Carga por técnico</td></tr>
+                ${TECHS.map(([d], ti) => `<tr class="pl-load"><td colspan="4" style="text-align:right">${techChip(d)} <small>${load[ti].reduce((a, b) => a + b, 0)} pl.</small></td>${load[ti].map(v =>
+                    `<td class="${v ? 'has' : ''}">${v || ''}${v ? `<span class="pl-load-bar" style="--tc:${techColor(d)};width:${Math.max(12, v / maxLoad * 100)}%"></span>` : ''}</td>`).join('')}</tr>`).join('')}
+                ${unassigned.some(Boolean) ? `<tr class="pl-load"><td colspan="4" style="text-align:right"><span class="tech-none">Sin asignar</span></td>${unassigned.map(v => `<td style="color:#b45309">${v || ''}</td>`).join('')}</tr>` : ''}
+            </tfoot>`;
             $('plTable').innerHTML = html;
             renderPlanningForecast(p, keys);
         }
 
+
+        // ---------- Técnicos asignables en el planning ----------
+        const TECHS = [['Decorador 1', '#0f766e'], ['Decorador 2', '#2563eb'], ['Decorador 3', '#b45309']];
+        const techColor = dec => (TECHS.find(t => t[0] === dec) || [])[1] || '#64748b';
+        const techChip = dec => dec ? `<span class="tech-chip" style="--tc:${techColor(dec)}">${escapeHtml(displayDecorator(dec))}</span>` : '<span class="tech-none">—</span>';
+        let edTech = '';
+        function setEdTech(dec) {
+            edTech = dec;
+            $('plEdTech').innerHTML = [['', 'Sin asignar'], ...TECHS.map(([d]) => [d, displayDecorator(d)])].map(([d, n]) =>
+                `<button type="button" class="${d === edTech ? 'active' : ''}" style="--tc:${d ? techColor(d) : '#64748b'}" onclick="setEdTech('${d}')">${escapeHtml(n)}</button>`).join('');
+        }
         const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         let edIndex = -1, edReton = false;
         function setEdReton(v) { edReton = v; $('plEdSi').classList.toggle('active', v); $('plEdNo').classList.toggle('active', !v); }
@@ -1625,7 +1657,7 @@
                     .map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
             $('plEdTitle').textContent = i >= 0 ? 'Editar producción' : 'Añadir producción';
             $('plEdSearch').value = ''; $('plEdSap').value = r.sap || ''; $('plEdDeco').value = r.deco ? shortName(r.deco) : '';
-            setEdReton(!!r.reton);
+            setEdReton(!!r.reton); setEdTech(r.tech || '');
             $('plEdDelete').style.visibility = i >= 0 ? 'visible' : 'hidden';
             const days = weekDays(), keys = days.map(isoDate), today = todayLocal();
             $('plEdWeek').textContent = `semana ${isoWeek(planningMonday).week}`;
@@ -1655,7 +1687,7 @@
             const p = readPlanning();
             let r = edIndex >= 0 ? p.rows[edIndex] : null;
             if (!r) { r = { id: 'r' + Date.now().toString(36), qty: {} }; p.rows.push(r); }
-            r.sap = sap; r.deco = deco; r.reton = edReton; r.qty = r.qty || {};
+            r.sap = sap; r.deco = deco; r.reton = edReton; r.tech = edTech; r.qty = r.qty || {};
             document.querySelectorAll('#plEdDays input').forEach(inp => {
                 const n = parseInt(inp.value, 10);
                 if (n > 0) r.qty[inp.dataset.k] = n; else delete r.qty[inp.dataset.k];
