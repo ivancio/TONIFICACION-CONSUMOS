@@ -88,6 +88,13 @@
         .home-kicker { color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
         .home-cards { display: grid; gap: 10px; margin-top: 22px; }
         .home-section { margin-top: 22px; }
+        .area-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 20px; padding: 5px; border-radius: 14px; background: var(--soft-bg); }
+        .area-tab { border: 0; border-radius: 10px; padding: 14px 8px; font: inherit; font-size: 1.05rem; font-weight: 800; background: transparent; color: var(--muted); cursor: pointer; }
+        .area-tab.active { background: var(--card-bg); color: var(--text-color); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+        .home-section.area { margin-top: 14px; }
+        .home-section.area[hidden] { display: none; }
+        .more-opts { margin-top: 22px; }
+        .more-opts summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
         .home-section h2 { font-size: 1.05rem; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; color: var(--text-color); }
         .home-section .planning-btn { margin-bottom: 10px; }
         .step-n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--primary-color); color: var(--card-bg); font-size: 0.8rem; flex: none; }
@@ -515,9 +522,13 @@
                 <h1>Tonificación Consumos</h1>
             </header>
 
-            <section class="home-section">
-                <h2><span class="step-n">1</span> Pruebas de tono en línea</h2>
-                <p class="section-help">Diseño echa planchas de prueba para ajustar el tono antes de que se produzca en masa. <b>Entra con tu nombre</b> para apuntar tus pruebas.</p>
+            <div class="area-tabs" role="tablist">
+                <button type="button" role="tab" class="area-tab" data-area="diseno" onclick="setArea('diseno')">🎨 Diseño</button>
+                <button type="button" role="tab" class="area-tab" data-area="produccion" onclick="setArea('produccion')">🏭 Producción</button>
+            </div>
+
+            <section class="home-section area" data-area="diseno">
+                <p class="section-help">Pulsa tu nombre para apuntar tus pruebas de tono.</p>
                 <div class="home-cards" style="margin-top:10px">
                 <button type="button" class="card-selector" onclick="selectDecorator('Decorador 1')">
                     <div class="card-person">
@@ -550,24 +561,20 @@
                     <span class="card-arrow" aria-hidden="true">›</span>
                 </button>
                 </div>
+                <button type="button" class="link-btn" style="margin-top:10px" onclick="exportAllHistory()">📥 Descargar todas las pruebas en Excel</button>
             </section>
 
-            <section class="home-section">
-                <h2><span class="step-n">2</span> Producción y costes</h2>
-                <button type="button" class="planning-btn sum-btn" onclick="openSummary()">
-                    <span>📊 Resumen de producción<small>Producción por código SAP, tinta, pruebas de diseño y Excel</small></span>
-                    <span aria-hidden="true">›</span>
-                </button>
-                <button type="button" class="planning-btn kera-btn" onclick="openKera()">
-                    <span>🎨 Consumos de tinta (KERAcost)<small id="keraSummary">Fichas de consumo por modelo</small><small>Lo gestiona Augusto</small></span>
-                    <span aria-hidden="true">›</span>
-                </button>
-            </section>
-
-            <section class="home-section">
-                <h2><span class="step-n">3</span> Planificación</h2>
+            <section class="home-section area" data-area="produccion">
                 <button type="button" class="planning-btn" onclick="openPlanning()">
-                    <span>📅 Planning semanal<small id="planningSummary">Faena programada de la semana</small><small>Lo editan Basilio, Augusto y Dirección</small></span>
+                    <span>📅 Planning semanal<small id="planningSummary">Faena programada de la semana</small></span>
+                    <span aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="planning-btn" onclick="openSummary()">
+                    <span>📊 Resumen de producción<small>Planchas, m² y tinta por código SAP</small></span>
+                    <span aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="planning-btn" onclick="openKera()">
+                    <span>🎨 Consumos de tinta<small id="keraSummary">Fichas de consumo por modelo</small></span>
                     <span aria-hidden="true">›</span>
                 </button>
             </section>
@@ -577,12 +584,15 @@
                 <span aria-hidden="true">›</span>
             </button>
 
-            <div class="home-tools">
-                <button type="button" class="btn btn-secondary btn-small" onclick="exportBackup()" title="Descargar copia de seguridad">↓ Copia</button>
-                <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('importFile').click()" title="Restaurar una copia de seguridad">↑ Restaurar</button>
-                <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
-                <button type="button" class="btn btn-secondary btn-small" onclick="openSettings()">☁ Nube</button>
-            </div>
+            <details class="more-opts">
+                <summary>⚙️ Más opciones</summary>
+                <div class="home-tools">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="exportBackup()" title="Descargar copia de seguridad">↓ Copia</button>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('importFile').click()" title="Restaurar una copia de seguridad">↑ Restaurar</button>
+                    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="openSettings()">☁ Nube</button>
+                </div>
+            </details>
             <button type="button" class="btn btn-primary install-app" id="installApp" hidden>Instalar app</button>
             <div id="syncBadge" class="sync-badge">☁️ Comprobando sincronización</div>
 
@@ -790,8 +800,7 @@
             </div>
             <div id="sumBody"></div>
             <div class="pl-actions no-print" style="margin-top:16px">
-                <button type="button" class="btn btn-secondary" onclick="exportPlanningExcel()">📥 Excel de producción (planning)<br><small style="font-weight:400;opacity:.75">Por código SAP y fecha · periodo elegido</small></button>
-                <button type="button" class="btn btn-secondary" onclick="exportAllHistory()">📥 Excel de pruebas de diseño<br><small style="font-weight:400;opacity:.75">Todas las sesiones, por código SAP y fecha</small></button>
+                <button type="button" class="btn btn-secondary" onclick="exportPlanningExcel()">📥 Descargar en Excel</button>
             </div>
         </div>
 
@@ -1333,7 +1342,7 @@
             const bySap = map => [...map.values()].sort((a, b) => String(a.sap || '~').localeCompare(String(b.sap || '~')));
             const name = v => `${e(v.name || '—')}${v.caraM ? ' <span class="pl-m">Cara M</span>' : ''}`;
             const ink = v => v.hasInk ? nf(v.c, 0) + ' €' : '<small>sin ficha</small>';
-            let html = `<div class="sum-section"><h3>🏭 Producción (planning)</h3><div class="sum-kpis" style="margin-top:6px">
+            let html = `<div class="sum-section"><h3>🏭 Producción programada</h3><div class="sum-kpis" style="margin-top:6px">
                 <div class="sum-kpi"><b>${F.plates}</b><small>Planchas</small></div>
                 <div class="sum-kpi"><b>${nf(F.m2, 0)} m²</b><small>Producción</small></div>
                 <div class="sum-kpi"><b>${nf(F.c, 0)} €</b><small>Tinta<br>${nf(F.g / 1000, 1)} kg</small></div>
@@ -1341,15 +1350,6 @@
             if (F.missing.size) html += `<p class="pl-hint" style="color:#b45309;margin-top:0">Sin ficha de consumo (no entran en la tinta): ${[...F.missing].map(e).join(', ')}.</p>`;
             html += `<details open><summary class="pl-hint" style="cursor:pointer">Por código SAP (${prodBySap.size})</summary><table class="sum-table"><thead><tr><th>SAP</th><th>Modelo</th><th>Días</th><th>Planchas</th><th>m²</th><th>Tinta</th></tr></thead><tbody>${
                 bySap(prodBySap).map(v => `<tr><td>${e(v.sap || '—')}</td><td>${name(v)}</td><td>${v.days.size}</td><td>${v.plates}</td><td>${nf(v.m2, 0)}</td><td>${ink(v)}</td></tr>`).join('') || '<tr><td colspan="6">Nada programado en este periodo.</td></tr>'}</tbody></table></details></div>`;
-            html += `<div class="sum-section"><h3>🎨 Diseño · pruebas de tono</h3>
-                <p class="pl-hint" style="margin-top:0">Planchas que gasta diseño retonificando modelos. Gasto aparte: no cuenta como producción.</p>
-                <div class="sum-kpis" style="margin-top:6px">
-                <div class="sum-kpi"><b>${D.plates}</b><small>Planchas de prueba</small></div>
-                <div class="sum-kpi"><b>${nf(D.m2, 0)} m²</b><small>Gastados en pruebas</small></div>
-                <div class="sum-kpi"><b>${nf(D.c, 0)} €</b><small>Tinta en pruebas<br>${nf(D.g / 1000, 1)} kg</small></div>
-            </div>
-            <details><summary class="pl-hint" style="cursor:pointer">Por código SAP (${testBySap.size})</summary><table class="sum-table"><thead><tr><th>SAP</th><th>Modelo</th><th>Planchas de prueba</th><th>m²</th><th>Tinta</th><th>Última prueba</th></tr></thead><tbody>${
-                bySap(testBySap).map(v => `<tr><td>${e(v.sap || '—')}</td><td>${name(v)}</td><td>${v.plates}</td><td>${nf(v.m2, 0)}</td><td>${ink(v)}</td><td>${v.last ? formatDate(v.last) : ''}</td></tr>`).join('') || '<tr><td colspan="6">Sin pruebas en este periodo.</td></tr>'}</tbody></table></details></div>`;
             $('sumBody').innerHTML = html;
         }
         function printSummary() {
@@ -1929,7 +1929,7 @@
         });
 
         function updateHomeStatuses() {
-            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); }
+            if (!$('codesSap').options.length) { fillCodeLists(); initPlanningEditor(); initKera(); initTono(); let a = 'diseno'; try { a = localStorage.getItem('ui_area') || 'diseno'; } catch (e) {} setArea(a); }
             updateKeraSummary();
             updatePlanningSummary();
             Object.entries(DECORATORS).forEach(([dec, prefix], i) => {
@@ -1984,6 +1984,12 @@
             $('saveBtn').innerText = '💾 GUARDAR REGISTRO DE HOY';
             $('commentsBox').open = false; toggleDateField(false); syncSessionUI();
             updateHoursPreview();
+        }
+
+        function setArea(area) {
+            try { localStorage.setItem('ui_area', area); } catch (e) {}
+            document.querySelectorAll('.area-tab').forEach(b => b.classList.toggle('active', b.dataset.area === area));
+            document.querySelectorAll('.home-section.area').forEach(sec => { sec.hidden = sec.dataset.area !== area; });
         }
 
         function goHome() {
