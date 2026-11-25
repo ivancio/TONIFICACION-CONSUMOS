@@ -462,7 +462,14 @@
         .pl-table td.filled { background: #57534e; }
         .pl-table td.filled input { color: #fff; font-weight: 700; }
         .pl-reton { border: 0; background: transparent; font: inherit; font-weight: 700; padding: 7px 6px; cursor: pointer; width: 100%; }
-        .pl-reton.si { background: #d6d3d1; }
+        .pl-table td.reton-cell { padding: 0; }
+        .pl-table td.reton-si { background: #16a34a; }
+        .pl-table td.reton-no { background: #dc2626; }
+        .pl-table td.reton-cell .pl-reton { color: #fff !important; font-weight: 800; letter-spacing: .3px; }
+        .pl-table td.reton-cell:hover { filter: brightness(1.1); }
+        #plEdNo.active { background: #dc2626; border-color: #dc2626; color: #fff; }
+        #plEdSi.active { background: #16a34a; border-color: #16a34a; color: #fff; }
+        @media print { .pl-table td.reton-si, .pl-table td.reton-no { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         .pl-del { border: 0; background: transparent; cursor: pointer; padding: 6px; font-size: 0.9rem; }
         .pl-table td, .pl-reton, .pl-name, .pl-quick button, .pl-day input { color: var(--text-color); }
         .pl-cell { width: 100%; min-height: 34px; border: 0; background: transparent; font: inherit; font-weight: 700; cursor: pointer; color: transparent; }
@@ -481,7 +488,7 @@
             .pl-table td.filled { background: #f59e0b; }
             td.filled .pl-cell, td.filled .pl-cell:hover { color: #111; }
             td.filled .pl-cell:hover { background: #fbbf24; }
-            .pl-reton.si { background: #475569; }
+
             .pl-table th.today { background: #b45309; color: #fff; }
         }
         .pl-name:hover { background: var(--soft-bg); }
@@ -1643,7 +1650,7 @@
                 }
                 const q = r.qty || {};
                 html += `<tr class="${f === 99 ? 'pl-idle' : ''}">
-                    <td><button type="button" class="pl-reton ${r.reton ? 'si' : ''}" onclick="togglePlanningReton(${i})">${r.reton ? 'SÍ' : 'NO'}</button></td>
+                    <td class="reton-cell ${r.reton ? 'reton-si' : 'reton-no'}"><button type="button" class="pl-reton" title="Tocar para cambiar" onclick="togglePlanningReton(${i})">${r.reton ? '✓ SÍ' : '✗ NO'}</button></td>
                     <td><button type="button" class="pl-reton" title="Asignar técnico" onclick="openPlanningEditor(${i})">${techChip(r.tech)}</button></td>
                     <td>${e(r.sap || '—')}</td>
                     <td><button type="button" class="pl-name" onclick="openPlanningEditor(${i})">${(() => { const m = parseModel(r.deco); return (r.deco ? e(m.model) + (m.caraM ? ' <span class="pl-m">Cara M</span>' : '') : 'Sin nombre') + testBadge(r); })()}</button></td>
