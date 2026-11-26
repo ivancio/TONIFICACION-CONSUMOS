@@ -529,7 +529,14 @@
         .pl-group.prod td { background: var(--soft-bg-2); color: var(--text-color); }
         .pl-group.dis td { background: #ede9fe; color: #4c1d95; }
         .pl-table td.enc-state { font-size: 0.74rem; font-weight: 800; color: #6d28d9; white-space: nowrap; }
-        .pl-table td.enc-state.ok { color: #15803d; } .pl-table td.enc-state.late { color: #dc2626; }
+        .pl-table td.enc-state.ok { color: #15803d; }
+        .req-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+        .req-b { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px; border-radius: 999px; font-size: 0.66rem; font-weight: 800; line-height: 1.5; border: 1px solid transparent; white-space: nowrap; font-family: inherit; }
+        button.req-b { cursor: pointer; }
+        button.req-b:hover { filter: brightness(0.95); outline: 2px solid rgba(0,0,0,.12); }
+        .req-b.si { background: #dcfce7; color: #166534; border-color: #86efac; }
+        .req-b.no { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+        .enc .req-row { margin-top: 3px; } .pl-table td.enc-state.late { color: #dc2626; }
         .pl-table td.enc-day { background: #7c3aed; } .pl-table td.enc-day.ok { background: #16a34a; }
         .pl-table td.enc-day .pl-cell { color: #fff; }
         .pl-name small { display: block; }
@@ -1452,7 +1459,8 @@
         function openChecklist(intro, then) {
             afterClose = then || null;
             $('closeIntro').textContent = intro || `Pedido de ${parseModel($('graphicName').value || CODE_BY_SAP.get($('sapField').value) || '').model || $('graphicName').value || 'este modelo'}. Se guardará en «Pedidos anteriores».`;
-            document.querySelectorAll('#chkList input').forEach(i => { i.checked = false; });
+            const pre = encChecksFor($('sapField').value.trim());
+            document.querySelectorAll('#chkList input').forEach(i => { i.checked = !!pre[i.dataset.chk]; });
             updateChecklist();
             $('closeModal').classList.add('open');
         }
@@ -1460,6 +1468,7 @@
         function updateChecklist() {
             const miss = [...document.querySelectorAll('#chkList input')].filter(i => !i.checked).map(i => CHECKS.find(c => c[0] === i.dataset.chk)[1]);
             $('chkConfirm').disabled = miss.length > 0;
+            if ($('closeModal').classList.contains('open')) { const c = {}; document.querySelectorAll('#chkList input').forEach(i => { c[i.dataset.chk] = i.checked; }); setEncChecks($('sapField').value.trim(), c); }
             $('chkMissing').textContent = miss.length ? `Falta: ${miss.join(', ')}. Solo se puede cerrar con todo en SÍ.` : '';
         }
         function confirmChecklist() {
@@ -1467,12 +1476,39 @@
             document.querySelectorAll('#chkList input').forEach(i => { checks[i.dataset.chk] = i.checked; if (!i.checked) ok = false; });
             if (!ok) { updateChecklist(); return; }
             checks.at = new Date().toISOString(); checks.by = currentDecorator;
+            setEncChecks($('sapField').value.trim(), { tonificado: true, caras: true, pegatina: true });
             const then = afterClose; $('closeModal').classList.remove('open'); afterClose = null;
             clearHistory(true, checks);
             toast('📦 Pedido cerrado con todo confirmado');
             if (then) then();
         }
         const checksLine = c => c && c.tonificado ? `<span class="chk-done">${c.tono ? '✓ Tono · ' : ''}✓ Tonificado · ✓ Todas las caras · ✓ Pegatina con cuño</span>` : '';
+
+        // Insignias de requisitos para cerrar la gráfica (verde = SÍ, rojo = falta)
+        const REQS = [['tonificado', 'Tonificado', 'Tonificado'], ['caras', 'Caras', 'Todas las caras revisadas'], ['pegatina', 'Pegatina D.T.', 'Pegatina de patrón con el cuño de dirección técnica']];
+        function encBadges(x, clickable) {
+            const c = x.checks || {};
+            return `<span class="req-row">${REQS.map(([k, short, long]) => {
+                const on = !!c[k], tip = `${long}: ${on ? 'SÍ' : 'falta'}${clickable ? ' · tocar para cambiar' : ''}`;
+                return clickable
+                    ? `<button type="button" class="req-b ${on ? 'si' : 'no'}" title="${tip}" onclick="event.stopPropagation(); toggleEncCheck('${escapeHtml(x.id)}', '${k}')">${on ? '✓' : '✗'} ${short}</button>`
+                    : `<span class="req-b ${on ? 'si' : 'no'}" title="${tip}">${on ? '✓' : '✗'} ${short}</span>`;
+            }).join('')}</span>`;
+        }
+        function toggleEncCheck(id, k) {
+            const t = readEnc(), x = t.items.find(i => i.id === id); if (!x) return;
+            x.checks = { ...(x.checks || {}), [k]: !(x.checks || {})[k] };
+            writeEnc(t); renderEncargos(); renderTodayJobs(); if ($('planningView').style.display === 'block') renderPlanning();
+            toast(`${REQS.find(r => r[0] === k)[2]}: ${x.checks[k] ? 'SÍ ✓' : 'pendiente'}`);
+        }
+        // Las comprobaciones del encargo de este SAP (para rellenar el cierre del pedido)
+        const encChecksFor = sap => { const it = readEnc().items.filter(x => sap && x.sap === sap); return (it.find(x => !x.done && (x.techs || []).includes(currentDecorator)) || it.find(x => !x.done) || it[0] || {}).checks || {}; };
+        function setEncChecks(sap, checks) {
+            if (!sap) return;
+            const t = readEnc(); let n = 0;
+            t.items.forEach(x => { if (x.sap === sap && !x.done) { x.checks = { ...(x.checks || {}), ...checks }; n++; } });
+            if (n) writeEnc(t);
+        }
 
         // ---------- Encargos de diseño (separados de la producción) ----------
         const ENC_KEY = 'encargos';
@@ -1527,7 +1563,7 @@
             const due = x.due ? (x.due === today ? 'para hoy' : (late ? '⚠️ era para el ' : 'para el ') + formatDate(x.due).slice(0, 5)) : 'sin fecha';
             const click = opts.pick ? `pickEncargo('${e(x.id)}')` : `openEncargoEditor('${e(x.id)}')`;
             return `<button type="button" class="enc ${x.done ? 'done' : late ? 'late' : ''} ${opts.current ? 'current' : ''}" onclick="${click}">
-                <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.of ? ' · OF ' + e(x.of) : ''}${x.material ? ' · ' + matText(x.material) : ''} · ${due}</small></span>
+                <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.of ? ' · OF ' + e(x.of) : ''}${x.material ? ' · ' + matText(x.material) : ''} · ${due}</small>${encBadges(x, false)}</span>
                 <span class="who">${opts.pick ? (t ? `<small>🎨 ${t.ok + t.nok} pl. de prueba</small>` : '<small>sin pruebas</small>') : (x.techs || []).map(techChip).join('')}</span>
                 ${x.notes || (opts.pick && (x.techs || []).length > 1) ? `<span class="note">${x.notes ? '📝 ' + e(x.notes) : ''}${opts.pick && x.techs.length > 1 ? (x.notes ? ' · ' : '') + 'con ' + e(x.techs.filter(d => d !== currentDecorator).map(displayDecorator).join(', ')) : ''}</span>` : ''}
             </button>`;
@@ -1576,7 +1612,7 @@
         function completeEncargosFor(sap) {
             if (!sap) return;
             const t = readEnc(); let n = 0;
-            t.items.forEach(x => { if (!x.done && x.sap === sap && (x.techs || []).includes(currentDecorator)) { x.done = true; x.doneAt = new Date().toISOString(); x.doneBy = currentDecorator; n++; } });
+            t.items.forEach(x => { if (!x.done && x.sap === sap && (x.techs || []).includes(currentDecorator)) { x.done = true; x.doneAt = new Date().toISOString(); x.doneBy = currentDecorator; x.checks = { ...(x.checks || {}), tonificado: true }; n++; } });
             if (n) writeEnc(t);
             const p = readPlanning(); let m = 0;
             p.rows.forEach(r => { if (r.sap === sap && needsTono(r) && !r.reton) { r.reton = true; m++; } });
@@ -1979,7 +2015,7 @@
                 const m = parseModel(x.deco || CODE_BY_SAP.get(x.sap) || ''), late = !x.done && x.due && x.due < today;
                 const dayIdx = keys.indexOf(x.due);
                 html += `<tr>
-                    <td class="enc-state ${x.done ? 'ok' : late ? 'late' : ''}">${x.done ? '✓ Hecho' : late ? '⚠️ Atrasado' : '⏳ Pendiente'}</td>
+                    <td class="enc-state ${x.done ? 'ok' : late ? 'late' : ''}">${x.done ? '✓ Hecho' : late ? '⚠️ Atrasado' : '⏳ Pendiente'}${encBadges(x, true)}</td>
                     <td>${e(x.sap || '—')}${x.of ? `<br><small class="pl-of">OF ${e(x.of)}</small>` : ''}</td>
                     <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${(x.techs || []).map(techChip).join(' ')}${(x.substrate || x.material) ? `<small>${e([subText(x.substrate), matText(x.material)].filter(Boolean).join(' · '))}</small>` : ''}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
                     ${keys.map((k, j) => `<td class="${j === dayIdx ? 'enc-day' + (x.done ? ' ok' : '') : ''}">${j === dayIdx ? `<button type="button" class="pl-cell" onclick="openEncargoEditor('${e(x.id)}')">${x.done ? '✓' : '🎨'}</button>` : (dayIdx < 0 && j === 0 && !x.due ? '<small class="pl-of">sin fecha</small>' : '')}</td>`).join('')}
