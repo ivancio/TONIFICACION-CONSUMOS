@@ -544,7 +544,8 @@
         .req-b.no { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
         .enc .req-row { margin-top: 3px; } .pl-table td.enc-state.late { color: #dc2626; }
         .pl-table td.enc-day { background: #7c3aed; } .pl-table td.enc-day.ok { background: #16a34a; }
-        .pl-table td.enc-day .pl-cell { color: #fff; }
+        .pl-table td.enc-day .pl-cell { color: #fff; cursor: grab; touch-action: none; user-select: none; }
+        .pl-table th.wkend { color: #b91c1c; }
         .pl-name small { display: block; }
         .pl-table td.reton-na { background: var(--soft-bg); color: var(--muted); font-weight: 700; }
         .tech-prod { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; background: var(--soft-bg); color: var(--muted); border: 1px solid var(--border-color); white-space: nowrap; }
@@ -1409,7 +1410,7 @@
             }));
             const e = escapeHtml;
             $('plForecastHead').innerHTML = `🎨 Tinta prevista: <b>${nf(c, 0)} €</b> · ${nf(g / 1000, 1)} kg${missing.size ? ` <small style="color:#b45309">· faltan ${missing.size} fichas</small>` : ''}`;
-            $('plForecast').innerHTML = (c ? `<small>${keys.map((k, j) => perDay[j] ? `${DAY_NAMES[j]}: ${nf(perDay[j], 0)} €` : '').filter(Boolean).join(' · ')}</small>` : '') +
+            $('plForecast').innerHTML = (c ? `<small>${keys.map((k, j) => perDay[j] ? `${dayName(k)}: ${nf(perDay[j], 0)} €` : '').filter(Boolean).join(' · ')}</small>` : '') +
                 (missing.size ? `<br><small style="color:#b45309">Sin ficha de consumo: ${[...missing].map(e).join(', ')}. Añádelas en «Consumos de tinta».</small>` : '');
         }
 
@@ -1473,22 +1474,25 @@
         function closeChecklist() { $('closeModal').classList.remove('open'); afterClose = null; }
         function updateChecklist() {
             const miss = [...document.querySelectorAll('#chkList input')].filter(i => !i.checked).map(i => CHECKS.find(c => c[0] === i.dataset.chk)[1]);
-            $('chkConfirm').disabled = miss.length > 0;
+            $('chkConfirm').disabled = false;
+            $('chkConfirm').textContent = miss.length ? '📦 Cerrar igualmente' : '📦 Cerrar pedido';
+            $('chkConfirm').className = 'btn btn-small ' + (miss.length ? 'btn-secondary' : 'btn-danger');
             if ($('closeModal').classList.contains('open')) { const c = {}; document.querySelectorAll('#chkList input').forEach(i => { c[i.dataset.chk] = i.checked; }); setEncChecks($('sapField').value.trim(), c); }
-            $('chkMissing').textContent = miss.length ? `Falta: ${miss.join(', ')}. Solo se puede cerrar con todo en SÍ.` : '';
+            $('chkMissing').textContent = miss.length ? `Falta: ${miss.join(', ')}. Puedes cerrarlo igualmente; en el planning quedará en rojo lo que falte.` : '';
         }
         function confirmChecklist() {
             const checks = {}; let ok = true;
             document.querySelectorAll('#chkList input').forEach(i => { checks[i.dataset.chk] = i.checked; if (!i.checked) ok = false; });
-            if (!ok) { updateChecklist(); return; }
             checks.at = new Date().toISOString(); checks.by = currentDecorator;
-            setEncChecks($('sapField').value.trim(), { tonificado: true, caras: true, pegatina: true });
+            setEncChecks($('sapField').value.trim(), { tonificado: checks.tonificado, caras: checks.caras, pegatina: checks.pegatina });
             const then = afterClose; $('closeModal').classList.remove('open'); afterClose = null;
             clearHistory(true, checks);
-            toast('📦 Pedido cerrado con todo confirmado');
+            toast(ok ? '📦 Pedido cerrado con todo confirmado' : '📦 Pedido cerrado · faltan requisitos (en rojo en el planning)');
             if (then) then();
         }
-        const checksLine = c => c && c.tonificado ? `<span class="chk-done">${c.tono ? '✓ Tono · ' : ''}✓ Tonificado · ✓ Todas las caras · ✓ Pegatina con cuño</span>` : '';
+        const checksLine = c => c && c.at ? (c.tonificado && c.caras && c.pegatina
+            ? `<span class="chk-done">✓ Tonificado · ✓ Todas las caras · ✓ Pegatina con cuño</span>`
+            : `<span class="chk-done" style="color:#b91c1c">${[['tonificado', 'Tonificado'], ['caras', 'Todas las caras'], ['pegatina', 'Pegatina con cuño']].map(([k, n]) => (c[k] ? '✓ ' : '✗ ') + n).join(' · ')}</span>`) : '';
 
         // Insignias de requisitos para cerrar la gráfica (verde = SÍ, rojo = falta)
         const REQ_ICON = {
@@ -1540,7 +1544,7 @@
                 $('codesSearch').innerHTML = UNDORA_CODES.map(([c, n]) => [c, shortName(n)]).sort((a, b) => a[1].localeCompare(b[1])).map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
             $('encTitle').textContent = id ? 'Encargo de diseño' : 'Nuevo encargo de diseño';
             $('encSearch').value = ''; $('encSap').value = x.sap || ''; $('encOf').value = x.of || '';
-            $('encDue').value = x.due || (weekMonday ? (() => { const t = todayLocal(), d = new Date(weekMonday); const k = isoDate(d); return t >= k ? t : k; })() : '');
+            $('encDue').value = x.due || (weekMonday ? (() => { const t = todayLocal(), d = new Date(weekMonday); const k = isoDate(d); return nextWorkday(t >= k ? t : k); })() : '');
             $('encDeco').value = x.deco ? shortName(x.deco) : ''; $('encNotes').value = x.notes || '';
             encTechs = [...(x.techs || [])]; renderEncTechs();
             fillSubSelect('encSub', x.substrate, x.deco); matOf.enc = ''; setMat('enc', x.material || '');
@@ -1557,7 +1561,9 @@
             if (!encTechs.length) { toast('Elige quién lo tonifica', true); return; }
             const t = readEnc(); let x = t.items.find(i => i.id === encEditId);
             if (!x) { x = { id: 'e' + Date.now().toString(36), createdAt: new Date().toISOString(), done: false }; t.items.unshift(x); }
-            Object.assign(x, { sap, deco, of: $('encOf').value.trim(), due: $('encDue').value, techs: encTechs, notes: $('encNotes').value.trim(), substrate: $('encSub').value, material: matOf.enc || '' });
+            const dueIn = $('encDue').value, due = nextWorkday(dueIn);
+            if (due !== dueIn) toast('Sábado y domingo no se trabaja: pasa al lunes ' + formatDate(due).slice(0, 5));
+            Object.assign(x, { sap, deco, of: $('encOf').value.trim(), due, techs: encTechs, notes: $('encNotes').value.trim(), substrate: $('encSub').value, material: matOf.enc || '' });
             writeEnc(t); closeEncargoEditor(); renderEncargos(); renderTodayJobs(); if ($('planningView').style.display === 'block') renderPlanning(); toast('Encargo guardado');
         }
         function toggleEncargoDone() {
@@ -1947,7 +1953,16 @@
             return { year: y, week: Math.ceil(((t - Date.UTC(y, 0, 1)) / 86400000 + 1) / 7) };
         }
         const weekKey = d => { const w = isoWeek(d); return `${w.year}-W${String(w.week).padStart(2, '0')}`; };
-        function weekDays() { return Array.from({ length: 6 }, (_, i) => { const d = new Date(planningMonday); d.setDate(d.getDate() + i); return d; }); }
+        const isWeekend = k => { const g = new Date(k + 'T12:00:00').getDay(); return g === 0 || g === 6; };
+        const dayName = k => ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][new Date(k + 'T12:00:00').getDay()];
+        // Si cae en sábado o domingo, al lunes siguiente (no se trabaja el fin de semana)
+        const nextWorkday = k => { if (!k) return k; const d = new Date(k + 'T12:00:00'); while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1); return isoDate(d); };
+        function weekDays() {
+            const all = Array.from({ length: 7 }, (_, i) => { const d = new Date(planningMonday); d.setDate(d.getDate() + i); return d; });
+            // Lunes a viernes; sábado/domingo solo aparecen si alguien dejó trabajo apuntado ahí (para poder moverlo)
+            const rows = readPlanning().rows, enc = readEnc().items;
+            return all.filter((d, i) => { if (i < 5) return true; const k = isoDate(d); return rows.some(r => Number((r.qty || {})[k]) > 0) || enc.some(x => x.due === k); });
+        }
 
         function openPlanning() {
             if (!planningMonday) planningMonday = mondayOf(new Date());
@@ -1977,7 +1992,7 @@
             const p = readPlanning(), days = weekDays(), keys = days.map(isoDate), today = todayLocal();
             const w = isoWeek(planningMonday), wk = p.weeks[weekKey(planningMonday)] || {};
             const fmt = d => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-            $('plWeekLabel').textContent = `Semana ${w.week} · ${fmt(days[0])} – ${fmt(days[5])}`;
+            $('plWeekLabel').textContent = `Semana ${w.week} · ${fmt(days[0])} – ${fmt(days[4])}`;
             $('plShift').value = wk.shift || '';
             $('plPrintMeta').textContent = [wk.shift && 'Turno ' + wk.shift, wk.updated && 'F. actualización ' + formatDate(wk.updated)].filter(Boolean).join(' · ');
             $('plUpdated').value = wk.updated || '';
@@ -2001,7 +2016,7 @@
             const testBadge = r => { const t = tests.get(r.sap); return t ? ` <span class="pl-test" title="Pruebas de ${escapeHtml([...t.who].join(', '))} · última ${formatDate(t.last)}">🎨 ${t.ok + t.nok} pl. prueba</span>` : ''; };
             const C = 3 + keys.length;
             let html = `<thead><tr><th>Estado</th><th>SAP · OF</th><th>Decoración</th>${days.map((d, i) =>
-                `<th class="${keys[i] === today ? 'today' : ''}">${DAY_NAMES[i]} ${formatDate(keys[i]).slice(0, 5)}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}${doneTot[i] ? ` · <span style="color:#15803d">✓ ${doneTot[i]}</span>` : ''}${nokTot[i] ? ` · <span style="color:#dc2626">✗ ${nokTot[i]}</span>` : ''}${r1Tot[i] ? ` · <span style="color:#b45309">R1 ${r1Tot[i]}</span>` : ''}</small></th>`).join('')}</tr></thead><tbody>
+                `<th class="${keys[i] === today ? 'today' : ''} ${isWeekend(keys[i]) ? 'wkend' : ''}">${dayName(keys[i])} ${formatDate(keys[i]).slice(0, 5)}${isWeekend(keys[i]) ? ' ⚠️' : ''}<br><small>${totals[i] ? totals[i] + ' pl.' : '—'}${doneTot[i] ? ` · <span style="color:#15803d">✓ ${doneTot[i]}</span>` : ''}${nokTot[i] ? ` · <span style="color:#dc2626">✗ ${nokTot[i]}</span>` : ''}${r1Tot[i] ? ` · <span style="color:#b45309">R1 ${r1Tot[i]}</span>` : ''}</small></th>`).join('')}</tr></thead><tbody>
                 <tr class="pl-group prod"><td colspan="${C}">🏭 Producción</td></tr>`;
             const firstDay = r => { const j = keys.findIndex(k => Number((r.qty || {})[k]) > 0); return j < 0 ? 99 : j; };
             const order = p.rows.map((r, i) => ({ r, i, f: firstDay(r) })).sort((a, b) => a.f - b.f || a.i - b.i);
@@ -2030,7 +2045,7 @@
                     <td class="enc-state ${x.done ? 'ok' : late ? 'late' : ''}">${x.done ? '✓ Hecho' : late ? '⚠️ Atrasado' : '⏳ Pendiente'}${encBadges(x, true)}</td>
                     <td>${e(x.sap || '—')}${x.of ? `<br><small class="pl-of">OF ${e(x.of)}</small>` : ''}</td>
                     <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${(x.techs || []).map(techChip).join(' ')}${(x.substrate || x.material) ? `<small>${e([subText(x.substrate), matText(x.material)].filter(Boolean).join(' · '))}</small>` : ''}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
-                    ${keys.map((k, j) => `<td class="${j === dayIdx ? 'enc-day' + (x.done ? ' ok' : '') : ''}">${j === dayIdx ? `<button type="button" class="pl-cell" onclick="openEncargoEditor('${e(x.id)}')">${x.done ? '✓' : '🎨'}</button>` : (dayIdx < 0 && j === 0 && !x.due ? '<small class="pl-of">sin fecha</small>' : '')}</td>`).join('')}
+                    ${keys.map((k, j) => `<td class="${j === dayIdx ? 'enc-day' + (x.done ? ' ok' : '') : ''}" data-row="e:${e(x.id)}" data-k="${k}">${j === dayIdx ? `<button type="button" class="pl-cell" title="Arrástralo a otro día" onclick="if (!plJustDragged) openEncargoEditor('${e(x.id)}')">${x.done ? '✓' : '🎨'}</button>` : (dayIdx < 0 && j === 0 && !x.due ? '<small class="pl-of">sin fecha</small>' : '')}</td>`).join('')}
                 </tr>`;
             });
             if (!enc.length) html += `<tr><td colspan="${C}" style="padding:10px;color:var(--muted)">Sin encargos de diseño esta semana.</td></tr>`;
@@ -2096,7 +2111,7 @@
             const days = weekDays(), keys = days.map(isoDate), today = todayLocal();
             $('plEdWeek').textContent = `semana ${isoWeek(planningMonday).week}`;
             $('plEdDays').innerHTML = keys.map((k, j) => `<label class="pl-day ${k === today ? 'today' : ''} ${Number(r.qty?.[k]) > 0 ? 'has' : ''}">
-                <span>${DAY_NAMES[j]} ${formatDate(k).slice(0, 5)}</span>
+                <span>${dayName(k)} ${formatDate(k).slice(0, 5)}</span>
                 <input type="number" min="0" inputmode="numeric" class="qty-in" data-k="${k}" value="${Number(r.qty?.[k]) > 0 ? r.qty[k] : ''}" placeholder="0"
                     onfocus="edLastDay = this" oninput="this.parentElement.classList.toggle('has', Number(this.value) > 0)">
                 <span class="res-row">
@@ -2167,7 +2182,7 @@
         function initPlanningDrag() {
             const table = $('plTable');
             table.addEventListener('pointerdown', ev => {
-                const td = ev.target.closest('td.filled[data-k]');
+                const td = ev.target.closest('td.filled[data-k], td.enc-day[data-k]');
                 if (!td || ev.button > 0) return;
                 plDrag = { td, row: td.dataset.row, k: td.dataset.k, x: ev.clientX, y: ev.clientY, active: false, ghost: null, over: null };
             });
@@ -2179,14 +2194,15 @@
                     document.body.classList.add('pl-dragging');
                     plDrag.ghost = document.createElement('div');
                     plDrag.ghost.className = 'pl-drag-ghost';
-                    plDrag.ghost.textContent = (readPlanning().rows[plDrag.row]?.qty?.[plDrag.k] || '') + ' pl.';
+                    if (String(plDrag.row).startsWith('e:')) { const x = readEnc().items.find(i => i.id === plDrag.row.slice(2)); plDrag.ghost.textContent = '🎨 ' + (x ? parseModel(x.deco || CODE_BY_SAP.get(x.sap) || '').model || x.sap : ''); }
+                    else plDrag.ghost.textContent = (readPlanning().rows[plDrag.row]?.qty?.[plDrag.k] || '') + ' pl.';
                     document.body.appendChild(plDrag.ghost);
                 }
                 ev.preventDefault();
                 plDrag.ghost.style.left = ev.clientX + 'px'; plDrag.ghost.style.top = ev.clientY + 'px';
                 const el = document.elementFromPoint(ev.clientX, ev.clientY), weekBtn = el && el.closest('[data-weekdrop]');
                 const over = plCellAt(ev.clientX, ev.clientY);
-                const ok = weekBtn || (over && over.dataset.row === plDrag.row && over.dataset.k !== plDrag.k ? over : null);
+                const ok = weekBtn || (over && over.dataset.row === plDrag.row && over.dataset.k !== plDrag.k && !isWeekend(over.dataset.k) ? over : null);
                 if (plDrag.over !== ok) { plDrag.over?.classList.remove('pl-drop'); ok?.classList.add('pl-drop'); plDrag.over = ok; }
             }, { passive: false });
             const end = () => {
@@ -2199,14 +2215,22 @@
                 if (!d.over) return;
                 if (d.over.dataset.weekdrop) {
                     const dir = Number(d.over.dataset.weekdrop), t = new Date(d.k + 'T12:00:00'); t.setDate(t.getDate() + 7 * dir);
-                    movePlanningDay(Number(d.row), d.k, isoDate(t));
+                    if (String(d.row).startsWith('e:')) moveEncargoDay(d.row.slice(2), nextWorkday(isoDate(t)));
+                    else movePlanningDay(Number(d.row), d.k, nextWorkday(isoDate(t)));
                     movePlanningWeek(dir);
                     return;
                 }
-                movePlanningDay(Number(d.row), d.k, d.over.dataset.k);
+                if (String(d.row).startsWith('e:')) moveEncargoDay(d.row.slice(2), d.over.dataset.k);
+                else movePlanningDay(Number(d.row), d.k, d.over.dataset.k);
             };
             window.addEventListener('pointerup', end);
             window.addEventListener('pointercancel', end);
+        }
+        function moveEncargoDay(id, toK) {
+            const t = readEnc(), x = t.items.find(i => i.id === id); if (!x || x.due === toK) return;
+            const from = x.due; x.due = toK;
+            writeEnc(t); renderPlanning(); renderEncargos(); renderTodayJobs();
+            toast(`🎨 Encargo movido${from ? ' del ' + formatDate(from).slice(0, 5) : ''} al ${dayName(toK)} ${formatDate(toK).slice(0, 5)}`);
         }
         function movePlanningDay(i, fromK, toK) {
             const p = readPlanning(), r = p.rows[i], n = Number(r.qty?.[fromK]) || 0;
@@ -2742,7 +2766,7 @@
             const name = displayDecorator(currentDecorator);
             const rows = orders.map(o => { const h = o.history || []; const ok = sum(h, 'ok'), nok = sum(h, 'nok');
                 return `<tr><td>${e(o.order || 'Sin OF')}</td><td>${o.open ? 'Abierto' : 'Cerrado ' + new Date(o.closedAt).toLocaleDateString('es-ES')}</td><td>${e(o.substrate || '-')}</td><td>${e(o.material || '-')}</td><td>${e(o.graphic || '-')}</td><td>${h.length}</td><td>${sum(h, 'hours').toFixed(2)}</td><td>${ok}</td><td>${nok}</td><td>${pct(ok, nok)}</td></tr>`; }).join('');
-            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin OF')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>${o.checks && o.checks.tonificado ? '<p style="margin:0 0 4px;font-size:.8rem">Cierre confirmado: ✓ Tonificado · ✓ Todas las caras · ✓ Pegatina de patrón con cuño de dirección técnica</p>' : ''}
+            const detail = orders.map(o => `<div class="fr-order"><h3>${e(o.order || 'Sin OF')} · ${e(o.substrate || '-')} · ${e(o.graphic || '-')}</h3>${o.checks && o.checks.at ? `<p style="margin:0 0 4px;font-size:.8rem;color:${o.checks.tonificado && o.checks.caras && o.checks.pegatina ? '#15803d' : '#b91c1c'}">Cierre: ${[['tonificado', 'Tonificado'], ['caras', 'Todas las caras'], ['pegatina', 'Pegatina de patrón con cuño de dirección técnica']].map(([k, n]) => (o.checks[k] ? '✓ ' : '✗ ') + n).join(' · ')}</p>` : ''}
                 <table class="fr-table"><thead><tr><th>Fecha</th><th>Desde</th><th>Hasta</th><th>Horas</th><th>Estatus</th><th>OK</th><th>No OK</th><th>Comentarios</th></tr></thead><tbody>
                 ${(o.history || []).map(x => `<tr><td>${e(formatDate(x.date))}</td><td>${e(x.timeFrom)}</td><td>${e(x.timeTo)}</td><td>${(x.hours || 0).toFixed(2)}</td><td>${e(x.status || '')}</td><td>${x.ok || 0}</td><td>${x.nok || 0}</td><td>${e(x.comment || '')}</td></tr>`).join('')}
                 </tbody></table></div>`).join('');
