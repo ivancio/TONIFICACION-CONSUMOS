@@ -531,7 +531,13 @@
         .pl-table td.enc-state { font-size: 0.74rem; font-weight: 800; color: #6d28d9; white-space: nowrap; }
         .pl-table td.enc-state.ok { color: #15803d; }
         .req-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
-        .req-b { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px; border-radius: 999px; font-size: 0.66rem; font-weight: 800; line-height: 1.5; border: 1px solid transparent; white-space: nowrap; font-family: inherit; }
+        .req-b { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 1.5px solid transparent; font-family: inherit; position: relative; }
+        .req-b svg { width: 14px; height: 14px; display: block; }
+        .req-b::after { content: ''; position: absolute; right: -3px; bottom: -3px; width: 11px; height: 11px; border-radius: 50%; font-size: 8px; font-weight: 900; line-height: 11px; text-align: center; color: #fff; }
+        .req-b.si::after { content: '✓'; background: #16a34a; } .req-b.no::after { content: '✕'; background: #dc2626; }
+        .req-row { gap: 6px; }
+        .req-legend { font-weight: 600; font-size: 0.72rem; color: var(--muted); margin-left: 10px; display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .req-legend span { display: inline-flex; align-items: center; gap: 3px; } .req-legend svg { width: 13px; height: 13px; }
         button.req-b { cursor: pointer; }
         button.req-b:hover { filter: brightness(0.95); outline: 2px solid rgba(0,0,0,.12); }
         .req-b.si { background: #dcfce7; color: #166534; border-color: #86efac; }
@@ -1485,16 +1491,22 @@
         const checksLine = c => c && c.tonificado ? `<span class="chk-done">${c.tono ? '✓ Tono · ' : ''}✓ Tonificado · ✓ Todas las caras · ✓ Pegatina con cuño</span>` : '';
 
         // Insignias de requisitos para cerrar la gráfica (verde = SÍ, rojo = falta)
+        const REQ_ICON = {
+            tonificado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5s6.5 7.2 6.5 11.8a6.5 6.5 0 0 1-13 0C5.5 9.7 12 2.5 12 2.5z"/><path d="M9 15a3 3 0 0 0 3 3"/></svg>',
+            caras: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/></svg>',
+            pegatina: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3h5v4.5l2 3h-9l2-3z"/><rect x="4" y="10.5" width="16" height="5" rx="1.2"/><path d="M5 19.5h14"/></svg>'
+        };
         const REQS = [['tonificado', 'Tonificado', 'Tonificado'], ['caras', 'Caras', 'Todas las caras revisadas'], ['pegatina', 'Pegatina D.T.', 'Pegatina de patrón con el cuño de dirección técnica']];
         function encBadges(x, clickable) {
             const c = x.checks || {};
             return `<span class="req-row">${REQS.map(([k, short, long]) => {
                 const on = !!c[k], tip = `${long}: ${on ? 'SÍ' : 'falta'}${clickable ? ' · tocar para cambiar' : ''}`;
                 return clickable
-                    ? `<button type="button" class="req-b ${on ? 'si' : 'no'}" title="${tip}" onclick="event.stopPropagation(); toggleEncCheck('${escapeHtml(x.id)}', '${k}')">${on ? '✓' : '✗'} ${short}</button>`
-                    : `<span class="req-b ${on ? 'si' : 'no'}" title="${tip}">${on ? '✓' : '✗'} ${short}</span>`;
+                    ? `<button type="button" class="req-b ${on ? 'si' : 'no'}" title="${tip}" aria-label="${tip}" onclick="event.stopPropagation(); toggleEncCheck('${escapeHtml(x.id)}', '${k}')">${REQ_ICON[k]}</button>`
+                    : `<span class="req-b ${on ? 'si' : 'no'}" title="${tip}" aria-label="${tip}">${REQ_ICON[k]}</span>`;
             }).join('')}</span>`;
         }
+        const reqLegend = () => `<span class="req-legend">${REQS.map(([k, short]) => `<span>${REQ_ICON[k]}${short}</span>`).join('')}</span>`;
         function toggleEncCheck(id, k) {
             const t = readEnc(), x = t.items.find(i => i.id === id); if (!x) return;
             x.checks = { ...(x.checks || {}), [k]: !(x.checks || {})[k] };
@@ -1574,7 +1586,7 @@
             if ($('tileDis')) $('tileDis').textContent = pendN ? `${pendN} ${pendN === 1 ? 'encargo pendiente' : 'encargos pendientes'} · pruebas de tono` : 'Pruebas de tono y encargos';
             const box = $('encList'); if (!box) return;
             const items = readEnc().items, pend = items.filter(x => !x.done).sort(encSort), done = items.filter(x => x.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
-            box.innerHTML = (pend.length ? pend.map(x => encCard(x)).join('') : '<p class="pl-hint" style="margin:0">No hay encargos pendientes.</p>') +
+            box.innerHTML = (items.length ? `<div style="margin:-2px 0 6px">${reqLegend().replace('margin-left: 10px', '')}</div>` : '') + (pend.length ? pend.map(x => encCard(x)).join('') : '<p class="pl-hint" style="margin:0">No hay encargos pendientes.</p>') +
                 (done.length ? `<details class="tj-more"><summary>Hechos (${done.length})</summary><div style="margin-top:6px">${done.slice(0, 30).map(x => encCard(x)).join('')}</div></details>` : '');
         }
         function pickEncargo(id) {
@@ -2010,7 +2022,7 @@
             html += `<tr class="pl-totals"><td colspan="3" style="text-align:right">Total planchas</td>${totals.map(t => `<td>${t || ''}</td>`).join('')}</tr>`;
             // Diseño: encargos de tonificación de esta semana (y los atrasados o sin fecha)
             const enc = readEnc().items.filter(x => (x.due && keys.includes(x.due)) || (!x.done && (!x.due || x.due < keys[0]))).sort(encSort);
-            html += `<tr class="pl-group dis"><td colspan="${C}">🎨 Diseño · encargos de tonificación</td></tr>`;
+            html += `<tr class="pl-group dis"><td colspan="${C}">🎨 Diseño · encargos de tonificación ${reqLegend()}</td></tr>`;
             enc.forEach(x => {
                 const m = parseModel(x.deco || CODE_BY_SAP.get(x.sap) || ''), late = !x.done && x.due && x.due < today;
                 const dayIdx = keys.indexOf(x.due);
