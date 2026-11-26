@@ -9,6 +9,8 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "tesseract.js": "^5.1.1",
     "wrangler": "^4.158.0"
   }
 }

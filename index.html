@@ -414,6 +414,13 @@
         .sum-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 10px; vertical-align: -1px; }
         .kera-btn { background: #0f766e; }
         .kc-list { display: grid; gap: 10px; margin-top: 12px; }
+        .kj-row { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 8px; background: var(--card-bg); }
+        .kj-row.bad { border-color: #fca5a5; background: #fff7f7; }
+        .kj-row input[type=checkbox] { width: 20px; height: 20px; }
+        .kj-row small { color: var(--muted); }
+        .kj-row .kj-warn { color: #b91c1c; font-weight: 700; }
+        .kj-bar { height: 8px; border-radius: 99px; background: var(--border-color); overflow: hidden; margin: 8px 0 4px; }
+        .kj-bar span { display: block; height: 100%; background: #7c3aed; width: 0; transition: width .3s; }
         .kc-card { border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; background: var(--card-bg); color: var(--text-color); text-align: left; font: inherit; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
         .kc-card:hover { border-color: var(--primary-color); }
         .kc-card b { font-size: 1rem; }
@@ -984,8 +991,23 @@
             <h1 class="view-title">Consumos de tinta</h1>
             <p class="pl-hint" style="margin-top:0">Una ficha por modelo con los datos de la pestaña <b>Costes</b> de KERAjet.</p>
             <div class="pl-actions no-print" style="margin:10px 0 0">
-                <button type="button" class="btn btn-primary" onclick="openKeraEditor(-1)">＋ Nueva ficha de consumo</button>
+                <button type="button" class="btn btn-primary" onclick="$('kjFiles').click()">📷 Leer capturas de KERAjet</button>
+                <button type="button" class="btn btn-secondary" onclick="openKeraEditor(-1)">＋ Ficha a mano</button>
                 <button type="button" class="btn btn-secondary btn-small" id="kcUndo" onclick="undoKera()">↶ Deshacer</button>
+                <input type="file" id="kjFiles" accept="image/*" multiple hidden onchange="readKerajetShots(this.files); this.value = ''">
+            </div>
+            <p class="pl-hint" style="margin:6px 0 0">📷 Selecciona de golpe las capturas de la pestaña <b>Costes</b> (por ejemplo, de la carpeta de KRION del servidor). Las caras A, B, C… de un mismo modelo se juntan en una ficha con la media.</p>
+            <div class="pl-modal" id="kjModal">
+                <div class="pl-sheet" role="dialog" aria-modal="true" aria-labelledby="kjTitle">
+                    <h2 id="kjTitle">Leyendo capturas de KERAjet</h2>
+                    <div id="kjProgress"><p id="kjStep" style="margin:0">Preparando el lector…</p><div class="kj-bar"><span id="kjBarFill"></span></div>
+                        <p class="pl-hint" style="margin:0">La primera vez tarda un poco más (carga el lector). Puedes seguir mirando, no cierres la app.</p></div>
+                    <div id="kjResult"></div>
+                    <div class="pl-actions" style="justify-content:flex-end;margin-top:12px">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="closeKj()">Cancelar</button>
+                        <button type="button" class="btn btn-primary btn-small" id="kjSave" onclick="saveKj()" disabled>Guardar</button>
+                    </div>
+                </div>
             </div>
             <input type="text" id="kcFilter" placeholder="🔍 Buscar modelo o SAP..." oninput="renderKera()" style="margin-top:12px">
             <div class="kc-list" id="kcList"></div>
@@ -1323,7 +1345,8 @@
         function findKeraFor(row) {
             const items = readKera().items;
             return items.find(it => it.sap && row.sap && it.sap === row.sap)
-                || items.find(it => it.sap === '' && row.deco && it.name && parseModel(it.name).model === parseModel(row.deco).model);
+                || items.find(it => it.sap === '' && row.deco && it.name && parseModel(it.name).model === parseModel(row.deco).model)
+                || items.find(it => it.sap && row.deco && CODE_BY_SAP.has(it.sap) && parseModel(CODE_BY_SAP.get(it.sap)).model === parseModel(row.deco).model);
         }
         function openKera() { $('homeView').style.display = 'none'; $('keraView').style.display = 'block'; renderKera(); updateUndoButtons(); window.scrollTo(0, 0); }
         function closeKera() { $('keraView').style.display = 'none'; $('homeView').style.display = 'block'; updateKeraSummary(); }
@@ -1340,15 +1363,15 @@
                     <span class="kc-cost">${nf(t.cPlate)} €<br><small>por plancha · ${nf(t.c, 3)} €/m²</small></span>
                     <span class="kc-inks">${inkBar(it)}</span></button>`; }).join('') || '<p class="pl-hint">No hay fichas. Pulsa «＋ Nueva ficha de consumo».</p>';
         }
-        function openKeraEditor(i) {
-            const k = readKera(), it = i >= 0 ? k.items[i] : { name: '', sap: '', w: 270.4, h: 120.4, date: todayLocal(), notes: '', inks: {} };
+        function openKeraEditor(i, preset) {
+            const k = readKera(), it = i >= 0 ? k.items[i] : (preset || { name: '', sap: '', w: 270.4, h: 120.4, date: todayLocal(), notes: '', inks: {} });
             kcIndex = i;
             if (!$('codesSearch').options.length)
                 $('codesSearch').innerHTML = UNDORA_CODES.map(([c, n]) => [c, shortName(n)]).sort((a, b) => a[1].localeCompare(b[1])).map(([c, n]) => `<option value="${c} · ${escapeHtml(n)}"></option>`).join('');
             $('kcTitle').textContent = i >= 0 ? 'Ficha de consumo' : 'Nueva ficha de consumo';
             $('kcSearch').value = ''; $('kcName').value = it.name || ''; $('kcSap').value = it.sap || '';
             $('kcW').value = it.w || 270.4; $('kcH').value = it.h || 120.4; $('kcDate').value = it.date || ''; $('kcNotes').value = it.notes || '';
-            $('kcInks').innerHTML = `<thead><tr><th>Tinta</th><th>g/m²</th><th>€/m²</th></tr></thead><tbody>${INKS.map(([n, col]) => `<tr><td><span class="kc-dot" style="background:${col}"></span>${n}</td>
+            $('kcInks').innerHTML = `<thead><tr><th>Tinta</th><th>g/m²</th><th>€/m²</th></tr></thead><tbody>${[...INKS, ...Object.keys(it.inks || {}).filter(n => !INKS.some(x => x[0] === n)).map(n => [n, '#a8a29e'])].map(([n, col]) => `<tr><td><span class="kc-dot" style="background:${col}"></span>${n}</td>
                 <td><input type="number" step="0.001" min="0" inputmode="decimal" data-ink="${n}" data-f="0" value="${it.inks?.[n]?.[0] ?? ''}" placeholder="0"></td>
                 <td><input type="number" step="0.001" min="0" inputmode="decimal" data-ink="${n}" data-f="1" value="${it.inks?.[n]?.[1] ?? ''}" placeholder="0"></td></tr>`).join('')}</tbody>
                 <tfoot><tr><td>Total</td><td id="kcTg"></td><td id="kcTc"></td></tr></tfoot>`;
@@ -1380,12 +1403,204 @@
             const k = readKera();
             if (kcIndex >= 0) k.items[kcIndex] = { ...k.items[kcIndex], ...it }; else k.items.push({ id: 'k' + Date.now().toString(36), ...it });
             writeKera(k); closeKeraEditor(); renderKera(); toast('Ficha guardada');
+            if (kjEditing) { kjEditing.saved = true; kjEditing = null; renderKj(); }
         }
         function deleteKera() {
             if (kcIndex < 0) return;
             const k = readKera();
             if (!confirm(`¿Borrar la ficha de ${k.items[kcIndex].name || k.items[kcIndex].sap}?`)) return;
             k.items.splice(kcIndex, 1); writeKera(k); closeKeraEditor(); renderKera();
+        }
+        // ---- Lector de capturas de KERAjet (pestaña Costes) ----
+        const KJ_INKS = ['Primer-BL', 'White', 'Yellow', 'Magenta', 'Brown', 'Cyan', 'Black', 'Varnish-BR', 'Varnish-MT', 'Beige', 'Pink', 'Orange', 'Blue', 'Red', 'Green', 'Grey', 'Gold', 'Glue', 'Varnish'];
+        function kjLev(a, b) {
+            const m = a.length, n = b.length, d = Array.from({ length: m + 1 }, (_, i) => [i]);
+            for (let j = 1; j <= n; j++) d[0][j] = j;
+            for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+            return d[m][n];
+        }
+        const kjNum = s => parseFloat(String(s).replace(/\./g, '').replace(',', '.'));
+        function kjInkName(raw, used) {
+            const clean = raw.replace(/[^A-Za-z0-9\- ]/g, ' ').trim(), toks = clean.split(/\s+/).filter(Boolean);
+            const cands = [clean, ...toks, toks.slice(-2).join('-'), toks.slice(-2).join('')].filter(Boolean).map(s => s.toLowerCase());
+            let best = null, bd = 9;
+            KJ_INKS.forEach(ink => { if (used.has(ink)) return; const l = ink.toLowerCase();
+                cands.forEach(c => { const d = kjLev(c, l) / l.length; if (d < bd) { bd = d; best = ink; } }); });
+            return bd <= 0.55 ? best : null;
+        }
+        // Convierte el texto leído en { title, base, face, name, w, h, inks, total, ok }
+        function parseKerajetText(text) {
+            const lines = String(text).split(/\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+            const out = { inks: {}, total: null, title: '', w: 0, h: 0, problems: [] };
+            const titleLine = lines.find(l => /Costes|Esquema de impres/i.test(l)) || '';
+            out.title = titleLine.replace(/\[?\s*Costes.*$/i, '').replace(/\|.*$/, '').replace(/[|\[\]]/g, '').trim();
+            const nom = lines.find(l => /^Nombre\s*:/i.test(l)); if (nom) out.name = nom.replace(/^Nombre\s*:\s*/i, '').trim();
+            const dim = lines.map(l => l.match(/(\d{2,4}[.,]\d{1,2})\s*[xX×]\s*(\d{2,4}[.,]\d{1,2})\s*cm/)).find(Boolean);
+            if (dim) { out.w = kjNum(dim[1]); out.h = kjNum(dim[2]); }
+            const used = new Set(); let unk = 0;
+            lines.forEach(l => {
+                const m = l.match(/^(.*?)\s*(\d{1,3}[.,]\d{3})\s*g\S*\s*m?2?\S*\s+(\d{1,3}[.,]\d{3})\s*(?:€|&|e)?/i);
+                if (!m) return;
+                if (/^\W*Total\b/i.test(m[1]) || /Total/i.test(m[1])) { out.total = [kjNum(m[2]), kjNum(m[3])]; return; }
+                const ink = kjInkName(m[1], used) || `Tinta ${++unk}`;
+                if (!ink.startsWith('Tinta ')) used.add(ink); else out.problems.push(`no reconozco el nombre de una tinta («${m[1].trim()}»)`);
+                out.inks[ink] = [kjNum(m[2]), kjNum(m[3])];
+            });
+            // Nombre base y cara: «TRAVERTINO NAVONA BAMBOO_A_» → base «TRAVERTINO NAVONA BAMBOO», cara «A»
+            const t = (out.title || out.name || '').toUpperCase().replace(/_+$/, '').trim();
+            const fm = t.match(/^(.*?)[_ ]+([A-Z]\d?)$/);
+            out.base = (fm ? fm[1] : t).replace(/_/g, ' ').replace(/\s+/g, ' ').trim(); out.face = fm ? fm[2] : '';
+            const sg = Object.values(out.inks).reduce((a, v) => a + v[0], 0), sc = Object.values(out.inks).reduce((a, v) => a + v[1], 0);
+            if (!Object.keys(out.inks).length) out.problems.push('no encuentro la tabla de tintas (¿es la pestaña Costes?)');
+            else if (!out.total) out.problems.push('no encuentro la línea Total');
+            else { if (Math.abs(sg - out.total[0]) > 0.006) out.problems.push(`las tintas suman ${sg.toFixed(3)} g/m² y el Total dice ${out.total[0].toFixed(3)}`);
+                   if (Math.abs(sc - out.total[1]) > 0.012) out.problems.push(`los costes suman ${sc.toFixed(3)} € y el Total dice ${out.total[1].toFixed(3)}`); }
+            if (!out.base) out.problems.push('no encuentro el nombre del modelo');
+            out.ok = !out.problems.length;
+            return out;
+        }
+
+        function prepGray(d, w, h, scale) {
+          const L = new Float32Array(w * h);
+          for (let y = 0; y < h; y++) {
+            let x0 = -1, x1 = -1, cnt = 0;
+            for (let x = 0; x < w; x++) { const i = (y * w + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2];
+              if (b > 150 && r < 90 && g > 70 && g < 170) { cnt++; if (x0 < 0) x0 = x; x1 = x; } }
+            const inv = cnt > 40;
+            for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; let l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+              if (inv && x >= x0 && x <= x1) l = Math.min(255, d[i + 1] * 2.1); L[y * w + x] = l; }
+          }
+          // fila azul invertida: el azul (~94) pasa a ~161: lo aclaramos
+          const W = Math.round(w * scale), H = Math.round(h * scale), out = new Uint8ClampedArray(W * H);
+          for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
+            const fx = Math.min(w - 1.001, Math.max(0, (X + 0.5) / scale - 0.5)), fy = Math.min(h - 1.001, Math.max(0, (Y + 0.5) / scale - 0.5));
+            const x = Math.floor(fx), y = Math.floor(fy), ax = fx - x, ay = fy - y;
+            const v = L[y * w + x] * (1 - ax) * (1 - ay) + L[y * w + x + 1] * ax * (1 - ay) + L[(y + 1) * w + x] * (1 - ax) * ay + L[(y + 1) * w + x + 1] * ax * ay;
+            out[Y * W + X] = v > 200 ? 255 : v < 110 ? 0 : (v - 110) * 255 / 90;
+          }
+          return { g: out, W, H };
+        }
+        // Busca el SAP del listado a partir del nombre de KERAjet («TRAVERTINO NAVONA BAMBOO» → TRAV NAVONA BAMBOO)
+        function kjMatchSap(base) {
+            const toks = String(base).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+            if (!toks.length) return '';
+            const fits = (a, b) => a.startsWith(b) || b.startsWith(a);
+            const hits = UNDORA_CODES.filter(([c, n]) => {
+                if (parseModel(n).caraM) return false;
+                const mt = parseModel(n).model.replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+                return mt.length === toks.length && mt.every(t => toks.some(o => fits(o, t))) && toks.every(o => mt.some(t => fits(o, t)));
+            });
+            return new Set(hits.map(([, n]) => parseModel(n).model)).size === 1 ? hits[0][0] : '';
+        }
+        let kjGroups = [], kjEditing = null, kjOcr = null, kjCancel = false;
+        function kjLoadOcr() {
+            if (kjOcr) return kjOcr;
+            kjOcr = new Promise((res, rej) => {
+                const sc = document.createElement('script'); sc.src = 'ocr/tesseract.min.js';
+                sc.onload = async () => { try {
+                    const w = await Tesseract.createWorker('eng', 1, { workerPath: 'ocr/worker.min.js', corePath: 'ocr/', langPath: 'ocr/', gzip: true });
+                    await w.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' }); res(w);
+                } catch (e) { rej(e); } };
+                sc.onerror = () => rej(new Error('no se pudo cargar el lector'));
+                document.head.appendChild(sc);
+            });
+            kjOcr.catch(() => { kjOcr = null; });
+            return kjOcr;
+        }
+        function kjImageCanvas(file) {
+            return new Promise((res, rej) => {
+                const url = URL.createObjectURL(file), img = new Image();
+                img.onload = () => {
+                    const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+                    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url);
+                    const d = ctx.getImageData(0, 0, c.width, c.height).data, scale = c.width > 1400 ? 1.5 : 3;
+                    const { g, W, H } = prepGray(d, c.width, c.height, scale);
+                    const o = document.createElement('canvas'); o.width = W; o.height = H;
+                    const oc = o.getContext('2d'), id = oc.createImageData(W, H);
+                    for (let i = 0; i < W * H; i++) { id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = g[i]; id.data[i * 4 + 3] = 255; }
+                    oc.putImageData(id, 0, 0); res(o);
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('no es una imagen')); };
+                img.src = url;
+            });
+        }
+        async function readKerajetShots(fileList) {
+            const files = [...fileList].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|bmp|webp)$/i.test(f.name));
+            if (!files.length) { toast('Elige imágenes (.jpg o .png)', true); return; }
+            kjGroups = []; kjCancel = false;
+            $('kjTitle').textContent = 'Leyendo capturas de KERAjet'; $('kjResult').innerHTML = ''; $('kjSave').disabled = true;
+            $('kjProgress').style.display = 'block'; $('kjBarFill').style.width = '0'; $('kjModal').classList.add('open');
+            let worker;
+            try { worker = await kjLoadOcr(); }
+            catch (e) { $('kjStep').textContent = '⚠️ No se pudo cargar el lector de imágenes. Comprueba la conexión y vuelve a intentarlo.'; return; }
+            const shots = [];
+            for (let i = 0; i < files.length; i++) {
+                if (kjCancel) return;
+                $('kjStep').textContent = `Leyendo ${i + 1} de ${files.length}: ${files[i].name}`;
+                $('kjBarFill').style.width = (i / files.length * 100) + '%';
+                try { const { data } = await worker.recognize(await kjImageCanvas(files[i])); shots.push({ file: files[i].name, ...parseKerajetText(data.text) }); }
+                catch (e) { shots.push({ file: files[i].name, ok: false, problems: ['no se pudo leer la imagen'], inks: {}, base: '' }); }
+            }
+            $('kjBarFill').style.width = '100%';
+            // Juntar las caras de un mismo modelo
+            const byBase = new Map(), failed = [];
+            shots.forEach(s => {
+                const base = s.base || '';
+                if (!base || !Object.keys(s.inks).length) { failed.push(s); return; }
+                if (!byBase.has(base)) byBase.set(base, []);
+                byBase.get(base).push(s);
+            });
+            const existing = readKera().items;
+            kjGroups = [...byBase].map(([base, faces]) => {
+                const good = faces.filter(f => f.ok), use = good.length ? good : faces, inks = {};
+                use.forEach(f => Object.entries(f.inks).forEach(([n, [g, c]]) => { inks[n] = inks[n] || [0, 0]; inks[n][0] += g / use.length; inks[n][1] += c / use.length; }));
+                Object.values(inks).forEach(v => { v[0] = Math.round(v[0] * 1000) / 1000; v[1] = Math.round(v[1] * 1000) / 1000; });
+                const letters = faces.map(f => f.face).filter(Boolean).sort();
+                const ex = existing.find(it => (it.name || '').toUpperCase() === base);
+                const sap = (ex && ex.sap) || kjMatchSap(base);
+                const w = (use.find(f => f.w) || {}).w || 270.4, h = (use.find(f => f.h) || {}).h || 120.4;
+                return { base, faces, ok: good.length === faces.length, exists: !!ex, pick: good.length === faces.length,
+                    item: { name: base, sap, w, h, date: todayLocal(), inks,
+                        notes: 'KERAjet · ' + (letters.length > 1 ? `media de ${letters.length} caras (${letters.join(', ')})` : letters.length ? 'cara ' + letters[0] : 'leído de captura') } };
+            }).sort((a, b) => a.base.localeCompare(b.base));
+            kjGroups.failed = failed;
+            $('kjProgress').style.display = 'none';
+            renderKj();
+        }
+        function renderKj() {
+            const e = escapeHtml, failed = kjGroups.failed || [];
+            $('kjTitle').textContent = `${kjGroups.length} ${kjGroups.length === 1 ? 'modelo leído' : 'modelos leídos'}`;
+            $('kjResult').innerHTML = (kjGroups.length ? `<p class="pl-hint" style="margin-top:0">Revisa y pulsa <b>Guardar</b>. Lo que sale en rojo no cuadra con el Total de KERAjet: pulsa «Revisar» para corregirlo a mano.</p>` : '') +
+                kjGroups.map((g, i) => { const t = keraTotals(g.item), bad = g.faces.filter(f => !f.ok);
+                    return `<div class="kj-row ${g.ok ? '' : 'bad'}">
+                        ${g.saved ? '<span style="font-size:1.2rem">✅</span>' : `<input type="checkbox" ${g.pick ? 'checked' : ''} onchange="kjGroups[${i}].pick = this.checked; kjUpdateSave()" aria-label="Guardar ${e(g.base)}">`}
+                        <span><b>${e(g.base)}</b> ${g.exists ? '<small>(actualiza la ficha que ya hay)</small>' : ''}<br>
+                        <small>${g.item.sap ? 'SAP ' + e(g.item.sap) : '<span style="color:#b45309">sin SAP</span>'} · ${e(g.item.notes.replace('KERAjet · ', ''))}</small>
+                        ${bad.length ? `<br><small class="kj-warn">⚠️ ${bad.map(f => `${f.face ? 'Cara ' + f.face : e(f.file)}: ${e(f.problems[0])}`).join(' · ')}</small>` : ''}
+                        ${g.saved ? '<br><small style="color:#15803d;font-weight:700">Guardada</small>' : ''}</span>
+                        <span style="text-align:right"><b>${nf(t.c, 3)} €/m²</b><br><small>${nf(t.g, 3)} g/m²</small>
+                        ${!g.saved && !g.ok ? `<br><button type="button" class="btn btn-secondary btn-small" style="margin-top:4px" onclick="kjReview(${i})">Revisar</button>` : ''}</span></div>`; }).join('') +
+                (failed.length ? `<p class="kj-warn" style="margin-top:8px">⚠️ No se han podido leer: ${failed.map(f => e(f.file)).join(', ')}. ¿Son capturas de la pestaña <b>Costes</b>? Puedes meterlas con «＋ Ficha a mano».</p>` : '') +
+                (!kjGroups.length && !failed.length ? '<p>No había imágenes.</p>' : '');
+            kjUpdateSave();
+        }
+        function kjUpdateSave() {
+            const n = kjGroups.filter(g => g.pick && !g.saved).length;
+            $('kjSave').disabled = !n; $('kjSave').textContent = n ? `💾 Guardar ${n} ${n === 1 ? 'ficha' : 'fichas'}` : 'Guardar';
+        }
+        function kjReview(i) { kjEditing = kjGroups[i]; openKeraEditor(-1, JSON.parse(JSON.stringify(kjGroups[i].item))); }
+        function closeKj() { kjCancel = true; $('kjModal').classList.remove('open'); }
+        function saveKj() {
+            const k = readKera(); let n = 0;
+            kjGroups.filter(g => g.pick && !g.saved).forEach(g => {
+                const ex = k.items.find(it => (it.name || '').toUpperCase() === g.base);
+                if (ex) Object.assign(ex, { ...g.item, sap: ex.sap || g.item.sap }); else k.items.push({ id: 'k' + Date.now().toString(36) + n, ...g.item });
+                g.saved = true; n++;
+            });
+            if (!n) return;
+            writeKera(k); renderKera(); updateKeraSummary();
+            toast(`💾 ${n} ${n === 1 ? 'ficha guardada' : 'fichas guardadas'}`);
+            if (kjGroups.every(g => g.saved || !g.pick) && kjGroups.every(g => g.saved || g.ok)) closeKj(); else renderKj();
         }
         function updateKeraSummary() {
             const el = $('keraSummary'); if (!el) return;
