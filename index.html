@@ -467,6 +467,11 @@
         .tech-pick button.active { border-color: var(--tc, var(--primary-color)); background: var(--tc, var(--primary-color)); color: #fff; }
         .tech-chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; color: #fff; background: var(--tc); white-space: nowrap; }
         .tech-none { color: var(--muted); font-size: 0.75rem; }
+        .tech-free { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; color: #6d28d9; background: #ede9fe; border: 1px dashed #a78bfa; white-space: nowrap; }
+        .take-btn { display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 800; color: #fff; background: #7c3aed; white-space: nowrap; }
+        .enc.free { border-style: dashed; }
+        .rel-btn { display: inline-block; margin-top: 4px; font-size: 0.72rem; font-weight: 700; color: var(--muted); text-decoration: underline; cursor: pointer; }
+        .tj-head { margin: 10px 0 6px; font-size: 0.85rem; font-weight: 800; }
         .pl-load td { padding: 5px 4px !important; font-size: 0.78rem; }
         .pl-load td.has { font-weight: 800; }
         .pl-load-bar { display: block; height: 4px; border-radius: 2px; margin-top: 2px; background: var(--tc); }
@@ -1105,7 +1110,7 @@
                         <div class="form-group"><label for="encSub">Sustrato</label><select id="encSub" class="sub-sel"></select></div>
                         <div class="form-group"><label>Material</label><div class="shift-picker mat-pick" style="margin:0" data-target="enc"><button type="button" class="shift-btn" data-mat="criscal" onclick="setMat('enc','criscal')">Criscal</button><button type="button" class="shift-btn" data-mat="pigmentado" onclick="setMat('enc','pigmentado')">Pigmentado</button></div></div>
                     </div>
-            <div class="form-group"><label>¿Quién lo tonifica? <small style="color:var(--muted);font-weight:400">(puedes elegir varios)</small></label><div class="tech-pick" id="encTech"></div></div>
+            <div class="form-group"><label>¿Quién lo tonifica? <small style="color:var(--muted);font-weight:400">(opcional · si no eliges a nadie, queda <b>libre</b> y lo coge un diseñador)</small></label><div class="tech-pick" id="encTech"></div></div>
             <div class="form-group"><label for="encNotes">Notas <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="text" id="encNotes" placeholder="Ej.: más cálido que la última vez"></div>
             <p class="pl-hint" id="encFromPlan" hidden>Creado desde el planning: el modelo y la fecha se cambian allí.</p>
             <div class="pl-sheet-actions">
@@ -1558,7 +1563,6 @@
         function saveEncargo() {
             const sap = $('encSap').value.trim(), deco = $('encDeco').value.trim();
             if (!sap && !deco) { toast('Pon el modelo (SAP o nombre)', true); $('encSearch').focus(); return; }
-            if (!encTechs.length) { toast('Elige quién lo tonifica', true); return; }
             const t = readEnc(); let x = t.items.find(i => i.id === encEditId);
             if (!x) { x = { id: 'e' + Date.now().toString(36), createdAt: new Date().toISOString(), done: false }; t.items.unshift(x); }
             const dueIn = $('encDue').value, due = nextWorkday(dueIn);
@@ -1580,9 +1584,9 @@
             const late = !x.done && x.due && x.due < today, t = opts.tests ? opts.tests.get(x.sap) : null;
             const due = x.due ? (x.due === today ? 'para hoy' : (late ? '⚠️ era para el ' : 'para el ') + formatDate(x.due).slice(0, 5)) : 'sin fecha';
             const click = opts.pick ? `pickEncargo('${e(x.id)}')` : `openEncargoEditor('${e(x.id)}')`;
-            return `<button type="button" class="enc ${x.done ? 'done' : late ? 'late' : ''} ${opts.current ? 'current' : ''}" onclick="${click}">
+            return `<button type="button" class="enc ${x.done ? 'done' : late ? 'late' : ''} ${opts.current ? 'current' : ''} ${opts.take ? 'free' : ''}" onclick="${click}">
                 <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.of ? ' · OF ' + e(x.of) : ''}${x.material ? ' · ' + matText(x.material) : ''} · ${due}</small>${encBadges(x, false)}</span>
-                <span class="who">${opts.pick ? (t ? `<small>🎨 ${t.ok + t.nok} pl. de prueba</small>` : '<small>sin pruebas</small>') : (x.techs || []).map(techChip).join('')}</span>
+                <span class="who">${opts.take ? '<span class="take-btn">✋ Cogerla</span>' : opts.pick ? (t ? `<small>🎨 ${t.ok + t.nok} pl. de prueba</small>` : '<small>sin pruebas</small>') + (opts.others ? '<br>' + encWho(x) : '') : encWho(x)}${opts.release ? `<br><span class="rel-btn" role="button" onclick="event.stopPropagation(); releaseEncargo('${e(x.id)}')">↩ Soltar</span>` : ''}</span>
                 ${x.notes || (opts.pick && (x.techs || []).length > 1) ? `<span class="note">${x.notes ? '📝 ' + e(x.notes) : ''}${opts.pick && x.techs.length > 1 ? (x.notes ? ' · ' : '') + 'con ' + e(x.techs.filter(d => d !== currentDecorator).map(displayDecorator).join(', ')) : ''}</span>` : ''}
             </button>`;
         }
@@ -1603,6 +1607,10 @@
                 openChecklist(`Para empezar con «${parseModel(x.deco || CODE_BY_SAP.get(x.sap) || '').model}» primero hay que cerrar el pedido de «${curGraphic || curSap}».`, () => pickEncargo(id));
                 return;
             }
+            if (!(x.techs || []).length) {
+                const t = readEnc(), y = t.items.find(i => i.id === id);
+                if (y) { y.techs = [currentDecorator]; y.takenAt = new Date().toISOString(); writeEnc(t); renderEncargos(); setTimeout(() => toast('✋ Te la quedas: ' + (parseModel(x.deco || CODE_BY_SAP.get(x.sap) || '').model || x.sap)), 1600); }
+            }
             $('sapField').value = x.sap || '';
             $('graphicName').value = x.deco ? shortName(x.deco) : (CODE_BY_SAP.has(x.sap) ? shortName(CODE_BY_SAP.get(x.sap)) : '');
             $('graphicName').dispatchEvent(new Event('change'));
@@ -1613,6 +1621,13 @@
             orderEditing = false; saveHeaderDraft(); renderTodayJobs();
             toast('Listo para tonificar: ' + (parseModel($('graphicName').value).model || x.sap));
             $('countOk').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // Soltar una gráfica cogida: vuelve a la lista de libres
+        function releaseEncargo(id) {
+            const t = readEnc(), x = t.items.find(i => i.id === id); if (!x) return;
+            if (!confirm('¿Soltar esta gráfica? Volverá a la lista de libres para que la coja otro.')) return;
+            x.techs = (x.techs || []).filter(d => d !== currentDecorator); x.takenAt = '';
+            writeEnc(t); renderEncargos(); renderTodayJobs(); toast('↩ Gráfica soltada');
         }
         // Un trabajo del planning marcado «para diseño» con técnicos crea (o actualiza) su encargo
         function syncEncargoFromPlanning(r) {
@@ -1659,9 +1674,13 @@
             const box = $('todayJobs'); if (!box || !currentDecorator) return;
             const tests = testsMap(), cur = $('sapField').value.trim();
             const pend = readEnc().items.filter(x => !x.done).sort(encSort);
-            const mine = pend.filter(x => (x.techs || []).includes(currentDecorator)), others = pend.filter(x => !(x.techs || []).includes(currentDecorator));
-            box.innerHTML = (mine.length ? mine.map(x => encCard(x, { pick: true, tests, current: x.sap && x.sap === cur })).join('') : '<p class="pl-hint" style="margin:0 0 6px">No tienes encargos pendientes.</p>') +
-                (others.length ? `<details class="tj-more"><summary>Encargos de los compañeros (${others.length})</summary><div style="margin-top:6px">${others.map(x => encCard(x, { pick: true, tests })).join('')}</div></details>` : '');
+            const mine = pend.filter(x => (x.techs || []).includes(currentDecorator)), free = pend.filter(x => !(x.techs || []).length);
+            const others = pend.filter(x => (x.techs || []).length && !(x.techs || []).includes(currentDecorator));
+            box.innerHTML = `<p class="tj-head">Mis gráficas</p>` +
+                (mine.length ? mine.map(x => encCard(x, { pick: true, tests, release: true, current: x.sap && x.sap === cur })).join('') : '<p class="pl-hint" style="margin:0 0 6px">Aún no has cogido ninguna. Elige una de la lista de abajo 👇</p>') +
+                `<p class="tj-head">🙋 Gráficas libres para coger${free.length ? ` (${free.length})` : ''}</p>` +
+                (free.length ? free.map(x => encCard(x, { pick: true, take: true, tests })).join('') : '<p class="pl-hint" style="margin:0 0 6px">No hay gráficas libres. Basilio las pone en el Planning semanal.</p>') +
+                (others.length ? `<details class="tj-more"><summary>Cogidas por compañeros (${others.length})</summary><div style="margin-top:6px">${others.map(x => encCard(x, { pick: true, others: true, tests })).join('')}</div></details>` : '');
         }
         function pickPlanningJob(id) {
             const r = readPlanning().rows.find(x => x.id === id); if (!r) return;
@@ -2044,7 +2063,7 @@
                 html += `<tr>
                     <td class="enc-state ${x.done ? 'ok' : late ? 'late' : ''}">${x.done ? '✓ Hecho' : late ? '⚠️ Atrasado' : '⏳ Pendiente'}${encBadges(x, true)}</td>
                     <td>${e(x.sap || '—')}${x.of ? `<br><small class="pl-of">OF ${e(x.of)}</small>` : ''}</td>
-                    <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${(x.techs || []).map(techChip).join(' ')}${(x.substrate || x.material) ? `<small>${e([subText(x.substrate), matText(x.material)].filter(Boolean).join(' · '))}</small>` : ''}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
+                    <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${encWho(x)}${(x.substrate || x.material) ? `<small>${e([subText(x.substrate), matText(x.material)].filter(Boolean).join(' · '))}</small>` : ''}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
                     ${keys.map((k, j) => `<td class="${j === dayIdx ? 'enc-day' + (x.done ? ' ok' : '') : ''}" data-row="e:${e(x.id)}" data-k="${k}">${j === dayIdx ? `<button type="button" class="pl-cell" title="Arrástralo a otro día" onclick="if (!plJustDragged) openEncargoEditor('${e(x.id)}')">${x.done ? '✓' : '🎨'}</button>` : (dayIdx < 0 && j === 0 && !x.due ? '<small class="pl-of">sin fecha</small>' : '')}</td>`).join('')}
                 </tr>`;
             });
@@ -2066,6 +2085,7 @@
         const techColor = dec => (TECHS.find(t => t[0] === dec) || [])[1] || '#64748b';
         const techChip = dec => dec ? `<span class="tech-chip" style="--tc:${techColor(dec)}">${escapeHtml(displayDecorator(dec))}</span>` : '<span class="tech-none">—</span>';
         // Técnicos de un trabajo (admite varios) y si hay que tonificarlo o es solo producción
+        const encWho = x => (x.techs || []).length ? x.techs.map(techChip).join(' ') : '<span class="tech-free">🙋 Libre</span>';
         const techsOf = r => Array.isArray(r.techs) ? r.techs : (r.tech ? [r.tech] : []);
         const needsTono = r => r.tono !== false;
         let edTechs = [], edTono = true, plShowLoad = false;
