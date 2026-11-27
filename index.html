@@ -1805,7 +1805,8 @@
                 ${x.notes || (opts.pick && (x.techs || []).length > 1) ? `<span class="note">${x.notes ? '📝 ' + e(x.notes) : ''}${opts.pick && x.techs.length > 1 ? (x.notes ? ' · ' : '') + 'con ' + e(x.techs.filter(d => d !== currentDecorator).map(displayDecorator).join(', ')) : ''}</span>` : ''}
             </button>`;
         }
-        const encSort = (a, b) => (a.due || '9999').localeCompare(b.due || '9999');
+        // Orden de los encargos: el que Basilio deja arrastrando filas (pos); los nuevos, al final por fecha
+        const encSort = (a, b) => { const pa = a.pos ?? 1e9, pb = b.pos ?? 1e9; return pa !== pb ? pa - pb : (a.due || '9999').localeCompare(b.due || '9999'); };
         function renderEncargos() {
             const pendN = readEnc().items.filter(x => !x.done).length;
             if ($('tileDis')) $('tileDis').textContent = pendN ? `${pendN} ${pendN === 1 ? 'encargo pendiente' : 'encargos pendientes'} · pruebas de tono` : 'Pruebas de tono y encargos';
@@ -2437,7 +2438,10 @@
                 plDrag.ghost.style.left = ev.clientX + 'px'; plDrag.ghost.style.top = ev.clientY + 'px';
                 const el = document.elementFromPoint(ev.clientX, ev.clientY), weekBtn = el && el.closest('[data-weekdrop]');
                 const over = plCellAt(ev.clientX, ev.clientY);
-                const ok = weekBtn || (over && over.dataset.row === plDrag.row && over.dataset.k !== plDrag.k && !isWeekend(over.dataset.k) ? over : null);
+                const isEnc = String(plDrag.row).startsWith('e:');
+                const ok = weekBtn || (over && !isWeekend(over.dataset.k) && (isEnc
+                    ? String(over.dataset.row).startsWith('e:') && (over.dataset.row !== plDrag.row || over.dataset.k !== plDrag.k)
+                    : over.dataset.row === plDrag.row && over.dataset.k !== plDrag.k) ? over : null);
                 if (plDrag.over !== ok) { plDrag.over?.classList.remove('pl-drop'); ok?.classList.add('pl-drop'); plDrag.over = ok; }
             }, { passive: false });
             const end = () => {
@@ -2455,17 +2459,27 @@
                     movePlanningWeek(dir);
                     return;
                 }
-                if (String(d.row).startsWith('e:')) moveEncargoDay(d.row.slice(2), d.over.dataset.k);
+                if (String(d.row).startsWith('e:')) moveEncargoDay(d.row.slice(2), d.over.dataset.k, d.over.dataset.row.slice(2));
                 else movePlanningDay(Number(d.row), d.k, d.over.dataset.k);
             };
             window.addEventListener('pointerup', end);
             window.addEventListener('pointercancel', end);
         }
-        function moveEncargoDay(id, toK) {
-            const t = readEnc(), x = t.items.find(i => i.id === id); if (!x || x.due === toK) return;
-            const from = x.due; x.due = toK;
+        function moveEncargoDay(id, toK, targetId) {
+            const t = readEnc(), x = t.items.find(i => i.id === id); if (!x) return;
+            const from = x.due, moveRow = targetId && targetId !== id;
+            if (from === toK && !moveRow) return;
+            x.due = toK;
+            if (moveRow) {
+                // Orden actual tal y como se ve, y el encargo pasa a la fila donde se ha soltado
+                const seen = [...new Set([...document.querySelectorAll('#plTable td[data-row^="e:"]')].map(td => td.dataset.row.slice(2)))];
+                const order = [...seen, ...t.items.filter(i => !seen.includes(i.id)).sort(encSort).map(i => i.id)];
+                const fromIdx = order.indexOf(id), toIdx = order.indexOf(targetId);
+                order.splice(fromIdx, 1); order.splice(toIdx, 0, id);
+                order.forEach((oid, n) => { const it = t.items.find(i => i.id === oid); if (it && it.pos !== n) it.pos = n; });
+            }
             writeEnc(t); renderPlanning(); renderEncargos(); renderTodayJobs();
-            toast(`🎨 Encargo movido${from ? ' del ' + formatDate(from).slice(0, 5) : ''} al ${dayName(toK)} ${formatDate(toK).slice(0, 5)}`);
+            toast(from === toK ? '🎨 Encargo cambiado de fila' : `🎨 Encargo movido${from ? ' del ' + formatDate(from).slice(0, 5) : ''} al ${dayName(toK)} ${formatDate(toK).slice(0, 5)}${moveRow ? ' y de fila' : ''}`);
         }
         function movePlanningDay(i, fromK, toK) {
             const p = readPlanning(), r = p.rows[i], n = Number(r.qty?.[fromK]) || 0;
