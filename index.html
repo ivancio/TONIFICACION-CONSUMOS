@@ -583,6 +583,9 @@
         td.filled .pl-cell { color: #fff; }
         td.filled .pl-cell:hover { background: #44403c; color: #fff; }
         .pl-name { border: 0; background: transparent; font: inherit; text-align: left; padding: 7px 6px; cursor: pointer; width: 100%; min-width: 300px; }
+        .enc-m { display: flex; gap: 10px; align-items: center; padding: 10px 12px; margin: 0 0 12px; border: 1px dashed #818cf8; border-radius: 10px; background: #eef2ff; color: #312e81; cursor: pointer; }
+        .enc-m input { width: 20px; height: 20px; flex: none; }
+        .enc-m small { color: #4338ca; }
         .pl-m { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 800; background: #e0e7ff; color: #3730a3; vertical-align: 1px; }
         .pl-name small { display: block; color: var(--muted); font-size: 0.72rem; }
         .pl-name:hover { background: var(--soft-bg); }
@@ -1128,6 +1131,7 @@
                 <div class="form-group"><label for="encDue">Para cuándo <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input type="date" id="encDue"></div>
             </div>
             <div class="form-group"><label for="encDeco">Nombre</label><input type="text" id="encDeco"></div>
+            <label class="enc-m" id="encMBox" hidden><input type="checkbox" id="encWithM"> <span><b>➕ Incluir también la cara M</b><br><small id="encMSap"></small></span></label>
             <div class="form-row">
                         <div class="form-group"><label for="encSub">Sustrato</label><select id="encSub" class="sub-sel"></select></div>
                         <div class="form-group"><label>Material</label><div class="shift-picker mat-pick" style="margin:0" data-target="enc"><button type="button" class="shift-btn" data-mat="criscal" onclick="setMat('enc','criscal')">Criscal</button><button type="button" class="shift-btn" data-mat="pigmentado" onclick="setMat('enc','pigmentado')">Pigmentado</button></div></div>
@@ -1738,11 +1742,28 @@
             toast(`${REQS.find(r => r[0] === k)[2]}: ${x.checks[k] ? 'SÍ ✓' : 'pendiente'}`);
         }
         // Las comprobaciones del encargo de este SAP (para rellenar el cierre del pedido)
-        const encChecksFor = sap => { const it = readEnc().items.filter(x => sap && x.sap === sap); return (it.find(x => !x.done && (x.techs || []).includes(currentDecorator)) || it.find(x => !x.done) || it[0] || {}).checks || {}; };
+        // Un encargo puede llevar también la cara M (otro SAP): sirve para cualquiera de los dos
+        const encHas = (x, sap) => !!sap && (x.sap === sap || x.sapM === sap);
+        // SAP de la otra versión del modelo: { main, m } a partir de un SAP o nombre
+        function mPair(sap, deco) {
+            const name = CODE_BY_SAP.get(sap) || deco || ''; if (!name) return null;
+            const mod = parseModel(name).model;
+            const same = UNDORA_CODES.filter(([, n]) => parseModel(n).model === mod);
+            const main = same.find(([, n]) => !parseModel(n).caraM), m = same.find(([, n]) => parseModel(n).caraM);
+            return main && m ? { main: main[0], m: m[0] } : null;
+        }
+        function refreshEncM(checked) {
+            const pr = mPair($('encSap').value.trim(), $('encDeco').value.trim());
+            $('encMBox').hidden = !pr;
+            if (!pr) { $('encWithM').checked = false; return; }
+            $('encMSap').textContent = `SAP cara M: ${pr.m} · así el diseñador sabe que tiene que tonificar también la cara M`;
+            if (checked !== undefined) $('encWithM').checked = checked;
+        }
+        const encChecksFor = sap => { const it = readEnc().items.filter(x => encHas(x, sap)); return (it.find(x => !x.done && (x.techs || []).includes(currentDecorator)) || it.find(x => !x.done) || it[0] || {}).checks || {}; };
         function setEncChecks(sap, checks) {
             if (!sap) return;
             const t = readEnc(); let n = 0;
-            t.items.forEach(x => { if (x.sap === sap && !x.done) { x.checks = { ...(x.checks || {}), ...checks }; n++; } });
+            t.items.forEach(x => { if (encHas(x, sap) && !x.done) { x.checks = { ...(x.checks || {}), ...checks }; n++; } });
             if (n) writeEnc(t);
         }
 
@@ -1766,6 +1787,7 @@
             $('encSearch').value = ''; $('encSap').value = x.sap || ''; $('encOf').value = x.of || '';
             $('encDue').value = x.due || (weekMonday ? (() => { const t = todayLocal(), d = new Date(weekMonday); const k = isoDate(d); return nextWorkday(t >= k ? t : k); })() : '');
             $('encDeco').value = x.deco ? shortName(x.deco) : ''; $('encNotes').value = x.notes || '';
+            refreshEncM(!!x.sapM);
             encTechs = [...(x.techs || [])]; renderEncTechs();
             fillSubSelect('encSub', x.substrate, x.deco); matOf.enc = ''; setMat('enc', x.material || '');
             $('encDelete').style.visibility = id ? 'visible' : 'hidden';
@@ -1776,13 +1798,15 @@
         }
         function closeEncargoEditor() { $('encModal').classList.remove('open'); }
         function saveEncargo() {
-            const sap = $('encSap').value.trim(), deco = $('encDeco').value.trim();
+            let sap = $('encSap').value.trim(), deco = $('encDeco').value.trim(), sapM = '';
+            const pr = mPair(sap, deco);
+            if (pr && $('encWithM').checked) { sapM = pr.m; if (sap === pr.m) { sap = pr.main; deco = shortName(CODE_BY_SAP.get(pr.main)); } }
             if (!sap && !deco) { toast('Pon el modelo (SAP o nombre)', true); $('encSearch').focus(); return; }
             const t = readEnc(); let x = t.items.find(i => i.id === encEditId);
             if (!x) { x = { id: 'e' + Date.now().toString(36), createdAt: new Date().toISOString(), done: false }; t.items.unshift(x); }
             const dueIn = $('encDue').value, due = nextWorkday(dueIn);
             if (due !== dueIn) toast('Sábado y domingo no se trabaja: pasa al lunes ' + formatDate(due).slice(0, 5));
-            Object.assign(x, { sap, deco, of: $('encOf').value.trim(), due, techs: encTechs, notes: $('encNotes').value.trim(), substrate: $('encSub').value, material: matOf.enc || '' });
+            Object.assign(x, { sap, sapM, deco, of: $('encOf').value.trim(), due, techs: encTechs, notes: $('encNotes').value.trim(), substrate: $('encSub').value, material: matOf.enc || '' });
             writeEnc(t); closeEncargoEditor(); renderEncargos(); renderTodayJobs(); if ($('planningView').style.display === 'block') renderPlanning(); toast('Encargo guardado');
         }
         function toggleEncargoDone() {
@@ -1796,11 +1820,11 @@
         }
         function encCard(x, opts = {}) {
             const e = escapeHtml, m = parseModel(x.deco || CODE_BY_SAP.get(x.sap) || ''), today = todayLocal();
-            const late = !x.done && x.due && x.due < today, t = opts.tests ? opts.tests.get(x.sap) : null;
+            const late = !x.done && x.due && x.due < today, t = opts.tests ? [opts.tests.get(x.sap), x.sapM && opts.tests.get(x.sapM)].filter(Boolean).reduce((a, v) => a ? { ok: a.ok + v.ok, nok: a.nok + v.nok } : { ok: v.ok, nok: v.nok }, null) : null;
             const due = x.due ? (x.due === today ? 'para hoy' : (late ? '⚠️ era para el ' : 'para el ') + formatDate(x.due).slice(0, 5)) : 'sin fecha';
             const click = opts.pick ? `pickEncargo('${e(x.id)}')` : `openEncargoEditor('${e(x.id)}')`;
             return `<button type="button" class="enc ${x.done ? 'done' : late ? 'late' : ''} ${opts.current ? 'current' : ''} ${opts.take ? 'free' : ''}" onclick="${click}">
-                <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.of ? ' · OF ' + e(x.of) : ''}${x.material ? ' · ' + matText(x.material) : ''} · ${due}</small>${encBadges(x, false)}</span>
+                <span><b>${x.done ? '✅ ' : ''}${e(m.model || x.deco || x.sap)}</b>${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}${x.sapM ? ` <span class="pl-m" title="También la cara M · SAP ${e(x.sapM)}">＋ Cara M</span>` : ''}<br><small>${x.sap ? 'SAP ' + e(x.sap) : ''}${x.sapM ? ' + M ' + e(x.sapM) : ''}${x.of ? ' · OF ' + e(x.of) : ''}${x.material ? ' · ' + matText(x.material) : ''} · ${due}</small>${encBadges(x, false)}</span>
                 <span class="who">${opts.take ? '<span class="take-btn">✋ Cogerla</span>' : opts.pick ? (t ? `<small>🎨 ${t.ok + t.nok} pl. de prueba</small>` : '<small>sin pruebas</small>') + (opts.others ? '<br>' + encWho(x) : '') : encWho(x)}${opts.release ? `<br><span class="rel-btn" role="button" onclick="event.stopPropagation(); releaseEncargo('${e(x.id)}')">↩ Soltar</span>` : ''}</span>
                 ${x.notes || (opts.pick && (x.techs || []).length > 1) ? `<span class="note">${x.notes ? '📝 ' + e(x.notes) : ''}${opts.pick && x.techs.length > 1 ? (x.notes ? ' · ' : '') + 'con ' + e(x.techs.filter(d => d !== currentDecorator).map(displayDecorator).join(', ')) : ''}</span>` : ''}
             </button>`;
@@ -1861,10 +1885,11 @@
         function completeEncargosFor(sap) {
             if (!sap) return;
             const t = readEnc(); let n = 0;
-            t.items.forEach(x => { if (!x.done && x.sap === sap && (x.techs || []).includes(currentDecorator)) { x.done = true; x.doneAt = new Date().toISOString(); x.doneBy = currentDecorator; x.checks = { ...(x.checks || {}), tonificado: true }; n++; } });
+            const saps = new Set([sap]);
+            t.items.forEach(x => { if (!x.done && encHas(x, sap) && (x.techs || []).includes(currentDecorator)) { saps.add(x.sap); if (x.sapM) saps.add(x.sapM); x.done = true; x.doneAt = new Date().toISOString(); x.doneBy = currentDecorator; x.checks = { ...(x.checks || {}), tonificado: true }; n++; } });
             if (n) writeEnc(t);
             const p = readPlanning(); let m = 0;
-            p.rows.forEach(r => { if (r.sap === sap && needsTono(r) && !r.reton) { r.reton = true; m++; } });
+            p.rows.forEach(r => { if (saps.has(r.sap) && needsTono(r) && !r.reton) { r.reton = true; m++; } });
             if (m) writePlanning(p, { undo: false });
             if (n || m) setTimeout(() => toast('✅ Tonificación terminada: encargo hecho y planning en Retonificado SÍ'), 1800);
         }
@@ -1893,7 +1918,7 @@
             const mine = pend.filter(x => (x.techs || []).includes(currentDecorator)), free = pend.filter(x => !(x.techs || []).length);
             const others = pend.filter(x => (x.techs || []).length && !(x.techs || []).includes(currentDecorator));
             box.innerHTML = `<p class="tj-head">Mis gráficas</p>` +
-                (mine.length ? mine.map(x => encCard(x, { pick: true, tests, release: true, current: x.sap && x.sap === cur })).join('') : '<p class="pl-hint" style="margin:0 0 6px">Aún no has cogido ninguna. Elige una de la lista de abajo 👇</p>') +
+                (mine.length ? mine.map(x => encCard(x, { pick: true, tests, release: true, current: encHas(x, cur) })).join('') : '<p class="pl-hint" style="margin:0 0 6px">Aún no has cogido ninguna. Elige una de la lista de abajo 👇</p>') +
                 `<p class="tj-head">🙋 Gráficas libres para coger${free.length ? ` (${free.length})` : ''}</p>` +
                 (free.length ? free.map(x => encCard(x, { pick: true, take: true, tests })).join('') : '<p class="pl-hint" style="margin:0 0 6px">No hay gráficas libres. Basilio las pone en el Planning semanal.</p>') +
                 (others.length ? `<details class="tj-more"><summary>Cogidas por compañeros (${others.length})</summary><div style="margin-top:6px">${others.map(x => encCard(x, { pick: true, others: true, tests })).join('')}</div></details>` : '');
@@ -2278,8 +2303,8 @@
                 const dayIdx = keys.indexOf(x.due);
                 html += `<tr>
                     <td class="enc-state ${x.done ? 'ok' : late ? 'late' : ''}">${x.done ? '✓ Hecho' : late ? '⚠️ Atrasado' : '⏳ Pendiente'}${encBadges(x, true)}</td>
-                    <td>${e(x.sap || '—')}${x.of ? `<br><small class="pl-of">OF ${e(x.of)}</small>` : ''}</td>
-                    <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''} ${encWho(x)}${(x.substrate || x.material) ? `<small>${e([subText(x.substrate), matText(x.material)].filter(Boolean).join(' · '))}</small>` : ''}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
+                    <td>${e(x.sap || '—')}${x.sapM ? `<br><small class="pl-of">M ${e(x.sapM)}</small>` : ''}${x.of ? `<br><small class="pl-of">OF ${e(x.of)}</small>` : ''}</td>
+                    <td><button type="button" class="pl-name" onclick="openEncargoEditor('${e(x.id)}')">${e(m.model || x.deco || x.sap)}${m.caraM ? ' <span class="pl-m">Cara M</span>' : ''}${x.sapM ? ` <span class="pl-m" title="También la cara M · SAP ${e(x.sapM)}">＋ Cara M</span>` : ''} ${encWho(x)}${(x.substrate || x.material) ? `<small>${e([subText(x.substrate), matText(x.material)].filter(Boolean).join(' · '))}</small>` : ''}${x.notes ? `<small>📝 ${e(x.notes)}</small>` : ''}</button></td>
                     ${keys.map((k, j) => `<td class="${j === dayIdx ? 'enc-day' + (x.done ? ' ok' : '') : ''}" data-row="e:${e(x.id)}" data-k="${k}">${j === dayIdx ? `<button type="button" class="pl-cell" title="Arrástralo a otro día" onclick="if (!plJustDragged) openEncargoEditor('${e(x.id)}')">${x.done ? '✓' : '🎨'}</button>` : (dayIdx < 0 && j === 0 && !x.due ? '<small class="pl-of">sin fecha</small>' : '')}</td>`).join('')}
                 </tr>`;
             });
@@ -2494,7 +2519,7 @@
         document.addEventListener('change', ev => { if (ev.target.closest && ev.target.closest('#chkList')) updateChecklist(); });
 
         function initEncargoEditor() {
-            const fill = sap => { if (!CODE_BY_SAP.has(sap)) return false; $('encSap').value = sap; $('encDeco').value = shortName(CODE_BY_SAP.get(sap)); $('encSearch').value = ''; const sb = substrateFromName($('encDeco').value); if (sb) $('encSub').value = sb; return true; };
+            const fill = sap => { if (!CODE_BY_SAP.has(sap)) return false; $('encSap').value = sap; $('encDeco').value = shortName(CODE_BY_SAP.get(sap)); $('encSearch').value = ''; const sb = substrateFromName($('encDeco').value); if (sb) $('encSub').value = sb; refreshEncM(); return true; };
             $('encSearch').addEventListener('change', () => { const v = $('encSearch').value.trim(); if (!fill(v.split(' · ')[0].trim())) { const c = CODE_BY_NAME.get(v.toUpperCase()); if (c) fill(c); } });
             $('encSap').addEventListener('change', () => fill($('encSap').value.trim()));
         }
